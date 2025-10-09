@@ -54,7 +54,7 @@ From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the 
 2. A container prepares data for the RAG model, by embedding it and populating the vector database.
 
 **`src/datapipeline/preprocess_rag.py`**
-   This script prepares the necessary data for setting up our vector database. It performs embedding and loads the data into a vector database (ChromaDB).
+   This script prepares the necessary data for setting up our vector database. It performs embedding and loads the data into a vector database.
 
 **`src/datapipeline/dataloader.py`**
    This script loads the (prepared) data from the Google Cloud Bucket.

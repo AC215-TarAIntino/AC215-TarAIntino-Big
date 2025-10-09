@@ -1,48 +1,15 @@
+# Jupyter and kernel
+jupyter==1.1.1
+ipykernel==6.29.5
+
 # Core environment
 python-dotenv==1.0.1
 numpy==1.26.4
 pandas==2.2.3
 scikit-learn==1.5.2
 scipy==1.13.1
-
-# API and orchestration
-requests==2.32.3
-fastapi==0.115.0
-uvicorn==0.30.6
-temporalio==1.5.0
-pydantic==2.9.0
-
-# Preference elicitation / modeling
-surprise==0.1
-pyirt==0.3.3
-fuzzywuzzy==0.18.0
-python-Levenshtein==0.25.1
-
-# LLM integration
-openai==1.51.0
-langchain==0.3.1
-langchain-core==0.3.6
-tiktoken==0.7.0
-
-# Generative video / media
-moviepy==1.0.3
-Pillow==10.4.0
-imageio==2.36.0
-pydub==0.25.1
-
-# Data management
-sqlalchemy==2.0.35
-datasets==3.0.1
-
-# MLOps & Logging
-mlflow==2.17.1
-prefect==3.0.3
-rich==13.8.0
-loguru==0.7.2
+seaborn==0.12.2
+matplotlib==3.8.0
 
 # Containerization & deployment
 docker==7.1.0
-
-# Optional dev tools
-black==24.8.0
-flake8==7.1.1
