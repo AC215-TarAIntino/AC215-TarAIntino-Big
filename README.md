@@ -23,6 +23,9 @@
         └── train_model.py
 ```
 
+To set up the venv for this project, run the following command: `bash venv_setup.sh`
+Then activate the environment using: `source taraintino_env/bin/activate`
+
 # AC215 - Milestone2 - TarAIntino
 
 **Team Members**
