@@ -32,41 +32,24 @@ Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vranci
 TarAIntino
 
 **Project**
-In this project, we aim to develop an ... application. The app will feature ... and include a ... . Users can simply ..., and the app will ... . Additionally, ... will allow users to ... . It will be powered by a ... model and ... models, making it a specialist in ... .
-
+In this project, we aim to develop an avant-garde end-to-end AI movie trailer generation application. The app will feature an adaptive, Akinator-style quiz to elicit user preferences and include a modular pipeline connecting those preferences to generative APIs. Users can simply answer a short interactive quiz, and the app will produce a personalized, AI-generated movie trailer that reflects their cinematic taste. Additionally, a storytelling and trailer-planning agent will allow users to explore customized narratives and styles. It will be powered by a large language model for narrative generation and diffusion-based video models, making it a specialist in personalized cinematic creation.
 
 ### Milestone2 ###
 
 In this milestone, we have the components for data management, including versioning, as well as the computer vision and language models.
 
 **Data**
-We gathered a dataset of #nbr images representing approximately ... different movies. The dataset, approximately 100GB in size, was collected from the following sources: ... . We have stored it in a private Google Cloud Bucket.
+We gathered a dataset of 11 million computed tag-movie relevance scores from a pool of 1,100 tags applied to 10,000 movies. The dataset, approximately 41MB in size, was collected from the following sources: "MovieLens Tag Genome Dataset 2014" in `https://grouplens.org/datasets/movielens/` . We have stored it in a private Google Cloud Bucket.
 
 **Data Pipeline Containers**
-1. One container processes the ...GB dataset by resizing the images and storing them back to Google Cloud Storage (GCS).
+1. From the nature of our data, we will not have a preprocessing step necessary.
+2. A container prepares data for the RAG model, by embedding it and populating the vector database.
 
-	**Input:** Source and destination GCS locations, resizing parameters, and required secrets (provided via Docker).
+**`src/datapipeline/preprocess_rag.py`**
+   This script prepares the necessary data for setting up our vector database. It performs embedding and loads the data into a vector database (ChromaDB).
 
-	**Output:** Resized images stored in the specified GCS location.
-
-2. Another container prepares data for the RAG model, including tasks such as chunking, embedding, and populating the vector database.
-
-
-## Data Pipeline Overview
-
-1. **`src/datapipeline/preprocess_cv.py`**
-   This script handles preprocessing on our 100GB dataset. It reduces the image sizes to 128x128 (a parameter that can be changed later) to enable faster iteration during processing. The preprocessed dataset is now reduced to 10GB and stored on GCS.
-
-2. **`src/datapipeline/preprocess_rag.py`**
-   This script prepares the necessary data for setting up our vector database. It performs chunking, embedding, and loads the data into a vector database (ChromaDB).
-
-3. **`src/datapipeline/Pipfile`**
-   We used the following packages to help with preprocessing:
-   - `special cheese package`
-
-4. **`src/preprocessing/Dockerfile(s)`**
-   Our Dockerfiles follow standard conventions, with the exception of some specific modifications described in the Dockerfile/described below.
-
+**`src/datapipeline/dataloader.py`**
+   This script loads the (prepared) data from the Google Cloud Bucket.
 
 ## Running Dockerfile
 Instructions for running the Dockerfile can be added here.
