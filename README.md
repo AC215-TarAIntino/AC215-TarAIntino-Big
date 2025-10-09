@@ -44,6 +44,11 @@ In this milestone, we have the components for data management, including version
 **Data**
 We gathered a dataset of 11 million computed tag-movie relevance scores from a pool of 1,100 tags applied to 10,000 movies. The dataset, approximately 41MB in size, was collected from the following sources: "MovieLens Tag Genome Dataset 2014" in `https://grouplens.org/datasets/movielens/` . We have stored it in a private Google Cloud Bucket.
 
+From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. The EDA revealed that:
+- the dataset contains a rich variety of tags associated with movies
+- we can identify popular tags based on their relevance scores
+- We can keep a subset of the tags only, by looking at the most popular ones AND the correlated tags' relevance scores to remove duplicates (e.g. "witch", "witches", "wizards") to ask more diverse questions to the user.
+
 **Data Pipeline Containers**
 1. From the nature of our data, we will not have a preprocessing step necessary.
 2. A container prepares data for the RAG model, by embedding it and populating the vector database.
