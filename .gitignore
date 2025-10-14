@@ -1,3 +1,24 @@
-data/
+# OS/editor
 .DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local env files
+.env
+
+# Project-specific
 taraintino_env/
+
+# Secrets (keep only the placeholder)
+secrets/*
+!secrets/.gitkeep
+
+# Local data (keep only the placeholder)
+src/dataweb/*
+!src/dataweb/.gitkeep

@@ -1,0 +1,6 @@
+[STORE 2025-10-14 02:35:11] Uploading 5 files → gs://tag-genome-data/datasets/tag_genome
+[STORE 2025-10-14 02:35:12] UPLOADED /app/local-ds/movies.dat → gs://tag-genome-data/datasets/tag_genome/movies.dat
+[STORE 2025-10-14 02:35:22] UPLOADED /app/local-ds/tag_relevance.dat → gs://tag-genome-data/datasets/tag_genome/tag_relevance.dat
+[STORE 2025-10-14 02:35:23] UPLOADED /app/local-ds/README.htm → gs://tag-genome-data/datasets/tag_genome/README.htm
+[STORE 2025-10-14 02:35:23] UPLOADED /app/local-ds/tags.dat → gs://tag-genome-data/datasets/tag_genome/tags.dat
+[STORE 2025-10-14 02:35:23] UPLOADED /app/local-ds/.Rapp.history → gs://tag-genome-data/datasets/tag_genome/.Rapp.history
