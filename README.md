@@ -49,6 +49,20 @@ From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the 
 - we can identify popular tags based on their relevance scores
 - We can keep a subset of the tags only, by looking at the most popular ones AND the correlated tags' relevance scores to remove duplicates (e.g. "witch", "witches", "wizards") to ask more diverse questions to the user.
 
+**Google cloud setup**
+Make sure you have gcloud set up on your machine before working with the following containers.
+- You should be outside of any virtual environment.
+- Check in your terminal with `which gcloud`.
+- If not, run `brew install --cask google-cloud-sdk`.
+- Restart you terminal or run
+`source "$(brew --prefix)/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.zsh.inc"`
+`source "$(brew --prefix)/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/completion.zsh.inc"`
+- Run `gcloud auth application-default login` to authenticate to your gcloud account.
+- Run `nano ~/.zshrc` to open your shell config.
+- Add this line at the end of the file `export GOOGLE_APPLICATION_CREDENTIALS="your_local_path/tarantAIno/secrets/llm-service-account.json"`.
+- Exit (Ctrl + O, Enter, Ctrl + X) and run `source ~/.zshrc` to refresh your shell.
+You are now ready to run the containers below.
+
 **Data Pipeline Containers**
 1. From the nature of our data, we will not have a preprocessing step necessary.
 2. A container prepares data for the RAG model, by embedding it and populating the vector database.
@@ -60,10 +74,9 @@ From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the 
    This script loads the (prepared) data from the Google Cloud Bucket.
 
 ## Running Dockerfile
-Instructions for running the Dockerfile can be added here.
-To run Dockerfile - `Instructions here`
+Instructions for loading the data in your container can be found at the end of the dataloader.py file. Respectively for the preprocess_rag.py file.
 
-**Models container**
+**Models container** --> TO-DO !!
 - This container has scripts for model training, rag pipeline and inference
 - Instructions for running the model container - `Instructions here`
 
