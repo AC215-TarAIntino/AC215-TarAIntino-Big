@@ -3,6 +3,10 @@
 .vscode/
 .idea/
 
+# Data and project env
+data/
+taraintino_env/
+
 # Python
 __pycache__/
 *.pyc
@@ -11,9 +15,6 @@ venv/
 
 # Local env files
 .env
-
-# Project-specific
-taraintino_env/
 
 # Secrets (keep only the placeholder)
 secrets/*
