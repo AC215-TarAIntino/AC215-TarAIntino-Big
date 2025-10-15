@@ -41,9 +41,17 @@ In this project, we aim to develop an avant-garde end-to-end AI movie trailer ge
 
 In this milestone, we have the components for data management, including versioning, as well as the computer vision and language models.
 
-**Data**
-We gathered a dataset of 11 million computed tag-movie relevance scores from a pool of 1,100 tags applied to 10,000 movies. The dataset, approximately 41MB in size, was collected from the following sources: "MovieLens Tag Genome Dataset 2014" in `https://grouplens.org/datasets/movielens/` . We have stored it in a private Google Cloud Bucket.
+**User Interface**
+UI With Dummy Data is available at: [https://tarantaino-mockup.vercel.app/](https://tarantaino-mockup.vercel.app/)
+The Git Repo for the UI is available at: [https://github.com/kvrancic/tarantaino-mockup](https://github.com/kvrancic/tarantaino-mockup)
 
+**Data**
+We gathered a dataset of 11 million computed tag-movie relevance scores from a pool of 1,100 tags applied to 10,000 movies. The dataset, approximately 41MB in size, was collected from the following sources: "MovieLens Tag Genome Dataset 2014" in `https://grouplens.org/datasets/movielens/` . We have stored it in a private Google Cloud Bucket (see Data Pipeline Containers section below for setup instructions).
+
+**Notebooks/Reports**
+This folder contains code that is not part of container - for e.g: Application mockup, EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
+
+## EDA notebook
 From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. The EDA revealed that:
 - the dataset contains a rich variety of tags associated with movies
 - we can identify popular tags based on their relevance scores
@@ -64,7 +72,7 @@ Make sure you have gcloud set up on your machine before working with the followi
 You are now ready to run the containers below.
 
 **Data Pipeline Containers**
-1. From the nature of our data, we will not have a preprocessing step necessary.
+1. From the nature of our data, we will not have much of a preprocessing step necessary.
 2. A container prepares data for the RAG model, by embedding it and populating the vector database.
 
 **`src/datapipeline/preprocess_rag.py`**
@@ -79,10 +87,3 @@ Instructions for loading the data in your container can be found at the end of t
 **Models container** --> TO-DO !!
 - This container has scripts for model training, rag pipeline and inference
 - Instructions for running the model container - `Instructions here`
-
-**Notebooks/Reports**
-This folder contains code that is not part of container - for e.g: EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
-
-UI With Dummy Data is available at: [https://tarantaino-mockup.vercel.app/](https://tarantaino-mockup.vercel.app/)
-The Git Repo for the UI is available at: [https://github.com/kvrancic/tarantaino-mockup](https://github.com/kvrancic/tarantaino-mockup)
-
