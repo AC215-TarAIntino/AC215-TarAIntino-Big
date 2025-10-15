@@ -1,19 +1,21 @@
-# src/datapipeline/Dockerfile
 FROM python:3.11-slim
+
+ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 WORKDIR /app
 
-# Dependencies (copy from repo root when building with context ".")
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install --no-cache-dir uv
 
-# Pipeline code
+COPY src/datapipeline/pyproject.toml pyproject.toml
+
+RUN uv sync --no-dev
+
 COPY src/datapipeline /app/datapipeline
 
-# Python module path
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app \
+    RAW_DATA_DIR=/data/raw \
+    PROCESSED_DATA_DIR=/data/processed \
+    QUERY_DIR=/data/queries \
+    ARTIFACT_DIR=/data/artifacts \
+    GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/llm-service-account.json
 
-# Default credential path (we'll mount the real file at runtime)
-ENV GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/llm-service-account.json
-
-# Show help by default
-CMD ["python", "datapipeline/dataloader.py", "--help"]
+CMD ["uv", "run", "python", "-m", "datapipeline.preprocess_rag"]

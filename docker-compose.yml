@@ -1,0 +1,34 @@
+services:
+  data-pipeline:
+    build:
+      context: .
+      dockerfile: src/datapipeline/Dockerfile
+    image: tarantaino-data-pipeline
+    environment:
+      GCS_BUCKET: ${GCS_BUCKET:-tag-genome-data}
+      GCS_PREFIX: ${GCS_PREFIX:-datasets/tag_genome}
+      TAG_RELEVANCE_THRESHOLD: ${TAG_RELEVANCE_THRESHOLD:-0.75}
+      MAX_MOVIES: ${MAX_MOVIES:-500}
+      MAX_TAGS_PER_MOVIE: ${MAX_TAGS_PER_MOVIE:-25}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/secrets/llm-service-account.json}
+    volumes:
+      - shared-data:/data
+      - ./secrets:/app/secrets:ro
+    restart: "no"
+
+  model-pipeline:
+    build:
+      context: .
+      dockerfile: src/models/Dockerfile
+    image: tarantaino-model-pipeline
+    depends_on:
+      data-pipeline:
+        condition: service_completed_successfully
+    volumes:
+      - shared-data:/data
+      - model-outputs:/outputs
+    restart: "no"
+
+volumes:
+  shared-data:
+  model-outputs:

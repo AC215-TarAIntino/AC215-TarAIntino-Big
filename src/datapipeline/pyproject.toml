@@ -1,0 +1,14 @@
+[project]
+name = "tarantaino-datapipeline"
+version = "0.1.0"
+description = "Data ingestion and preprocessing pipeline for the TarAIntino project."
+readme = "../../README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "google-cloud-storage>=2.18.2",
+    "tqdm>=4.66.4",
+    "pandas>=2.2.3"
+]
+
+[tool.uv]
+package = false
