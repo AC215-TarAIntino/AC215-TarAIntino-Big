@@ -81,4 +81,8 @@ Instructions for loading the data in your container can be found at the end of t
 - Instructions for running the model container - `Instructions here`
 
 **Notebooks/Reports**
-This folder contains code that is not part of container - for e.g: Application mockup, EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
+This folder contains code that is not part of container - for e.g: EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
+
+UI With Dummy Data is available at: [https://tarantaino-mockup.vercel.app/](https://tarantaino-mockup.vercel.app/)
+The Git Repo for the UI is available at: [https://github.com/kvrancic/tarantaino-mockup](https://github.com/kvrancic/tarantaino-mockup)
+
