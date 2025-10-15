@@ -40,38 +40,41 @@ export function CardStack({ movies, onSwipe, onComplete }: CardStackProps) {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="relative w-full max-w-md aspect-[3/4]" style={{ perspective: "1500px" }}>
-        <AnimatePresence>
+      <div className="relative w-full max-w-sm aspect-[2/3]" style={{ perspective: "1200px" }}>
+        <AnimatePresence mode="popLayout">
           {visibleCards.map((movie, index) => {
             const isTop = index === 0;
             const zIndex = visibleCards.length - index;
-            const scale = 1 - index * 0.05;
-            const yOffset = index * 10;
-            const opacity = 1 - index * 0.2;
+            const scale = 1 - index * 0.04;
+            const yOffset = index * 12;
+            const opacity = 1 - index * 0.15;
 
             return (
               <motion.div
                 key={movie.id}
                 initial={{
-                  scale: 0.8,
+                  scale: 0.9,
                   opacity: 0,
-                  y: 50,
+                  y: 30,
                 }}
                 animate={{
                   scale: isTop ? 1 : scale,
                   y: yOffset,
                   opacity: opacity,
-                  rotateX: index * 2,
+                  rotateX: index * 1.5,
                 }}
                 exit={{
-                  scale: 1.1,
+                  scale: 1.05,
                   opacity: 0,
-                  transition: { duration: 0.3 },
+                  transition: {
+                    duration: 0.25,
+                    ease: "easeOut",
+                  },
                 }}
                 transition={{
                   type: "spring",
-                  stiffness: 260,
-                  damping: 20,
+                  stiffness: 300,
+                  damping: 25,
                 }}
                 style={{
                   zIndex,
