@@ -303,7 +303,7 @@ export default function GeneratingPage() {
             className="text-center text-white/50 text-sm italic"
           >
             <p>
-              ✨ Fun fact: We're using your taste vector to find the perfect cinematic blend!
+              ✨ Fun fact: We&apos;re using your taste vector to find the perfect cinematic blend!
             </p>
           </motion.div>
         </motion.div>

@@ -29,8 +29,8 @@ export function SwipeCard({ movie, onSwipe, style, index }: SwipeCardProps) {
   const opacityDown = useTransform(y, [0, 40, 120], [0, 0.3, 1]);
 
   const bind = useGesture({
-    onDrag: ({ movement: [mx, my], velocity: [vx, vy], dragging }) => {
-      setIsDragging(dragging);
+    onDrag: ({ movement: [mx, my], dragging }) => {
+      setIsDragging(dragging ?? false);
       x.set(mx);
       y.set(my);
     },
@@ -61,32 +61,26 @@ export function SwipeCard({ movie, onSwipe, style, index }: SwipeCardProps) {
         // Swipe right - Like
         onSwipe("right");
       } else {
-        // Return to center with spring animation
-        const spring = {
-          type: "spring",
-          stiffness: 500,
-          damping: 30,
-        };
-        x.set(0, spring as any);
-        y.set(0, spring as any);
+        // Return to center
+        x.set(0);
+        y.set(0);
       }
     },
   });
 
+  const scale = isDragging ? 1.02 : 1;
+
   return (
     <motion.div
-      {...bind()}
       style={{
         x,
         y,
         rotate,
+        scale,
         ...style,
         touchAction: "none",
       }}
       className="absolute w-full h-full cursor-grab active:cursor-grabbing"
-      animate={{
-        scale: isDragging ? 1.02 : 1,
-      }}
       transition={{
         scale: {
           type: "spring",
@@ -95,6 +89,7 @@ export function SwipeCard({ movie, onSwipe, style, index }: SwipeCardProps) {
         },
       }}
     >
+      <div {...bind()} className="w-full h-full">
       <div className="relative w-full h-full rounded-3xl overflow-hidden glass-strong grain shadow-2xl">
         {/* Movie Poster Background */}
         <div className="absolute inset-0">
@@ -200,6 +195,7 @@ export function SwipeCard({ movie, onSwipe, style, index }: SwipeCardProps) {
             </div>
           </motion.div>
         )}
+      </div>
       </div>
     </motion.div>
   );

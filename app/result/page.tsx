@@ -9,9 +9,16 @@ import { TasteProfile } from "@/components/result/TasteProfile";
 import { Download, RotateCcw, Share2, Sparkles } from "lucide-react";
 import JSConfetti from "js-confetti";
 
+interface SwipeHistory {
+  direction: string;
+  movie: {
+    poster: string;
+    tags: string[];
+  };
+}
+
 export default function ResultPage() {
   const router = useRouter();
-  const [showConfetti, setShowConfetti] = useState(false);
   const [generatedTitle, setGeneratedTitle] = useState("");
   const [posterUrl, setPosterUrl] = useState("");
   const [tasteProfile, setTasteProfile] = useState<{ name: string; score: number }[]>([]);
@@ -26,7 +33,6 @@ export default function ResultPage() {
         confettiRadius: 6,
         confettiNumber: 500,
       });
-      setShowConfetti(true);
     }, 300);
 
     // Additional confetti bursts
@@ -60,7 +66,7 @@ export default function ResultPage() {
 
       // Use the first liked/loved movie's poster
       const likedMovie = swipeHistory.find(
-        (s: any) => s.direction === "right" || s.direction === "up"
+        (s: SwipeHistory) => s.direction === "right" || s.direction === "up"
       );
       if (likedMovie) {
         setPosterUrl(likedMovie.movie.poster);
@@ -71,7 +77,7 @@ export default function ResultPage() {
 
       // Calculate taste profile
       const tagScores: { [key: string]: number } = {};
-      swipeHistory.forEach((swipe: any) => {
+      swipeHistory.forEach((swipe: SwipeHistory) => {
         const weight =
           swipe.direction === "up" ? 2 : swipe.direction === "right" ? 1 : 0;
 
