@@ -3,9 +3,9 @@
 .vscode/
 .idea/
 
-# Data and project env
+# Data
 data/
-taraintino_env/
+!data/.gitkeep
 
 # Python
 __pycache__/
