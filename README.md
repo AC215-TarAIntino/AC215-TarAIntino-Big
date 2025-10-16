@@ -103,9 +103,9 @@ You are now ready to run the containers below.
    Provides the reusable GCS download helper. It is invoked automatically by `preprocess_rag.py`, but can also be executed on its own for ad-hoc pulls (e.g., `python3 src/datapipeline/dataloader.py --bucket "$GCS_BUCKET" --prefix "$GCS_PREFIX" --out_dir local_raw`).
 
 **Models container**
-- `src/models/model_rag.py` consumes `/data/processed/movies.jsonl` and `/data/queries/sample_query.json`, performs a tag-overlap ranking, and emits `/outputs/recommendations.json` plus `/outputs/artifacts/inference_log.json`.
+- `src/models/model_rag.py` consumes `/references/processed/movies.jsonl` and `/references/queries/sample_query.json`, performs a tag-overlap ranking, and emits `/outputs/recommendations.json` plus `/outputs/artifacts/inference_log.json`.
 **Models container**
-- `src/models/model_rag.py` consumes `/data/processed/movies.jsonl` and `/data/queries/sample_query.json`, performs a tag-overlap ranking, and emits `/outputs/recommendations.json` plus `/outputs/artifacts/inference_log.json`.
+- `src/models/model_rag.py` consumes `/references/processed/movies.jsonl` and `/references/queries/sample_query.json`, performs a tag-overlap ranking, and emits `/outputs/recommendations.json` plus `/outputs/artifacts/inference_log.json`.
 
 ## Container Pipeline Demo
 
@@ -122,12 +122,12 @@ You are now ready to run the containers below.
     ```
     You can also store these in a `.env` file; docker compose will pick them up automatically.
 - **One-command run**: From the repo root execute `docker compose up --build`. Docker builds the two images and runs them sequentially. Typical log snippets:
-  - `[LOAD …] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/tag_relevance.dat → /data/raw/tag_relevance.dat`
-  - `[DATA …] Wrote 500 documents → /data/processed/movies.jsonl`
+  - `[LOAD …] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/tag_relevance.dat → /references/raw/tag_relevance.dat`
+  - `[DATA …] Wrote 500 documents → /references/processed/movies.jsonl`
   - `[MODEL …] Wrote recommendations → /outputs/recommendations.json`
 - **Dependencies via uv**: Both Dockerfiles bootstrap `uv`; the `pyproject.toml` files in `src/datapipeline/` and `src/models/` declare the per-container dependencies (`google-cloud-storage`, `tqdm`, `pandas`, etc.).
 - **Outputs / evidence**: After the compose run, inspect the named volumes:
-  - `docker compose run --rm data-pipeline ls /data` → lists `raw/`, `processed/`, `queries/`, `artifacts/`.
+  - `docker compose run --rm data-pipeline ls /references` → lists `raw/`, `processed/`, `queries/`, `artifacts/`.
   - `docker compose run --rm model-pipeline ls /outputs` → lists `recommendations.json` plus `artifacts/inference_log.json`.
   - Save run logs via `docker compose logs data-pipeline model-pipeline > data2/docker-compose-run.log`.
   - For submission, we staged a snapshot of inputs/outputs/logs under `data2/` (including `raw/`, `processed/`, `queries/`, `artifacts/`, `outputs/`, `output_artifacts/`, and the captured log file).
@@ -150,12 +150,12 @@ You are now ready to run the containers below.
     ```
     You can also store these in a `.env` file; docker compose will pick them up automatically.
 - **One-command run**: From the repo root execute `docker compose up --build`. Docker builds the two images and runs them sequentially. Typical log snippets:
-  - `[LOAD …] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/tag_relevance.dat → /data/raw/tag_relevance.dat`
-  - `[DATA …] Wrote 500 documents → /data/processed/movies.jsonl`
+  - `[LOAD …] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/tag_relevance.dat → /references/raw/tag_relevance.dat`
+  - `[DATA …] Wrote 500 documents → /references/processed/movies.jsonl`
   - `[MODEL …] Wrote recommendations → /outputs/recommendations.json`
 - **Dependencies via uv**: Both Dockerfiles bootstrap `uv`; the `pyproject.toml` files in `src/datapipeline/` and `src/models/` declare the per-container dependencies (`google-cloud-storage`, `tqdm`, `pandas`, etc.).
 - **Outputs / evidence**: After the compose run, inspect the named volumes:
-  - `docker compose run --rm data-pipeline ls /data` → lists `raw/`, `processed/`, `queries/`, `artifacts/`.
+  - `docker compose run --rm data-pipeline ls /references` → lists `raw/`, `processed/`, `queries/`, `artifacts/`.
   - `docker compose run --rm model-pipeline ls /outputs` → lists `recommendations.json` plus `artifacts/inference_log.json`.
   - Save run logs via `docker compose logs data-pipeline model-pipeline > data2/docker-compose-run.log`.
   - For submission, we staged a snapshot of inputs/outputs/logs under `data2/` (including `raw/`, `processed/`, `queries/`, `artifacts/`, `outputs/`, `output_artifacts/`, and the captured log file).
