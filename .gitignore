@@ -15,6 +15,7 @@ venv/
 
 # Local env files
 .env
+notebooks/taraintino_env
 
 # Secrets (keep only the placeholder)
 secrets/*

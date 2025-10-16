@@ -13,6 +13,7 @@
 │      └── TarAIntino AI Movie Generation Infrastructure.pdf
 └── src
     ├── datapipeline
+    │   ├── chroma_db
     │   ├── Dockerfile
     │   ├── dataloader.py
     │   ├── docker-shell.sh
@@ -67,7 +68,8 @@ We gathered a dataset of 11 million computed tag-movie relevance scores from a p
 These folders contain code that is not part of container - for e.g: Application mockup, EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
 
 ## EDA notebook
-From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. You can create a venv to run the notebook with `./venv_setup.sh`. The EDA revealed that:
+From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. You can create a venv to run the notebook running `notebooks/venv_setup.sh`, then `source notebooks/taraintino_env/bin/activate`. 
+The EDA revealed that:
 - The dataset contains a rich variety of tags associated with movies.
 - We can identify popular tags and movies based on their relevance scores.
 - Since the dataset is really small, there is no real utility in doing PCA, but we might be interested in looking at the effect of it on the results if time permits in this project.
