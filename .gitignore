@@ -23,3 +23,7 @@ secrets/*
 # Local data (keep only the placeholder)
 src/dataweb/*
 !src/dataweb/.gitkeep
+
+# Not in milestone 2 yet
+models/*
+!models/.gitkeep

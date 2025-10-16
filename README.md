@@ -25,7 +25,7 @@
     │   ├── prompting.py
     │   ├── docker-shell.sh
     │   └── pyproject.toml
-    └── models
+    └── models (empty for milestone 2)
         ├── Dockerfile
         ├── docker-shell.sh
         ├── infer_model.py
