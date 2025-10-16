@@ -107,9 +107,8 @@ You are now ready to run the containers below.
 2. The **`src/llm/prompting.py`** file enables the access to a chat box to the LLM in your terminal.
 3. To access it:
 - Run `gcloud auth application-default login`
-- Then run `gcloud services enable aiplatform.googleapis.com --project=llm-service-account-474620`
-- IF you get the warning `ADC does not have the "serviceusage.services.use" permission on this project`, ask Robert Debbas for permission access before pursuing.
 - Then, run `gcloud config set project llm-service-account-474620`
+- IF you get the warning `ADC does not have the "serviceusage.services.use" permission on this project`, ask Robert Debbas for permission access before pursuing.
 - Check with `gcloud config list`, you should see `project = llm-service-account-474620` and `account = your@email.com`
 - Finally, check `gcloud services list --enabled | grep aiplatform` should return `aiplatform.googleapis.com`
 - And check `gcloud auth application-default set-quota-project llm-service-account-474620`

@@ -1,12 +1,11 @@
 [project]
 name = "tarAIntino-llm"
 version = "0.1.0"
-description = "Vertex AI LLM chat module for the TarAIntino project."
-readme = "../../README.md"
+description = "LLM chat interface using Google GenAI SDK"
 requires-python = ">=3.11"
 
 dependencies = [
-    "google-cloud-aiplatform>=1.72.0",
+    "google-genai>=0.3.0",
 ]
 
 [tool.uv]

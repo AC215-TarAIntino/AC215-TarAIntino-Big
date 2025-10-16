@@ -39,8 +39,9 @@ exec docker run --rm -it \
   -e GOOGLE_CLOUD_PROJECT="$PROJECT" \
   -e GOOGLE_APPLICATION_CREDENTIALS="$CRED_PATH" \
   -e LOCATION="us-central1" \
-  -e MODEL="gemini-1.5-pro-002" \
+  -e MODEL="gemini-2.5-pro" \
   $CRED_MOUNT \
   -v "$DATA_HOST_DIR:/app/local-ds" \
+  --env-file src/llm/.env \
   "$IMAGE" \
   bash
