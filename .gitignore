@@ -3,8 +3,7 @@
 .vscode/
 .idea/
 
-# Data
-data/
+# Data?
 !data/.gitkeep
 
 # Python

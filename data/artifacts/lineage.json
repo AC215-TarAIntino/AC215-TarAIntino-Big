@@ -1,0 +1,15 @@
+{
+  "raw_directory": "/data/raw",
+  "processed_dataset": "/data/processed/movies.jsonl",
+  "summary": "/data/processed/summary.json",
+  "query_file": "/data/queries/sample_query.json",
+  "threshold": 0.75,
+  "max_movies": 500,
+  "max_tags_per_movie": 25,
+  "generated_at": "2025-10-15 23:23:15",
+  "source_context": {
+    "scores_file": "(PosixPath('/data/raw/tag_relevance.dat'), ['movieId', 'tagId', 'relevance'])",
+    "tags_file": "(PosixPath('/data/raw/tags.dat'), ['tagId', 'tag'])",
+    "movies_file": "(PosixPath('/data/raw/movies.dat'), ['movieId', 'title', 'genres'])"
+  }
+}

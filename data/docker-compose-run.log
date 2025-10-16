@@ -1,0 +1,19 @@
+model-pipeline-1  |    Building tarantaino-models @ file:///app
+model-pipeline-1  |       Built tarantaino-models @ file:///app
+data-pipeline-1   | [DATA 2025-10-15 23:22:41] Raw data already present in /data/raw, skipping download
+data-pipeline-1   | [DATA 2025-10-15 23:22:41] Loading tags map from (PosixPath('/data/raw/tags.dat'), ['tagId', 'tag'])
+data-pipeline-1   | [DATA 2025-10-15 23:22:41] Loading movie titles from (PosixPath('/data/raw/movies.dat'), ['movieId', 'title', 'genres'])
+data-pipeline-1   | [DATA 2025-10-15 23:22:41] Processing genome scores from (PosixPath('/data/raw/tag_relevance.dat'), ['movieId', 'tagId', 'relevance'])
+data-pipeline-1   | [DATA 2025-10-15 23:23:15] Wrote 500 documents → /data/processed/movies.jsonl
+data-pipeline-1   | [DATA 2025-10-15 23:23:15] Wrote summary → /data/processed/summary.json
+data-pipeline-1   | [DATA 2025-10-15 23:23:15] Wrote sample query → /data/queries/sample_query.json
+data-pipeline-1   | [DATA 2025-10-15 23:23:15] Wrote lineage metadata → /data/artifacts/lineage.json
+data-pipeline-1   | [DATA 2025-10-15 23:23:15] Data preprocessing complete ✅
+model-pipeline-1  | Uninstalled 1 package in 2ms
+model-pipeline-1  | Installed 1 package in 2ms
+model-pipeline-1  | [MODEL 2025-10-15 23:23:16] Loaded 500 documents from /data/processed/movies.jsonl
+model-pipeline-1  | [MODEL 2025-10-15 23:23:16] Loaded query 'auto_tag_query' from /data/queries/sample_query.json
+model-pipeline-1  | [MODEL 2025-10-15 23:23:16] Wrote recommendations → /outputs/recommendations.json
+model-pipeline-1  | [MODEL 2025-10-15 23:23:16] Wrote inference log → /outputs/artifacts/inference_log.json
+model-pipeline-1  | [MODEL 2025-10-15 23:23:16] Top matches: Movie 293, Movie 145, Movie 349
+model-pipeline-1  | [MODEL 2025-10-15 23:23:16] Model inference complete ✅
