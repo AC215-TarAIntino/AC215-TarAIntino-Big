@@ -52,4 +52,7 @@ if __name__ == "__main__":
 # EXECUTE WITHIN YOUR CONTAINER TO UPLOAD DATA TO GCS #
 #######################################################
 
-# python datapipeline/preprocess_rag.py --local_dir /app/local-ds --bucket "$GCS_BUCKET" --prefix "$GCS_PREFIX"
+# python datapipeline/preprocess_rag.py \
+#   --local_dir /app/local-ds \
+#   --bucket "$GCS_BUCKET" \
+#   --prefix "$GCS_PREFIX"
