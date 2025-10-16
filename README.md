@@ -4,9 +4,10 @@
 ├── Readme.md
 ├── notebooks
 │   └── eda.ipynb
-├── references
-├── reports
-│   └── TarAIntino AI Movie Generation Infrastructure.pdf
+├── hand-ins
+│  ├── references
+│  └── reports
+│      └── TarAIntino AI Movie Generation Infrastructure.pdf
 └── src
     ├── datapipeline
     │   ├── Dockerfile
@@ -15,12 +16,21 @@
     │   ├── dataloader.py
     │   ├── docker-shell.sh
     │   ├── preprocess_rag.py
+    │   └── pyproject.toml
+    ├── llm
+    │   ├── Dockerfile
+    │   ├── Pipfile
+    │   ├── Pipfile.lock
+    │   ├── prompting.py
+    │   ├── docker-shell.sh
+    │   └── pyproject.toml
     └── models
         ├── Dockerfile
         ├── docker-shell.sh
         ├── infer_model.py
         ├── model_rag.py
-        └── train_model.py
+        ├── train_model.py
+        └── pyproject.toml
 ```
 
 To set up the venv for this project, run the following command: `bash venv_setup.sh`
@@ -42,14 +52,20 @@ In this project, we aim to develop an avant-garde end-to-end AI movie trailer ge
 In this milestone, we have the components for data management, including versioning, as well as the computer vision and language models.
 
 **User Interface**
-UI With Dummy Data is available at: [https://tarantaino-mockup.vercel.app/](https://tarantaino-mockup.vercel.app/)
-The Git Repo for the UI is available at: [https://github.com/kvrancic/tarantaino-mockup](https://github.com/kvrancic/tarantaino-mockup)
+There is no specific folder for the UI in this repo, as it is in a separate git repo.
+- The UI With Dummy Data is available at: [https://tarantaino-mockup.vercel.app/](https://tarantaino-mockup.vercel.app/)
+- The Git Repo for the UI is available at: [https://github.com/kvrancic/tarantaino-mockup](https://github.com/kvrancic/tarantaino-mockup)
+
+**Hand-ins**
+This folder contains for the respective milestones:
+- All reports in the `reports` folder.
+- Any other documents (such as screenshots of running steps in the project, or graphs of the architecture of the project) in the `references` folder.
 
 **Data**
 We gathered a dataset of 11 million computed tag-movie relevance scores from a pool of 1,100 tags applied to 10,000 movies. The dataset, approximately 41MB in size, was collected from the following sources: "MovieLens Tag Genome Dataset 2014" in `https://grouplens.org/datasets/movielens/` . We have stored it in a private Google Cloud Bucket (see Data Pipeline Containers section below for setup instructions).
 
-**Notebooks/Reports**
-This folder contains code that is not part of container - for e.g: Application mockup, EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
+**Notebooks**
+These folders contain code that is not part of container - for e.g: Application mockup, EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
 
 ## EDA notebook
 From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. The EDA revealed that:

@@ -60,8 +60,8 @@ if __name__ == "__main__":
 
 # src/datapipeline/docker-shell.sh
 
-###########################################################
-# EXECUTE WITHIN YOUR CONTAINER TO DOWNLOAD DATA FROM GCS #
-###########################################################
-
+##############################################################################
+# EXECUTE NECESSARY COMMANDS WITHIN YOUR CONTAINER TO DOWNLOAD DATA FROM GCS #
+##############################################################################
+# Example:
 # python datapipeline/dataloader.py --bucket "$GCS_BUCKET" --prefix "$GCS_PREFIX" --out_dir /app/data
