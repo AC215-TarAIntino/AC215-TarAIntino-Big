@@ -1,7 +1,0 @@
-[LOAD  2025-10-14 02:34:15] Downloading 5 objects → /app/data
-[LOAD  2025-10-14 02:34:15] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/.Rapp.history → /app/data/.Rapp.history
-[LOAD  2025-10-14 02:34:15] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/README.htm → /app/data/README.htm
-[LOAD  2025-10-14 02:34:16] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/movies.dat → /app/data/movies.dat
-[LOAD  2025-10-14 02:34:28] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/tag_relevance.dat → /app/data/tag_relevance.dat
-[LOAD  2025-10-14 02:34:28] DOWNLOADED gs://tag-genome-data/datasets/tag_genome/tags.dat → /app/data/tags.dat
-[LOAD  2025-10-14 02:34:28] DONE

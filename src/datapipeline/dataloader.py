@@ -63,7 +63,7 @@ def ingest_tag_relevance_to_chroma(
     bucket: str,
     object_name: str,
     chroma_path: str = "./chroma_db",
-    collection_name: str = "movie_tag_relevance",
+    collection_name: str = "movie_tag_relevance_cos",
     batch_size: int = 2000
 ):
     """
@@ -103,15 +103,16 @@ def ingest_tag_relevance_to_chroma(
         json.dump({"tag_ids_sorted": tag_ids_sorted}, f)
     log(f"Saved tag index mapping → {tag_index_path}")
 
-    # Init Chroma persistent client
     client = chromadb.PersistentClient(path=str(chroma_dir))
-    # Create or get collection (no embedding function — we provide embeddings directly)
     try:
         collection = client.get_collection(collection_name)
         log(f"Using existing Chroma collection: {collection_name}")
     except Exception:
-        collection = client.create_collection(name=collection_name)
-        log(f"Created Chroma collection: {collection_name}")
+        collection = client.create_collection(
+        name=collection_name,
+        metadata={"hnsw:space": "cosine"} 
+        )
+        log(f"Created Chroma collection (cosine): {collection_name}")
 
     # Batch insert
     movie_ids_sorted = sorted(movie_to_sparse.keys())
@@ -158,7 +159,7 @@ def cli():
     ap.add_argument("--object_name", default=os.getenv("TAG_REL_OBJECT", "datasets/tag_genome/tag_relevance.dat"),
                     help="GCS object name for tag_relevance.dat")
     ap.add_argument("--chroma_path", default=os.getenv("CHROMA_PATH", "./chroma_db"))
-    ap.add_argument("--collection", default=os.getenv("CHROMA_COLLECTION", "movie_tag_relevance"))
+    ap.add_argument("--collection", default=os.getenv("CHROMA_COLLECTION", "movie_tag_relevance_cos"))
     ap.add_argument("--batch_size", type=int, default=int(os.getenv("BATCH_SIZE", "2000")))
     args = ap.parse_args()
 
@@ -199,4 +200,9 @@ if __name__ == "__main__":
 # EXECUTE WITHIN YOUR CONTAINER TO DOWNLOAD DATA FROM GCS #
 ###########################################################
 
-# python datapipeline/dataloader.py --bucket "$GCS_BUCKET" --prefix "$GCS_PREFIX" --out_dir /app/data
+# python datapipeline/dataloader.py --to_chroma \
+#   --bucket "$GCS_BUCKET" \
+#   --object_name "$TAG_REL_OBJECT" \
+#   --chroma_path "$CHROMA_PATH" \
+#   --collection "$CHROMA_COLLECTION" \
+#   --batch_size "${BATCH_SIZE:-2000}"

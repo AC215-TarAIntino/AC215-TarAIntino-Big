@@ -1,0 +1,10 @@
+[LOAD  2025-10-16 20:19:14] Fetching tag_relevance.dat from GCS…
+[LOAD  2025-10-16 20:19:31] STREAMED 167156436 bytes from gs://tag-genome-data/datasets/tag_genome/tag_relevance.dat
+[LOAD  2025-10-16 20:19:31] First pass: collecting unique tags & sparse rows per movie…
+[LOAD  2025-10-16 20:19:44] Parsed 10,979,952 triples across 9,734 movies and 1,128 unique tags.
+[LOAD  2025-10-16 20:19:44] Vector dimension = number of unique tags = 1,128
+[LOAD  2025-10-16 20:19:44] Saved tag index mapping → /app/chroma_db/movie_tag_relevance_cos__tag_index.json
+[LOAD  2025-10-16 20:19:44] Using existing Chroma collection: movie_tag_relevance_cos
+[LOAD  2025-10-16 20:19:44] Ingesting into Chroma in batches of 2000 movies…
+[LOAD  2025-10-16 20:19:47] Inserted 9,734 movie vectors into Chroma collection 'movie_tag_relevance_cos'.
+[LOAD  2025-10-16 20:19:47] DONE
