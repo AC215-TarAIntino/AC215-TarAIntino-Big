@@ -4,6 +4,8 @@
 ├── README.md
 ├── docker-compose.yml
 ├── notebooks
+    ├── requirements.txt
+    ├── venv_setup.sh
 │   └── eda.ipynb
 ├── hand-ins
 │  ├── references
@@ -12,16 +14,12 @@
 └── src
     ├── datapipeline
     │   ├── Dockerfile
-    │   ├── Pipfile
-    │   ├── Pipfile.lock
     │   ├── dataloader.py
     │   ├── docker-shell.sh
     │   ├── preprocess_rag.py
     │   └── pyproject.toml
     ├── llm
     │   ├── Dockerfile
-    │   ├── Pipfile
-    │   ├── Pipfile.lock
     │   ├── prompting.py
     │   ├── docker-shell.sh
     │   └── pyproject.toml
@@ -69,10 +67,10 @@ We gathered a dataset of 11 million computed tag-movie relevance scores from a p
 These folders contain code that is not part of container - for e.g: Application mockup, EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
 
 ## EDA notebook
-From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. The EDA revealed that:
-- the dataset contains a rich variety of tags associated with movies
-- we can identify popular tags based on their relevance scores
-- We can keep a subset of the tags only, by looking at the most popular ones AND the correlated tags' relevance scores to remove duplicates (e.g. "witch", "witches", "wizards") to ask more diverse questions to the user.
+From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. You can create a venv to run the notebook with `./venv_setup.sh`. The EDA revealed that:
+- The dataset contains a rich variety of tags associated with movies.
+- We can identify popular tags and movies based on their relevance scores.
+- Since the dataset is really small, there is no real utility in doing PCA, but we might be interested in looking at the effect of it on the results if time permits in this project.
 
 **Google cloud setup**
 Make sure you have gcloud set up on your machine before working with the following containers.

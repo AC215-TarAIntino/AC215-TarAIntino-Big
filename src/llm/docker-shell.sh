@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start an interactive shell inside the LLM container
+# Start an interactive shell inside the Vertex AI Gemini container
 
 set -euo pipefail
 
@@ -8,11 +8,13 @@ DOCKERFILE="src/llm/Dockerfile"
 PROJECT_DEFAULT="llm-service-account-474620"
 DATA_HOST_DIR="${DATA_HOST_DIR:-$PWD/data}"
 
+# Build the image if missing
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   echo "[build] $IMAGE not found – building…"
   docker build -t "$IMAGE" -f "$DOCKERFILE" .
 fi
 
+# Locate credentials
 ADC="$HOME/.config/gcloud/application_default_credentials.json"
 SA_JSON="$PWD/secrets/llm-service-account.json"
 
@@ -42,6 +44,6 @@ exec docker run --rm -it \
   -e MODEL="gemini-2.5-pro" \
   $CRED_MOUNT \
   -v "$DATA_HOST_DIR:/app/local-ds" \
-  --env-file src/llm/.env \
+  --env-file secrets/.env \
   "$IMAGE" \
   bash

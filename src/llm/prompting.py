@@ -1,16 +1,23 @@
-# prompting.py  — uses google-genai SDK for Gemini 2.x models
+# prompting.py — uses Vertex AI SDK for Gemini models (service account auth)
 import os
-from google import genai
+from vertexai import init
+from vertexai.preview.generative_models import GenerativeModel
 
 def main():
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        raise ValueError("Missing GOOGLE_API_KEY environment variable.")
+    project = os.getenv("GOOGLE_CLOUD_PROJECT")
+    location = os.getenv("LOCATION", "us-central1")
+    model_name = os.getenv("MODEL", "gemini-2.5-pro")
 
-    client = genai.Client(api_key=api_key)
-    model = os.getenv("MODEL", "gemini-2.5-pro")
+    if not project:
+        raise ValueError("Missing GOOGLE_CLOUD_PROJECT environment variable.")
+    if not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        raise ValueError("Missing GOOGLE_APPLICATION_CREDENTIALS environment variable.")
 
-    print(f"Connected to Google GenAI model: {model}")
+    # Initialize Vertex AI client
+    init(project=project, location=location)
+    model = GenerativeModel(model_name)
+
+    print(f"Connected to Vertex AI Gemini model: {model_name}")
     print("Type your message and press Enter. Type /exit to quit.\n")
 
     while True:
@@ -19,21 +26,22 @@ def main():
         except (EOFError, KeyboardInterrupt):
             print("\n[exit]")
             break
+
         if text.lower() in {"/exit", "/quit"}:
             break
         if not text:
             continue
 
-        response = client.models.generate_content(
-            model=model,
-            contents=text,
-            config={
+        response = model.generate_content(
+            text,
+            generation_config={
                 "temperature": 0.7,
                 "max_output_tokens": 1024,
             },
         )
 
         print(response.text, "\n")
+
 
 if __name__ == "__main__":
     main()

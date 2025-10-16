@@ -1,31 +1,31 @@
 # src/llm/Dockerfile
 FROM python:3.11-slim-bookworm
 
+# Environment setup
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV PYTHONUNBUFFERED=1
-ENV UV_LINK_MODE=copy
-ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
+# System deps
 RUN set -ex; \
     apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends build-essential curl && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install uv && \
-    useradd -ms /bin/bash app && \
-    mkdir -p /app && \
-    chown app:app /app
+    rm -rf /var/lib/apt/lists/*
 
+# Create user + app directory
+RUN useradd -ms /bin/bash app && mkdir -p /app && chown app:app /app
 USER app
 WORKDIR /app
 
-COPY --chown=app:app src/llm/ ./
-RUN uv sync
-COPY src/llm /app/llm
+# Copy project metadata and install deps with pip
+COPY --chown=app:app src/llm/pyproject.toml ./
+RUN pip install --no-cache-dir --upgrade pip && pip install -e .
 
-ENTRYPOINT ["/bin/sh", "-c"]
-CMD ["source /app/.venv/bin/activate && exec bash"]
+# Copy source code
+COPY --chown=app:app src/llm/ /app/
+
+# Default command
+CMD ["bash"]
