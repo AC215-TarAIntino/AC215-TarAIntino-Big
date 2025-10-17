@@ -196,9 +196,9 @@ if __name__ == "__main__":
 
 # src/datapipeline/docker-shell.sh
 
-###########################################################
-# EXECUTE WITHIN YOUR CONTAINER TO DOWNLOAD DATA FROM GCS #
-###########################################################
+############################################################################################
+# EXECUTE WITHIN YOUR CONTAINER TO DOWNLOAD DATA FROM GCS AND STORE IN THE VECTOR DATABASE #
+############################################################################################
 
 # python datapipeline/dataloader.py --to_chroma \
 #   --bucket "$GCS_BUCKET" \

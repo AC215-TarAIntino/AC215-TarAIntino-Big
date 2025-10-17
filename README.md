@@ -39,7 +39,7 @@ Then activate the environment using: `source taraintino_env/bin/activate`
 # AC215 - Milestone2 - TarAIntino
 
 **Team Members**
-Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vranci
+Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vrancic
 
 **Group Name**
 TarAIntino
