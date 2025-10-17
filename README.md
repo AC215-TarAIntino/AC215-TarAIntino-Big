@@ -13,13 +13,15 @@
 │      └── TarAIntino AI Movie Generation Infrastructure.pdf
 └── src
     ├── datapipeline
-    │   ├── chroma_db
+    │   ├── logs/
+    │   ├── chroma_db/
     │   ├── Dockerfile
     │   ├── dataloader.py
     │   ├── docker-shell.sh
     │   ├── preprocess_rag.py
     │   └── pyproject.toml
     ├── llm
+    │   ├── logs/
     │   ├── Dockerfile
     │   ├── prompting.py
     │   ├── docker-shell.sh
@@ -33,13 +35,10 @@
         └── pyproject.toml
 ```
 
-To set up the venv for this project, run the following command: `bash venv_setup.sh`
-Then activate the environment using: `source taraintino_env/bin/activate`
-
 # AC215 - Milestone2 - TarAIntino
 
 **Team Members**
-Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vranci
+Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vrancic
 
 **Group Name**
 TarAIntino
@@ -49,30 +48,30 @@ In this project, we aim to develop an avant-garde end-to-end AI movie trailer ge
 
 ### Milestone2 ###
 
-In this milestone, we have the components for data management, including versioning, as well as the computer vision and language models.
+**Hand-ins**
+This folder contains for the respective milestones:
+- All reports in the `reports` folder.
+   - The report for this milestone is `TarAIntino AI Movie Generation Infrastructure.pdf`.
+- Any other documents are the `references` folder.
+   - The graph of the architecture of the project is `TarAIntino System Architecture 1.jpeg` and `TarAIntino System Architecture 2.jpeg` (it was too big in one image).
 
 **User Interface**
 There is no specific folder for the UI in this repo, as it is in a separate git repo.
 - The UI With Dummy Data is available at: [https://tarantaino-mockup.vercel.app/](https://tarantaino-mockup.vercel.app/)
 - The Git Repo for the UI is available at: [https://github.com/kvrancic/tarantaino-mockup](https://github.com/kvrancic/tarantaino-mockup)
-
-**Hand-ins**
-This folder contains for the respective milestones:
-- All reports in the `reports` folder.
-- Any other documents (such as screenshots of running steps in the project, or graphs of the architecture of the project) in the `references` folder.
-
+   
 **Data**
 We gathered a dataset of 11 million computed tag-movie relevance scores from a pool of 1,100 tags applied to 10,000 movies. The dataset, approximately 41MB in size, was collected from the following sources: "MovieLens Tag Genome Dataset 2014" in `https://grouplens.org/datasets/movielens/` . We have stored it in a private Google Cloud Bucket (see Data Pipeline Containers section below for setup instructions).
 
 **Notebooks**
 These folders contain code that is not part of container - for e.g: Application mockup, EDA, any 🔍 🕵️‍♀️ 🕵️‍♂️ crucial insights, reports or visualizations.
 
-## EDA notebook
-From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. You can create a venv to run the notebook running `notebooks/venv_setup.sh`, then `source notebooks/taraintino_env/bin/activate`. 
+-> **EDA notebook**
+From `notebooks/eda.ipynb`, we performed exploratory data analysis (EDA) on the dataset to understand its structure and content. You can create a venv to run the notebook running `bash notebooks/venv_setup.sh`, then `source notebooks/taraintino_env/bin/activate`. 
 The EDA revealed that:
 - The dataset contains a rich variety of tags associated with movies.
 - We can identify popular tags and movies based on their relevance scores.
-- Since the dataset is really small, there is no real utility in doing PCA, but we might be interested in looking at the effect of it on the results if time permits in this project.
+- Since the dataset is really small, there is no real utility in doing PCA, but we might be interested in looking at the effect of it on the results if time permits in this project. Indeed, we notice systematically that there are more irrelevant movie-tag pairs than relevant ones, more unpopular movies than popular ones, and more unused tags than popular ones. 
 
 **Google cloud setup**
 Make sure you have gcloud set up on your machine before working with the following containers.
@@ -88,7 +87,7 @@ Make sure you have gcloud set up on your machine before working with the followi
 - Exit (Ctrl + O, Enter, Ctrl + X) and run `source ~/.zshrc` to refresh your shell.
 You are now ready to run the containers below.
 
-**Data Pipeline Containers**
+**Data Pipeline Container**
 1. From the nature of our data, we will not have much of a preprocessing step necessary.
 2. A container prepares data for the RAG model, by populating the vector database and allows for computing similarity scores between movies.
 3. Instructions for loading the data in your container can be found at the end of the dataloader.py, preprocess_rag.py and similarity.py files respectively.
@@ -102,6 +101,10 @@ You are now ready to run the containers below.
 **`src/datapipeline/similarity.py`**
    This script computes cosine similarity between movies embeddings from the ChromaDB vector database.
 
+**Deliverables for Data Pipeline Container**
+- The logs of running the above scripts can be found in the `src/datapipeline/logs` folder. 
+- The ChromaDB database is stored in the `src/datapipeline/chroma_db` folder.
+
 **LLM container**
 1. A container to be able to chat/have access to a running llm (using vertex ai).
 2. The **`src/llm/prompting.py`** file enables the access to a chat box to the LLM in your terminal.
@@ -113,6 +116,9 @@ You are now ready to run the containers below.
 - Finally, check `gcloud services list --enabled | grep aiplatform` should return `aiplatform.googleapis.com`
 - And check `gcloud auth application-default set-quota-project llm-service-account-474620`
 - You are now ready to run the llm container in the instructions at the end of the `prompting.py` file.
+
+**Deliverables for LLM Container**
+- The logs of running the above prompting script can be found in the `src/llm/logs` folder. 
 
 **Models container** --> Not necessary for milestone 2 yet (empty)
 ...
