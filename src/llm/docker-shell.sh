@@ -7,6 +7,8 @@ IMAGE="taraintino-llm"
 DOCKERFILE="src/llm/Dockerfile"
 PROJECT_DEFAULT="llm-service-account-474620"
 DATA_HOST_DIR="${DATA_HOST_DIR:-$PWD/data}"
+LOG_HOST_DIR="${LOG_HOST_DIR:-$PWD/src/llm/logs}"
+mkdir -p "$LOG_HOST_DIR"
 
 # Build the image if missing
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
@@ -44,6 +46,8 @@ exec docker run --rm -it \
   -e MODEL="gemini-2.5-pro" \
   $CRED_MOUNT \
   -v "$DATA_HOST_DIR:/app/local-ds" \
+  -e LOG_DIR="/app/logs" \
+  -v "$LOG_HOST_DIR:/app/logs" \
   --env-file secrets/.env \
   "$IMAGE" \
   bash
