@@ -1,0 +1,39 @@
+# 🎬 TarAIntino System Architecture
+
+## Part 1 – Taste Vector & Recommendation
+
+```mermaid
+
+---
+config:
+  theme: neutral
+---
+flowchart LR
+subgraph Z[" "]
+  A["Initialize user taste vector"] --> B["Preference  quiz"]
+  M(["Akinator (decision tree)"]) -.- B
+  L(["Tinder-swipe"]) -.- B
+  B -- update by step --> C{"User taste vector"}
+  end
+
+subgraph ZA[" "]
+  C --> D["Similarity match"]
+  O["Movie DB + Tag Genome"] -.- D
+  D --> R{Preferred movie anchors}
+  R --> K[PCA + GMM/KNN]
+  R --> Z1[PCA + Autoencoder/t-SNE]
+  R --> T[Centroid + Similarity]
+  K --> Q{Entended movie recommendations}
+  Z1 --> Q
+  T --> Q
+  O@{ shape: db}
+  style M fill:transparent
+  style L fill:transparent
+  style O fill:transparent
+end
+
+subgraph ZB[" "]
+Q --> V[LLM story generation agent]
+
+end
+
