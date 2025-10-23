@@ -4,10 +4,15 @@
 set -euo pipefail
 
 IMAGE="taraintino-llm"
-DOCKERFILE="src/llm/Dockerfile"
+DOCKERFILE="Dockerfile"
 PROJECT_DEFAULT="llm-service-account-474620"
-DATA_HOST_DIR="${DATA_HOST_DIR:-$PWD/data}"
-LOG_HOST_DIR="${LOG_HOST_DIR:-$PWD/src/llm/logs}"
+
+# Get the project root (parent directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+DATA_HOST_DIR="${DATA_HOST_DIR:-$PROJECT_ROOT/data}"
+LOG_HOST_DIR="${LOG_HOST_DIR:-$PWD/logs}"
 mkdir -p "$LOG_HOST_DIR"
 
 # Build the image if missing
@@ -16,23 +21,17 @@ if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   docker build -t "$IMAGE" -f "$DOCKERFILE" .
 fi
 
-# Locate credentials
-ADC="$HOME/.config/gcloud/application_default_credentials.json"
-SA_JSON="$PWD/secrets/llm-service-account.json"
+# Locate credentials at project root
+SA_JSON="$PROJECT_ROOT/secrets/llm-service-account.json"
 
-CRED_PATH=""
-CRED_MOUNT=""
-if [[ -f "$ADC" ]]; then
-  CRED_PATH="/app/adc.json"
-  CRED_MOUNT="-v $ADC:$CRED_PATH:ro"
-elif [[ -f "$SA_JSON" ]]; then
-  CRED_PATH="/app/secrets/llm-service-account.json"
-  CRED_MOUNT="-v $PWD/secrets:/app/secrets:ro"
-else
+if [[ ! -f "$SA_JSON" ]]; then
   echo "!! No credentials found."
-  echo "   Run 'gcloud auth application-default login' or add $SA_JSON"
+  echo "   Please add service account JSON at: $SA_JSON"
   exit 1
 fi
+
+CRED_PATH="/app/secrets/llm-service-account.json"
+CRED_MOUNT="-v $PROJECT_ROOT/secrets:/app/secrets:ro"
 
 PROJECT="${GOOGLE_CLOUD_PROJECT:-$PROJECT_DEFAULT}"
 
@@ -48,6 +47,4 @@ exec docker run --rm -it \
   -v "$DATA_HOST_DIR:/app/local-ds" \
   -e LOG_DIR="/app/logs" \
   -v "$LOG_HOST_DIR:/app/logs" \
-  --env-file secrets/.env \
-  "$IMAGE" \
-  bash
+  "$IMAGE"

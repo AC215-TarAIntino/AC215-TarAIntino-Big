@@ -15,7 +15,7 @@ def main():
 
     # Initialize Vertex AI client
     init(project=project, location=location)
-    model = GenerativeModel(model_name)
+    model = GenerativeModel("gemini-2.5-pro")
 
     print(f"Connected to Vertex AI Gemini model: {model_name}")
     print("Type your message and press Enter. Type /exit to quit.\n")

@@ -109,6 +109,7 @@ You are now ready to run the containers below.
 1. A container to be able to chat/have access to a running llm (using vertex ai).
 2. The **`src/llm/prompting.py`** file enables the access to a chat box to the LLM in your terminal.
 3. To access it:
+- Run within the `src/llm/` folder (change directory in your terminal)
 - Run `gcloud auth application-default login`
 - Then, run `gcloud config set project llm-service-account-474620`
 - IF you get the warning `ADC does not have the "serviceusage.services.use" permission on this project`, ask Robert Debbas for permission access before pursuing.
