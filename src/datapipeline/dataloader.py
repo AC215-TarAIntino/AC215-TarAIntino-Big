@@ -5,6 +5,16 @@ import argparse, os, time, json, re
 import chromadb
 from collections import defaultdict
 
+
+def get_chroma_client():
+    host = os.getenv("CHROMA_SERVER_HOST")
+    port = os.getenv("CHROMA_SERVER_PORT")
+    if host and port:
+        return chromadb.HttpClient(host=host, port=int(port))
+    # fallback for local dev
+    path = os.getenv("CHROMA_PATH", "./chroma_db")
+    return chromadb.PersistentClient(path=path)
+
 def log(msg: str):
     print(f"[LOAD  {time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
 
@@ -96,14 +106,14 @@ def ingest_tag_relevance_to_chroma(
     log(f"Vector dimension = number of unique tags = {dim:,}")
 
     # Ensure persistence directory exists and save tag index
-    chroma_dir = Path(chroma_path)
-    chroma_dir.mkdir(parents=True, exist_ok=True)
-    tag_index_path = chroma_dir / f"{collection_name}__tag_index.json"
+    log_dir = Path(os.getenv("LOG_DIR", "./src/datapipeline/logs"))
+    log_dir.mkdir(parents=True, exist_ok=True)
+    tag_index_path = log_dir / f"{collection_name}__tag_index.json"
     with tag_index_path.open("w", encoding="utf-8") as f:
         json.dump({"tag_ids_sorted": tag_ids_sorted}, f)
     log(f"Saved tag index mapping → {tag_index_path}")
-
-    client = chromadb.PersistentClient(path=str(chroma_dir))
+    
+    client = get_chroma_client()
     try:
         collection = client.get_collection(collection_name)
         log(f"Using existing Chroma collection: {collection_name}")

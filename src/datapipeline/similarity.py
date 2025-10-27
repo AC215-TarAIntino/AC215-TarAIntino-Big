@@ -2,6 +2,15 @@ import os, random
 from typing import List, Tuple, Optional
 import chromadb
 
+def get_chroma_client():
+    host = os.getenv("CHROMA_SERVER_HOST")
+    port = os.getenv("CHROMA_SERVER_PORT")
+    if host and port:
+        return chromadb.HttpClient(host=host, port=int(port))
+    # fallback for local dev
+    path = os.getenv("CHROMA_PATH", "./chroma_db")
+    return chromadb.PersistentClient(path=path)
+
 def similarity(
     *,
     movie_id: Optional[str] = None,
@@ -13,7 +22,7 @@ def similarity(
     if (movie_id is None) == (embedding is None):
         raise ValueError("Provide exactly one of movie_id or embedding.")
 
-    client = chromadb.PersistentClient(path=chroma_path)
+    client = get_chroma_client()
     col = client.get_collection(collection_name)
 
     if movie_id is not None:
@@ -35,7 +44,7 @@ if __name__ == "__main__":
     preferred = os.getenv("CHROMA_COLLECTION", "movie_tag_relevance_cos")
     fallback = "movie_tag_relevance_cos"
 
-    client = chromadb.PersistentClient(path=chroma_path)
+    client = get_chroma_client()
     try:
         col = client.get_collection(preferred); collection_name = preferred
     except Exception:

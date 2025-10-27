@@ -21,6 +21,10 @@ notebooks/taraintino_env
 secrets/*
 !secrets/.gitkeep
 
+# ChromaDB local storage 
+chroma_db/
+src/datapipeline/chroma_db/
+
 # Local data (keep only the placeholder)
 src/dataweb/*
 !src/dataweb/.gitkeep
