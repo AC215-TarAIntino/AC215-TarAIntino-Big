@@ -21,7 +21,7 @@ subgraph ZA[" "]
   D --> R{Preferred movie anchors}
   R --> K["PCA (or other ML approach for recommendation/similarity)"]
   K --> Q{Extended movie recommendations}
-  Q --> MCP["Movie Content Parser (MCP)"]
+  Q --> MCP["Model Context Protocol (MCP)"]
   IMDB[("IMDB Database")] -.- MCP
   MCP --> V[LLM story generation agent]
 
