@@ -1,5 +1,13 @@
 #### Project Milestone 2 Organization
 
+## Updates for Milestone 3 from Milestone 2 feedback
+- Slides of midterm presentation added in `hand-ins/reports/`.
+- Updated project architecture diagrams in `hand-ins/diagrams/` and `hand-ins/references/` with final modelling choices.
+- Corrected access to LLM with GCS permission issues.
+- Docker-compose file added for chromaDB setup.
+- Added ChromaCB folder to the gitignore.
+
+
 ```
 ├── README.md
 ├── docker-compose.yml
