@@ -21,12 +21,13 @@ subgraph ZA[" "]
   D --> R{Preferred movie anchors}
   R --> K["PCA (or other ML approach for recommendation/similarity)"]
   K --> Q{Extended movie recommendations}
+  Q --> MCP["Movie Content Parser (MCP)"]
+  IMDB[("IMDB Database")] -.- MCP
+  MCP --> V[LLM story generation agent]
+
   O@{ shape: db}
+  IMDB@{ shape: db}
   style M fill:transparent
   style O fill:transparent
+  style IMDB fill:transparent
 end
-
-subgraph ZB[" "]
-  Q --> V[LLM story generation agent]
-end
-
