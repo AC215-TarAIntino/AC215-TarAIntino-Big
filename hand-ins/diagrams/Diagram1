@@ -10,30 +10,23 @@ config:
 ---
 flowchart LR
 subgraph Z[" "]
-  A["Initialize user taste vector"] --> B["Preference  quiz"]
-  M(["Akinator (decision tree)"]) -.- B
-  L(["Tinder-swipe"]) -.- B
+  A["Initialize user taste vector"] --> B["Preference quiz"]
+  M(["Tinder-swiping interface with preference sorting algorithm"]) -.- B
   B -- update by step --> C{"User taste vector"}
-  end
+end
 
 subgraph ZA[" "]
   C --> D["Similarity match"]
   O["Movie DB + Tag Genome"] -.- D
   D --> R{Preferred movie anchors}
-  R --> K[PCA + GMM/KNN]
-  R --> Z1[PCA + Autoencoder/t-SNE]
-  R --> T[Centroid + Similarity]
-  K --> Q{Entended movie recommendations}
-  Z1 --> Q
-  T --> Q
+  R --> K["PCA (or other ML approach for recommendation/similarity)"]
+  K --> Q{Extended movie recommendations}
   O@{ shape: db}
   style M fill:transparent
-  style L fill:transparent
   style O fill:transparent
 end
 
 subgraph ZB[" "]
-Q --> V[LLM story generation agent]
-
+  Q --> V[LLM story generation agent]
 end
 
