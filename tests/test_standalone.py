@@ -123,11 +123,15 @@ def display_generated_movie(movie):
     print(f"\nInspiration Sources: {', '.join(movie.inspiration_source)}")
 
 
-def save_to_json(movie, filename="generated_movie.json"):
+def save_to_json(movie, filename="outputs/generated_movie.json"):
     """Save generated movie to JSON file."""
     if not movie:
         print("\n✗ No movie to save")
         return
+
+    # Ensure outputs directory exists
+    output_dir = Path(filename).parent
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     output = movie.model_dump()
 
@@ -156,8 +160,8 @@ def main():
     parser.add_argument(
         "--output",
         type=str,
-        default="generated_movie.json",
-        help="Output JSON file path (default: generated_movie.json)"
+        default="outputs/generated_movie.json",
+        help="Output JSON file path (default: outputs/generated_movie.json)"
     )
     parser.add_argument(
         "--no-save",
