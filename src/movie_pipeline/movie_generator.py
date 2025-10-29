@@ -191,4 +191,10 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
         fetcher = MovieFetcher()
         movies_context = fetcher.format_movies_for_context(movies)
 
-        return self.generate_movie(movies_context, model_override)
+        generated_movie = self.generate_movie(movies_context, model_override)
+
+        # Populate inspiration_source if not provided by LLM
+        if not generated_movie.inspiration_source:
+            generated_movie.inspiration_source = [movie.get("Title", "Unknown") for movie in movies]
+
+        return generated_movie

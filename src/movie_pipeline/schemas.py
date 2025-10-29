@@ -103,8 +103,8 @@ class GeneratedMovie(BaseModel):
         description="Description of the target audience"
     )
 
-    inspiration_source: List[str] = Field(
-        ...,
+    inspiration_source: Optional[List[str]] = Field(
+        None,
         description="Original movies that inspired this concept"
     )
 
@@ -121,6 +121,8 @@ class GeneratedMovie(BaseModel):
 
 class MovieGenerationResponse(BaseModel):
     """Complete API response with metadata."""
+
+    model_config = {"protected_namespaces": ()}
 
     success: bool = Field(..., description="Whether generation was successful")
 
