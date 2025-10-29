@@ -25,10 +25,37 @@ class MovieRequest(BaseModel):
 
 
 class CastMember(BaseModel):
-    """A cast member with their role."""
+    """A cast member with detailed physical and character description."""
 
-    actor: str = Field(..., description="Actor name")
-    role: str = Field(..., description="Character name or role description")
+    actor_name: str = Field(
+        ...,
+        description="FICTIONAL actor name (must be completely made up, not a real person)"
+    )
+
+    character_name: str = Field(
+        ...,
+        description="Character name in the movie"
+    )
+
+    physical_description: str = Field(
+        ...,
+        description="Detailed physical appearance: height, build, age, ethnicity, hair color/style, eye color, facial features, distinctive characteristics (5-7 sentences minimum)"
+    )
+
+    personality_traits: List[str] = Field(
+        ...,
+        description="Key personality traits and characteristics (e.g., 'charismatic', 'calculating', 'empathetic', 'volatile')"
+    )
+
+    acting_style: str = Field(
+        ...,
+        description="Description of their acting approach and screen presence (e.g., 'intense method actor known for emotional depth', 'versatile character actor')"
+    )
+
+    role_description: str = Field(
+        ...,
+        description="Detailed description of the character they play and their importance to the story"
+    )
 
 
 class GeneratedMovie(BaseModel):
@@ -49,9 +76,25 @@ class GeneratedMovie(BaseModel):
         description="Comprehensive plot summary of the movie"
     )
 
-    director: str = Field(..., description="Fictional director name")
+    director_name: str = Field(
+        ...,
+        description="FICTIONAL director name (must be completely made up, not a real person)"
+    )
 
-    writers: List[str] = Field(..., description="List of fictional writer names")
+    director_background: str = Field(
+        ...,
+        description="Director's background, style, previous work themes, and filmmaking approach (3-4 sentences)"
+    )
+
+    writers: List[str] = Field(
+        ...,
+        description="List of FICTIONAL writer names (must be completely made up, not real people)"
+    )
+
+    writer_backgrounds: str = Field(
+        ...,
+        description="Brief description of the writers' backgrounds and writing styles (2-3 sentences)"
+    )
 
     cast: List[CastMember] = Field(
         ...,
@@ -79,7 +122,12 @@ class GeneratedMovie(BaseModel):
 
     production_company: str = Field(
         ...,
-        description="Fictional production company"
+        description="FICTIONAL production company name (must be completely made up, not a real company)"
+    )
+
+    production_company_background: str = Field(
+        ...,
+        description="Production company's background, known for what type of films, size/scope (2-3 sentences)"
     )
 
     budget: str = Field(

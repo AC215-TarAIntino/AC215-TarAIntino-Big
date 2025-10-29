@@ -77,20 +77,33 @@ def display_generated_movie(movie):
     print(f"\nTitle: {movie.title}")
     print(f"Tagline: {movie.tagline}")
     print(f"\nGenres: {', '.join(movie.genres)}")
-    print(f"Director: {movie.director}")
-    print(f"Writers: {', '.join(movie.writers)}")
-    print(f"Runtime: {movie.runtime}")
+
+    print(f"\nDirector: {movie.director_name}")
+    print(f"  Background: {movie.director_background}")
+
+    print(f"\nWriters: {', '.join(movie.writers)}")
+    print(f"  Background: {movie.writer_backgrounds}")
+
+    print(f"\nRuntime: {movie.runtime}")
     print(f"Rating: {movie.rating}")
     print(f"Release Year: {movie.release_year}")
     print(f"Budget: {movie.budget}")
-    print(f"Production: {movie.production_company}")
+
+    print(f"\nProduction Company: {movie.production_company}")
+    print(f"  Background: {movie.production_company_background}")
 
     print(f"\nPlot Summary:")
     print(f"{movie.plot_summary}")
 
-    print(f"\nMain Cast:")
-    for cast_member in movie.cast:
-        print(f"  - {cast_member.actor} as {cast_member.role}")
+    print(f"\n" + "="*80)
+    print("CAST (Fictional Actors)")
+    print("="*80)
+    for i, cast_member in enumerate(movie.cast, 1):
+        print(f"\n[{i}] {cast_member.actor_name} as {cast_member.character_name}")
+        print(f"    Physical Description: {cast_member.physical_description}")
+        print(f"    Traits: {', '.join(cast_member.personality_traits)}")
+        print(f"    Acting Style: {cast_member.acting_style}")
+        print(f"    Role: {cast_member.role_description}")
 
     print(f"\nThemes: {', '.join(movie.themes)}")
 
