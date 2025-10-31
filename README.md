@@ -6,63 +6,77 @@ AI-powered microservice that generates detailed scene-by-scene trailer breakdown
 
 This service takes a complete movie description (from `mcp-screenplay` or similar) and generates a detailed trailer breakdown with:
 
-- **Scene-by-scene structure**: 4-8 scenes, each 4-8 seconds long
+- **Character reference images**: Generates design prompts for up to 4 main characters (white background, visual style-matched)
+- **Scene-by-scene structure**: 4-8 scenes, each 4-8 seconds long (8s when using character references)
 - **Image generation prompts**: Detailed start/end frame descriptions
 - **Video generation prompts**: Comprehensive VEO 3.1 prompts with motion, camera movement, cinematography
-- **Character consistency**: Ensures characters appear in continuous scenes for VEO 3.1 consistency
+- **Character consistency**: Uses VEO 3.1's `referenceImages` parameter for consistent character appearance across any scenes
 - **Optional narration**: Script for ElevenLabs voice generation
-- **Technical specifications**: Color grading, aspect ratio, sound design notes
+- **Technical specifications**: Color grading, aspect ratio (16:9 for VEO), sound design notes
 
 ## Key Features
 
-- **Character Consistency Management**: Intelligent scene structuring to maintain character appearance consistency across trailer
+- **VEO 3.1 Reference Images**: Pre-generates character design prompts for consistent appearance across ANY scenes (no continuity chains needed!)
+- **Character Design System**: Generates detailed prompts for character reference images on white backgrounds, matching movie visual style
 - **Self-Contained Prompts**: Every prompt is completely independent with full context - no references to previous scenes
-- **Continuity System**: `uses_previous_end_frame` flag tells orchestrator when to reuse frames vs. generate new ones
 - **Audio Integration**: Sound design naturally woven into video prompts (VEO 3.1 generates audio)
-- **Validation Logic**: Ensures character consistency rules are followed
+- **Validation Logic**: Ensures VEO 3.1 constraints (8s duration with refs, max 3 refs per scene)
 - **Flexible Duration**: Generate 20-60 second trailers
 - **Multiple Interfaces**: REST API, Python library, or standalone CLI
 - **Docker Ready**: Easy containerization and deployment
 
-## How It Works: The Continuity System
+## How It Works: VEO 3.1 Reference Images System
 
 **Critical Concept**: Video generation models (VEO 3.1) have NO MEMORY between API calls. Each prompt must be completely self-contained.
 
-### Frame Continuity
+### Two-Phase Generation
 
-The service generates two types of scenes:
+The service generates trailers in two phases:
 
-1. **New Scene** (`uses_previous_end_frame: false`)
-   - Has a complete `start_frame_prompt`
-   - Represents a CUT in the trailer
-   - Orchestrator generates new start frame image
+**Phase 1: Character Designs**
+- Generates detailed design prompts for up to 4 main characters
+- Each design specifies:
+  - Character name (e.g., "Dr_Elara_Vance")
+  - Complete physical description prompt (on white background)
+  - Visual style matching movie aesthetic (hyper-realistic, 3D animated, etc.)
+  - Brief identifier for use in scene prompts (e.g., "slender woman, late 30s, dark hair")
 
-2. **Continuous Scene** (`uses_previous_end_frame: true`)
-   - Has `start_frame_prompt: null`
-   - Continues from previous scene
-   - Orchestrator reuses previous `end_frame` as `start_frame`
+**Phase 2: Scene Generation**
+- Creates 4-8 scenes with full context prompts
+- Each scene can reference up to 3 characters via `reference_images` array
+- Characters can appear in ANY scenes (not limited to continuous sequences!)
 
-### Character Consistency Rule
+### Character Consistency via Reference Images
 
-**If a character appears in multiple scenes, those scenes MUST be continuous.**
+**Revolutionary Approach**: VEO 3.1's `referenceImages` parameter maintains character consistency WITHOUT requiring continuous scene chains.
 
-Why? VEO 3.1 maintains character consistency through frame-to-frame continuity (end_frame → start_frame). Without this chain, the character will look different.
+**How it works:**
+1. Orchestrator generates character reference images from design prompts (Phase 1)
+2. For each scene with characters, passes those character images to VEO 3.1 via `referenceImages`
+3. VEO 3.1 maintains character appearance consistency across ANY scenes
 
-**Example - Correct:**
+**Example:**
 ```
-Scene 1: Dr. Vance alone (uses_previous_end_frame: false) ✅ NEW
-Scene 2: Dr. Vance + Joric (uses_previous_end_frame: true) 🔗 CONTINUOUS
-Scene 3: Dr. Vance alone (uses_previous_end_frame: true) 🔗 CONTINUOUS
-Scene 4: General Kade (uses_previous_end_frame: false) ✅ CUT (new character)
+Phase 1: Generate character designs
+  - Dr_Elara_Vance → character_ref_1.png
+  - General_Kade → character_ref_2.png
+
+Phase 2: Generate scenes
+  Scene 1: Dr. Vance + General Kade (8s, reference_images: ["Dr_Elara_Vance", "General_Kade"])
+  Scene 2: Establishing shot (6s, reference_images: [])
+  Scene 3: Dr. Vance alone (8s, reference_images: ["Dr_Elara_Vance"])
+  Scene 4: General Kade (8s, reference_images: ["General_Kade"])
+
+✅ Characters can appear in ANY scenes - consistency maintained via reference images!
 ```
 
-**Example - Wrong:**
-```
-Scene 1: Dr. Vance (uses_previous_end_frame: false)
-Scene 2: Joric only (uses_previous_end_frame: false) ✂️ CUT
-Scene 3: Dr. Vance again (uses_previous_end_frame: false) ❌ WRONG!
-   → Character can't look the same across a cut!
-```
+### VEO 3.1 Requirements with Reference Images
+
+When using reference images:
+- **Duration**: Must be exactly 8 seconds
+- **Max References**: Up to 3 character images per scene
+- **Aspect Ratio**: 16:9 (VEO 3.1 limitation)
+- **Parameter**: `personGeneration: "allow_adult"` required
 
 ### Self-Contained Prompts
 
@@ -302,40 +316,55 @@ Generate a complete trailer scene breakdown.
   "trailer": {
     "movie_title": "Movie Title",
     "total_duration": 35,
+    "character_designs": [
+      {
+        "character_name": "Dr_Elara_Vance",
+        "image_generation_prompt": "A slender woman in her late 30s with long dark chestnut hair tied in a messy bun and warm hazel eyes, standing on a pure white background. She has an intelligent, focused expression with slight worry lines on her forehead. Wearing a fitted grey lab coat over a simple black shirt with practical dark pants. Hyper-realistic style with precise anatomical detail. Standing facing camera in neutral pose, 3/4 body shot. Soft, even lighting with no harsh shadows...",
+        "brief_identifier": "slender woman, late 30s, dark hair",
+        "visual_style": "hyper-realistic"
+      },
+      {
+        "character_name": "General_Valerius_Kade",
+        "image_generation_prompt": "An imposing man standing 6'2\" with silver-grey hair in military cut, standing on a pure white background. He has steely grey eyes and a commanding presence with military bearing. Wearing dark military-style tactical uniform with insignia. Hyper-realistic style. Standing facing camera, neutral expression, full body shot. Soft, even lighting...",
+        "brief_identifier": "imposing man, grey hair, military bearing",
+        "visual_style": "hyper-realistic"
+      }
+    ],
     "scenes": [
       {
         "scene_number": 1,
-        "duration_seconds": 6,
-        "scene_type": "establishing",
-        "uses_previous_end_frame": false,
-        "start_frame_prompt": "SELF-CONTAINED 4-5 sentence description with full context...",
+        "duration_seconds": 8,
+        "scene_type": "character_introduction",
+        "start_frame_prompt": "Dr. Vance (slender woman, late 30s, dark hair) and General Kade (imposing man, grey hair, military bearing) stand at the entrance of Project Cacophony facility. SELF-CONTAINED 4-5 sentence description with full context...",
         "end_frame_prompt": "SELF-CONTAINED 4-5 sentence description...",
-        "video_prompt": "SELF-CONTAINED 6-8 sentence prompt with camera movement AND audio naturally integrated...",
-        "characters_present": ["Character Name"],
+        "video_prompt": "The camera executes a dolly forward toward Dr. Vance (slender woman, late 30s, dark hair) and General Kade (imposing man, grey hair, military bearing). SELF-CONTAINED 6-8 sentence prompt with camera movement AND audio naturally integrated...",
+        "reference_images": ["Dr_Elara_Vance", "General_Valerius_Kade"],
+        "characters_present": ["Dr. Elara Vance", "General Valerius Kade"],
         "continuity_note": "Optional metadata note"
       },
       {
         "scene_number": 2,
-        "duration_seconds": 7,
-        "scene_type": "character_introduction",
-        "uses_previous_end_frame": true,
-        "start_frame_prompt": null,
+        "duration_seconds": 6,
+        "scene_type": "establishing",
+        "start_frame_prompt": "Wide aerial view of the facility. SELF-CONTAINED description, no characters...",
         "end_frame_prompt": "SELF-CONTAINED description...",
         "video_prompt": "SELF-CONTAINED with audio...",
-        "characters_present": ["Character Name"],
-        "continuity_note": "Continuous from scene 1"
+        "reference_images": [],
+        "characters_present": [],
+        "continuity_note": "Establishing shot"
       }
     ],
     "narration_script": "Compelling narration text...",
-    "continuity_guide": "Character consistency guide...",
+    "continuity_guide": "Brief visual consistency guide...",
     "technical_specs": {
       "color_grading": "Desaturated with teal shadows...",
-      "aspect_ratio": "2.39:1",
+      "aspect_ratio": "16:9",
       "visual_style": "...",
       "sound_design_notes": "..."
     },
     "character_appearance_map": {
-      "Character Name": [1, 3, 5]
+      "Dr. Elara Vance": [1],
+      "General Valerius Kade": [1]
     }
   },
   "model_used": "anthropic/claude-3.5-sonnet",
@@ -370,39 +399,59 @@ Analyze a movie to extract key information.
 
 ## Understanding the Output
 
-### Scene Structure
+### Character Designs (Phase 1)
 
-Each scene includes three critical prompts:
+Each character design includes:
+
+1. **character_name**: Formatted as "FirstName_LastName" for use as filename
+2. **image_generation_prompt**: Complete 6-8 sentence prompt for generating reference image
+   - Must include "standing on a pure white background"
+   - Specifies visual style (hyper-realistic, 3D animated, etc.)
+   - Full physical description (height, build, age, features, clothing)
+   - Neutral pose, even lighting
+3. **brief_identifier**: 3-5 word shorthand for use in scene prompts
+4. **visual_style**: Matches movie aesthetic (determined by LLM from movie data)
+
+### Scene Structure (Phase 2)
+
+Each scene includes three critical prompts plus reference metadata:
 
 1. **start_frame_prompt**: Detailed description for generating the opening image
-   - Character physical descriptions
+   - Characters identified as "Name (brief_identifier)"
    - Lighting and color palette
    - Composition and camera angle
    - Setting details
 
 2. **end_frame_prompt**: Detailed description for the closing image
    - Shows progression from start frame
-   - Will become the next scene's start frame
-   - Maintains visual consistency
+   - Complete self-contained description
 
 3. **video_prompt**: Comprehensive instructions for VEO 3.1
+   - Characters identified as "Name (brief_identifier)"
    - Explicit camera movement (dolly, crane, handheld, etc.)
    - Subject motion description
    - Pacing and timing
    - Cinematography style
    - Specific events that occur
    - Atmosphere and mood
+   - Audio design naturally integrated
+
+4. **reference_images**: List of character_names to use as VEO 3.1 reference images (max 3)
 
 ### Character Consistency
 
-The system ensures characters appear in **continuous scenes** to maintain consistency:
+The system uses VEO 3.1's `referenceImages` parameter for consistency:
 
 ```
-❌ BAD: Character A in Scene 1, Character B in Scene 2, Character A again in Scene 3
-✅ GOOD: Character A in Scene 1 (8s continuous), Character B in Scene 2, ...
-```
+✅ Characters can appear in ANY scenes - reference images maintain consistency!
 
-This is crucial because VEO 3.1 maintains consistency by chaining end_frame → start_frame.
+Example:
+  Scene 1: Dr. Vance + General Kade (reference_images: ["Dr_Elara_Vance", "General_Valerius_Kade"])
+  Scene 2: Establishing shot (reference_images: [])
+  Scene 3: Dr. Vance alone (reference_images: ["Dr_Elara_Vance"])
+
+All scenes maintain character consistency via reference images!
+```
 
 ## Integration with Larger Systems
 
@@ -434,6 +483,7 @@ This is crucial because VEO 3.1 maintains consistency by chaining end_frame → 
 ```python
 # In your orchestrator service
 import requests
+from typing import Dict
 
 # 1. Generate movie description
 movie_response = requests.post(
@@ -449,36 +499,60 @@ trailer_response = requests.post(
 )
 trailer = trailer_response.json()["trailer"]
 
-# 3. Generate actual video (your orchestrator logic)
-previous_end_frame = None
+# 3. PHASE 1: Generate character reference images
+character_ref_images: Dict[str, str] = {}
 
-for scene in trailer["scenes"]:
-    # Handle start frame based on continuity
-    if scene["uses_previous_end_frame"]:
-        # Reuse previous scene's end frame (maintains character consistency)
-        start_img = previous_end_frame
-        print(f"Scene {scene['scene_number']}: Reusing previous end_frame for continuity")
-    else:
-        # Generate new start frame (this is a CUT)
-        start_img = generate_image(scene["start_frame_prompt"])
-        print(f"Scene {scene['scene_number']}: Generated new start_frame (CUT)")
+for design in trailer["character_designs"]:
+    char_name = design["character_name"]
+    print(f"Generating reference image for {char_name}...")
 
-    # Always generate end frame
-    end_img = generate_image(scene["end_frame_prompt"])
-
-    # Generate video with VEO 3.1
-    # Note: video_prompt already includes audio design
-    video = generate_video(
-        prompt=scene["video_prompt"],
-        start_frame=start_img,
-        end_frame=end_img,
-        duration=scene["duration_seconds"]
+    # Generate character image using DALL-E/Flux
+    ref_img = generate_image(
+        prompt=design["image_generation_prompt"],
+        # Important: This creates the character on white background
     )
 
-    # Save for next iteration
-    previous_end_frame = end_img
+    # Store for use in scenes
+    character_ref_images[char_name] = ref_img
+    # Optionally save: ref_img.save(f"refs/{char_name}.png")
 
-    # Collect videos...
+print(f"✅ Generated {len(character_ref_images)} character reference images")
+
+# 4. PHASE 2: Generate scene videos with VEO 3.1
+for scene in trailer["scenes"]:
+    print(f"\nGenerating Scene {scene['scene_number']}: {scene['scene_type']}")
+
+    # Generate start and end frames
+    start_img = generate_image(scene["start_frame_prompt"])
+    end_img = generate_image(scene["end_frame_prompt"])
+
+    # Prepare reference images for this scene
+    scene_refs = []
+    if scene["reference_images"]:
+        for char_name in scene["reference_images"]:
+            scene_refs.append(character_ref_images[char_name])
+        print(f"  Using {len(scene_refs)} character reference(s)")
+
+    # Generate video with VEO 3.1
+    # video_prompt already includes audio design
+    veo_params = {
+        "prompt": scene["video_prompt"],
+        "image": start_img,  # Start frame
+        "lastFrame": end_img,  # End frame
+        "duration": scene["duration_seconds"],
+        "aspectRatio": "16:9",  # Required with reference images
+    }
+
+    # Add reference images if present (VEO 3.1 feature)
+    if scene_refs:
+        veo_params["referenceImages"] = scene_refs
+        veo_params["personGeneration"] = "allow_adult"  # Required with refs
+
+    video = call_veo_api(**veo_params)
+
+    # Collect videos for final stitching...
+
+# 5. Stitch videos together, add narration, etc.
 ```
 
 ## Project Structure
@@ -552,9 +626,10 @@ All configuration via environment variables or `.env` file:
 - Check OpenRouter status
 
 ### Scenes don't maintain character consistency
-- Review the `character_appearance_map` in output
-- Check `continuity_guide` for physical descriptions
-- Ensure you're using the end_frame → start_frame pattern in VEO
+- Ensure you're generating character reference images from `character_designs`
+- Verify you're passing those images to VEO 3.1 via `referenceImages` parameter
+- Check that `personGeneration: "allow_adult"` is set when using reference images
+- Review the `character_appearance_map` to see which scenes include which characters
 
 ### Docker issues
 - Ensure ports aren't in use: `lsof -i :8001`

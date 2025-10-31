@@ -9,6 +9,7 @@ from .schemas import (
     TrailerScene,
     TrailerBreakdown,
     TrailerGenerationResponse,
+    CharacterDesign,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "TrailerScene",
     "TrailerBreakdown",
     "TrailerGenerationResponse",
+    "CharacterDesign",
 ]

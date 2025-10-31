@@ -69,7 +69,7 @@ class SceneGenerator:
         # Analyze the movie
         analyzer = MovieAnalyzer(movie)
         movie_context = analyzer.format_for_llm_context()
-        character_guide = analyzer.get_character_consistency_guide()
+        character_designs_context = analyzer.format_character_designs_for_llm()
 
         # Calculate recommended number of scenes
         if target_duration <= 25:
@@ -87,42 +87,53 @@ class SceneGenerator:
   "narration_script": "A compelling narration script (2-4 sentences) that will be generated with ElevenLabs. This should be dramatic, hook the audience, and tease the story without spoiling it. Use short, punchy sentences.",
 """
 
-        prompt = f"""You are an expert movie trailer editor and creative director. Your task is to create a detailed scene-by-scene breakdown for a {target_duration}-second movie trailer.
+        prompt = f"""You are an expert movie trailer editor and creative director. Your task is to create character designs and a detailed scene-by-scene breakdown for a {target_duration}-second movie trailer.
 
 {movie_context}
 
-{character_guide}
+{character_designs_context}
 
-## YOUR TASK
+## TWO-PHASE GENERATION PROCESS
+
+### PHASE 1: CHARACTER DESIGNS (Generate First!)
+
+Before creating scenes, generate character designs for the top 4 main characters. These will be used to generate reference images.
+
+**Character Design Requirements:**
+- character_name: Format as "FirstName_LastName" (e.g., "Dr_Elara_Vance")
+- image_generation_prompt: 6-8 sentence COMPLETE prompt for generating character reference image
+  - MUST include: "standing on a pure white background"
+  - MUST specify visual style matching movie (hyper-realistic, 3D animated, hand-drawn 2D animation, claymation, etc.)
+  - Full physical description: height, build, age, hair (style/color), eyes, facial features, clothing
+  - Pose: standing, facing camera, neutral expression
+  - Lighting: soft, even, no harsh shadows
+  - Camera: straight-on, full body or 3/4 body shot
+- brief_identifier: 3-5 words for quick identification in video prompts (e.g., "slender woman, late 30s, dark hair")
+- visual_style: Match movie aesthetic (let movie data guide you - hyper-realistic for gritty dramas, 3D animated for family films, etc.)
+
+### PHASE 2: SCENE GENERATION
 
 Create a trailer breakdown with {num_scenes} scenes. Each scene should be 4-8 seconds long (total ~{target_duration} seconds).
 
-## ⚠️ ABSOLUTE RULE: CHARACTER CONSISTENCY ACROSS SCENES
+## ⚠️ VEO 3.1 REFERENCE IMAGES SYSTEM
 
-**CRITICAL**: Video generation models (VEO 3.1) have NO MEMORY between API calls. Each prompt is independent.
+**CRITICAL**: VEO 3.1 supports up to 3 character reference images per scene. This maintains character consistency WITHOUT requiring continuous scenes!
 
-**THE RULE**: If a character appears in Scene N and Scene M (where M > N+1), ALL scenes between them MUST form a continuous chain using `uses_previous_end_frame: true`.
+**The New Approach:**
+1. Pre-generate character reference images from character designs (orchestrator handles this)
+2. Pass character reference images to VEO 3.1 via `referenceImages` parameter
+3. Characters can appear in ANY scenes (not just continuous ones)
 
-**Why?** VEO 3.1 maintains character consistency only through frame continuity (end_frame → start_frame). Without this, the character will look different across scenes.
+**VEO 3.1 Requirements with Reference Images:**
+- Duration MUST be exactly 8 seconds when using reference images
+- Maximum 3 reference images per scene (avoid 4+ character scenes)
+- Aspect ratio: 16:9 (VEO 3.1 limitation with reference images)
+- Parameter: `personGeneration: "allow_adult"` required
 
-**Examples:**
-
-✅ CORRECT - Character A appears in 3 continuous scenes:
-```
-Scene 1: Character A (uses_previous_end_frame: false, start_frame_prompt: "...")
-Scene 2: Character A + B (uses_previous_end_frame: true, start_frame_prompt: null)
-Scene 3: Character A alone (uses_previous_end_frame: true, start_frame_prompt: null)
-Scene 4: Character B only (uses_previous_end_frame: false, start_frame_prompt: "...")
-```
-
-❌ WRONG - Character A in non-continuous scenes:
-```
-Scene 1: Character A (uses_previous_end_frame: false)
-Scene 2: Character B (uses_previous_end_frame: false) ← CUT, breaks continuity
-Scene 3: Character A again (uses_previous_end_frame: false) ← WRONG! Can't maintain consistency!
-```
-
-**Decision Making**: Use story flow to decide on cuts vs. continuity. BUT if a character must appear twice, make those appearances continuous.
+**When to Use Reference Images:**
+- ANY scene with named characters should list them in `reference_images` array
+- Use character_name format (e.g., "Dr_Elara_Vance")
+- Empty list = no character focus (establishing shots, title cards, abstract sequences)
 
 ## SELF-CONTAINED PROMPTS (CRITICAL!)
 
@@ -160,6 +171,7 @@ Classic trailer flow (adapt to story):
 ## PROMPT REQUIREMENTS
 
 ### start_frame_prompt (4-5 sentences, SELF-CONTAINED):
+- **When characters present**: Identify each as "CharacterName (brief_identifier)" on first mention, e.g., "Dr. Vance (slender woman, late 30s, dark hair)"
 - FULL character physical descriptions (height, build, age, hair, eyes, features, clothing)
 - Specific lighting with absolute description ("harsh blue-white fluorescents at 6500K")
 - Color palette and grading (teal shadows, amber highlights, etc.)
@@ -167,16 +179,15 @@ Classic trailer flow (adapt to story):
 - Camera angle with specifics ("eye level at 1.7m height", "low angle 30° up")
 - Complete setting description
 
-**Set to NULL when `uses_previous_end_frame: true`**
-
 ### end_frame_prompt (4-5 sentences, SELF-CONTAINED):
+- **When characters present**: Identify each as "CharacterName (brief_identifier)"
 - FULL character physical descriptions (complete, not relative to start)
 - Final positioning, emotion, action (absolute, not "has turned" but "faces camera")
 - Complete lighting and color (don't reference start, describe fully)
 - Setting details (complete description)
-- This will become next scene's START FRAME if continuous
 
 ### video_prompt (6-8 sentences, SELF-CONTAINED with AUDIO):
+- **When characters present**: Identify each as "CharacterName (brief_identifier)" on first mention
 - Camera movement (dolly in 2 meters over 6 seconds, crane up from ground to 20m, etc.)
 - Subject movement (walks left to right 4 steps, turns 90° clockwise, etc.)
 - Pacing and timing (slow 2-second pan, rapid 0.5s whip, etc.)
@@ -187,58 +198,76 @@ Classic trailer flow (adapt to story):
 - Visual style and color grading
 
 **Example with audio integrated:**
-"The camera executes a slow 6-second dolly forward toward Dr. Elara Vance, a slender woman in her late 30s with long dark chestnut hair in a messy bun and hazel eyes, as she stands 3 meters away at a holographic interface in a sterile laboratory. Her long fingers trace complex patterns in the glowing blue holographic display while the lab equipment emits a steady low-frequency electronic hum at approximately 60Hz. Harsh blue-white fluorescent lights at 6500K illuminate the space from above, creating sharp shadows. Halfway through the dolly movement, the Chrysalids in the containment chamber behind her begin pulsing with synchronized bioluminescent light, producing harmonic crystalline tones that build from 440Hz to 880Hz. Dr. Vance's expression shifts from concentration to realization as she hears the harmonic pattern. She whispers with urgency: 'It's not a weapon... it's a language.' The crystalline tones crescendo and mix with her controlled breathing, creating tension."
+"The camera executes a slow 6-second dolly forward toward Dr. Vance (slender woman, late 30s, dark hair), as she stands 3 meters away at a holographic interface in a sterile laboratory. Her long fingers trace complex patterns in the glowing blue holographic display while the lab equipment emits a steady low-frequency electronic hum at approximately 60Hz. Harsh blue-white fluorescent lights at 6500K illuminate the space from above, creating sharp shadows. Halfway through the dolly movement, the Chrysalids in the containment chamber behind her begin pulsing with synchronized bioluminescent light, producing harmonic crystalline tones that build from 440Hz to 880Hz. Dr. Vance's expression shifts from concentration to realization as she hears the harmonic pattern. She whispers with urgency: 'It's not a weapon... it's a language.' The crystalline tones crescendo and mix with her controlled breathing, creating tension."
 
 ## OUTPUT FORMAT
 
 {{
   "movie_title": "{movie.title}",
   "total_duration": {target_duration},
+  "character_designs": [
+    {{
+      "character_name": "Dr_Elara_Vance",
+      "image_generation_prompt": "COMPLETE 6-8 sentence prompt. Must specify visual style and include 'standing on a pure white background'. Full physical description, neutral pose, even lighting...",
+      "brief_identifier": "slender woman, late 30s, dark hair",
+      "visual_style": "hyper-realistic"
+    }},
+    {{
+      "character_name": "General_Valerius_Kade",
+      "image_generation_prompt": "...",
+      "brief_identifier": "imposing man, grey hair, military bearing",
+      "visual_style": "hyper-realistic"
+    }}
+  ],
   "scenes": [
     {{
       "scene_number": 1,
-      "duration_seconds": 6,
-      "scene_type": "establishing",
-      "uses_previous_end_frame": false,
-      "start_frame_prompt": "SELF-CONTAINED 4-5 sentence description with COMPLETE context...",
+      "duration_seconds": 8,
+      "scene_type": "character_introduction",
+      "start_frame_prompt": "SELF-CONTAINED 4-5 sentence description. Characters identified as 'Dr. Vance (slender woman, late 30s, dark hair)'...",
       "end_frame_prompt": "SELF-CONTAINED 4-5 sentence description with COMPLETE context...",
-      "video_prompt": "SELF-CONTAINED 6-8 sentence description with camera movement, action, AND audio naturally integrated...",
-      "characters_present": ["Character Name"],
+      "video_prompt": "SELF-CONTAINED 6-8 sentence description. Characters identified as 'Dr. Vance (slender woman, late 30s, dark hair)'. Includes camera movement, action, AND audio naturally integrated...",
+      "reference_images": ["Dr_Elara_Vance", "General_Valerius_Kade"],
+      "characters_present": ["Dr. Elara Vance", "General Valerius Kade"],
       "continuity_note": "Optional metadata note"
     }},
     {{
       "scene_number": 2,
-      "duration_seconds": 7,
-      "scene_type": "character_introduction",
-      "uses_previous_end_frame": true,
-      "start_frame_prompt": null,
+      "duration_seconds": 6,
+      "scene_type": "establishing",
+      "start_frame_prompt": "SELF-CONTAINED description, no characters...",
       "end_frame_prompt": "SELF-CONTAINED complete description...",
       "video_prompt": "SELF-CONTAINED with audio integrated...",
-      "characters_present": ["Character Name"],
-      "continuity_note": "Continuous from scene 1"
+      "reference_images": [],
+      "characters_present": [],
+      "continuity_note": "Wide establishing shot with no characters"
     }}
   ],{narration_instruction}
-  "continuity_guide": "SINGLE STRING with character descriptions...",
+  "continuity_guide": "Brief guide for maintaining visual consistency across scenes...",
   "technical_specs": {{
     "color_grading": "...",
-    "aspect_ratio": "2.39:1",
+    "aspect_ratio": "16:9",
     "visual_style": "...",
     "sound_design_notes": "..."
   }},
   "character_appearance_map": {{
-    "Character Name": [1, 2]
+    "Dr. Elara Vance": [1],
+    "General Valerius Kade": [1]
   }}
 }}
 
 ## CRITICAL RULES - MUST FOLLOW
 
-1. **Character consistency**: Same character in multiple scenes → continuous chain with `uses_previous_end_frame: true`
-2. **Self-contained prompts**: ZERO references to other scenes, COMPLETE context every time
-3. **Audio integration**: Naturally woven into video_prompt (no separate audio_notes field)
-4. **Continuity flag**: `uses_previous_end_frame: true` means `start_frame_prompt: null`
-5. **Duration**: 4-8 seconds per scene, total ~{target_duration} seconds
-6. **Prompt length**: start/end 4-5 sentences, video 6-8 sentences
-7. **Absolute descriptions**: No relative terms ("higher", "closer", "remains"), only absolute measurements
+1. **Character designs first**: Generate character_designs array BEFORE scenes array
+2. **Reference images**: Scenes with characters → list them in reference_images (max 3)
+3. **8-second rule**: If reference_images is NOT empty, duration_seconds MUST be 8
+4. **Character identification**: In ALL prompts, identify characters as "Name (brief_identifier)"
+5. **Self-contained prompts**: ZERO references to other scenes, COMPLETE context every time
+6. **Audio integration**: Naturally woven into video_prompt (no separate audio_notes field)
+7. **Duration**: 4-8 seconds per scene (8 if using reference_images), total ~{target_duration} seconds
+8. **Prompt length**: start/end 4-5 sentences, video 6-8 sentences
+9. **Absolute descriptions**: No relative terms ("higher", "closer", "remains"), only absolute measurements
+10. **Aspect ratio**: Use 16:9 for technical_specs (VEO 3.1 requirement with reference images)
 
 Generate the trailer breakdown now. Return ONLY valid JSON."""
 
@@ -354,7 +383,7 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
 
     def _validate_trailer_consistency(self, trailer: TrailerBreakdown) -> None:
         """
-        Validate character consistency and continuity rules.
+        Validate reference images constraints.
 
         Args:
             trailer: TrailerBreakdown to validate
@@ -363,70 +392,32 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
             SceneGeneratorError: If validation fails
         """
         scenes = trailer.scenes
+        character_designs = trailer.character_designs
+
+        # Build set of available character names for validation
+        available_characters = {design.character_name for design in character_designs}
 
         # Validate each scene
-        for i, scene in enumerate(scenes):
-            # Rule 1: uses_previous_end_frame => start_frame_prompt must be null
-            if scene.uses_previous_end_frame:
-                if scene.start_frame_prompt is not None:
-                    raise SceneGeneratorError(
-                        f"Scene {scene.scene_number}: uses_previous_end_frame=true but "
-                        f"start_frame_prompt is not null. It should be null to reuse previous end_frame."
-                    )
-
-                # Rule 2: First scene cannot use previous end frame
-                if i == 0:
-                    raise SceneGeneratorError(
-                        f"Scene {scene.scene_number}: First scene cannot have uses_previous_end_frame=true"
-                    )
-
-            # Rule 3: If not using previous end frame, must have start_frame_prompt
-            else:
-                if scene.start_frame_prompt is None:
-                    raise SceneGeneratorError(
-                        f"Scene {scene.scene_number}: uses_previous_end_frame=false but "
-                        f"start_frame_prompt is null. It must have a complete prompt."
-                    )
-
-        # Rule 4: Character consistency - characters appearing in multiple non-adjacent scenes
-        # must be connected by continuous scenes
-        character_scenes = {}
         for scene in scenes:
-            for char in scene.characters_present:
-                if char not in character_scenes:
-                    character_scenes[char] = []
-                character_scenes[char].append(scene.scene_number)
+            # Rule 1: If reference_images is not empty, duration must be 8 seconds
+            if scene.reference_images:
+                if scene.duration_seconds != 8:
+                    raise SceneGeneratorError(
+                        f"Scene {scene.scene_number}: Uses reference_images but duration is "
+                        f"{scene.duration_seconds}s. VEO 3.1 requires exactly 8 seconds when using reference images."
+                    )
 
-        for char, scene_nums in character_scenes.items():
-            if len(scene_nums) > 1:
-                # Check if scenes form a continuous chain
-                # For each pair of appearances, check if connected by uses_previous_end_frame chain
-                for i in range(len(scene_nums) - 1):
-                    current_scene_num = scene_nums[i]
-                    next_scene_num = scene_nums[i + 1]
+            # Rule 2: Maximum 3 reference images per scene
+            if len(scene.reference_images) > 3:
+                raise SceneGeneratorError(
+                    f"Scene {scene.scene_number}: Has {len(scene.reference_images)} reference images. "
+                    f"VEO 3.1 supports maximum 3 reference images per scene."
+                )
 
-                    # If not adjacent, check if all scenes between them form continuous chain
-                    if next_scene_num > current_scene_num + 1:
-                        # Check intermediate scenes
-                        for intermediate_scene_num in range(current_scene_num + 1, next_scene_num):
-                            # Find scene object
-                            intermediate_scene = next(s for s in scenes if s.scene_number == intermediate_scene_num)
-
-                            # Must use previous end frame to maintain continuity
-                            if not intermediate_scene.uses_previous_end_frame:
-                                raise SceneGeneratorError(
-                                    f"Character '{char}' appears in scenes {current_scene_num} and {next_scene_num}, "
-                                    f"but scene {intermediate_scene_num} breaks the continuity chain with "
-                                    f"uses_previous_end_frame=false. For character consistency, all scenes between "
-                                    f"character appearances must be continuous (uses_previous_end_frame=true)."
-                                )
-
-                    # If adjacent, next scene must use previous end frame
-                    elif next_scene_num == current_scene_num + 1:
-                        next_scene = next(s for s in scenes if s.scene_number == next_scene_num)
-                        if not next_scene.uses_previous_end_frame:
-                            raise SceneGeneratorError(
-                                f"Character '{char}' appears in consecutive scenes {current_scene_num} and {next_scene_num}, "
-                                f"but scene {next_scene_num} has uses_previous_end_frame=false. For character consistency, "
-                                f"the next scene must use the previous end frame (uses_previous_end_frame=true)."
-                            )
+            # Rule 3: All reference_images must exist in character_designs
+            for ref_char in scene.reference_images:
+                if ref_char not in available_characters:
+                    raise SceneGeneratorError(
+                        f"Scene {scene.scene_number}: References character '{ref_char}' but this character "
+                        f"is not in character_designs. Available characters: {sorted(available_characters)}"
+                    )

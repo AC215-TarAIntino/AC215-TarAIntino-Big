@@ -3,7 +3,7 @@ Movie analyzer for extracting key information for trailer generation.
 """
 
 from typing import Dict, List
-from .schemas import GeneratedMovie, MovieAnalysis, CastMember
+from .schemas import GeneratedMovie, MovieAnalysis, CastMember, CharacterDesign
 
 
 class MovieAnalyzer:
@@ -214,5 +214,33 @@ class MovieAnalyzer:
             "\n--- DIRECTOR ---",
             f"{self.movie.director_name}: {self.movie.director_background}"
         ])
+
+        return "\n".join(context_parts)
+
+    def format_character_designs_for_llm(self) -> str:
+        """
+        Format character information for LLM to generate character designs.
+
+        Returns:
+            Formatted string for LLM context
+        """
+        context_parts = [
+            "## CHARACTER DESIGNS TO GENERATE",
+            "\nGenerate character designs for the top 4 main characters.",
+            "\nFor EACH character design, you must provide:",
+            "1. character_name: Use format 'FirstName_LastName' (e.g., 'Dr_Elara_Vance')",
+            "2. image_generation_prompt: 6-8 sentence COMPLETE prompt for generating reference image on WHITE BACKGROUND",
+            "3. brief_identifier: 3-5 words for use in video prompts (e.g., 'slender woman, late 30s, dark hair')",
+            "4. visual_style: Determine from movie - options: 'hyper-realistic', '3D animated', 'hand-drawn 2D animation', 'claymation', etc.",
+            "\nCharacters from movie:\n"
+        ]
+
+        for i, member in enumerate(self.movie.cast[:4], 1):
+            context_parts.extend([
+                f"\n{i}. {member.character_name}",
+                f"   Physical: {member.physical_description}",
+                f"   Personality: {', '.join(member.personality_traits)}",
+                f"   Role: {member.role_description}"
+            ])
 
         return "\n".join(context_parts)

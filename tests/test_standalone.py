@@ -77,6 +77,15 @@ def display_trailer_summary(trailer_data: dict):
     print(f"\n📹 Total Duration: {trailer_data['total_duration']} seconds")
     print(f"🎞️  Number of Scenes: {len(trailer_data['scenes'])}")
 
+    # Display character designs
+    if trailer_data.get('character_designs'):
+        print(f"\n👥 Character Designs ({len(trailer_data['character_designs'])} characters):")
+        for design in trailer_data['character_designs']:
+            print(f"\n   📸 {design['character_name']}")
+            print(f"      Brief ID: {design['brief_identifier']}")
+            print(f"      Style: {design['visual_style']}")
+            print(f"      Prompt: {design['image_generation_prompt'][:80]}...")
+
     if trailer_data.get('narration_script'):
         print(f"\n🎙️  Narration Script:")
         print(f"   {trailer_data['narration_script']}")
@@ -93,17 +102,20 @@ def display_trailer_summary(trailer_data: dict):
 
     print(f"\n📋 Scene Breakdown:")
     for i, scene in enumerate(trailer_data['scenes']):
-        # Continuity indicator
-        if scene.get('uses_previous_end_frame', False):
-            continuity_icon = "🔗" # Linked/continuous
-            start_frame_status = "Uses previous end_frame"
+        # Reference images indicator
+        ref_images = scene.get('reference_images', [])
+        if ref_images:
+            icon = "👤" if len(ref_images) == 1 else f"👥"
+            ref_status = f"Using {len(ref_images)} reference image(s)"
         else:
-            continuity_icon = "✂️" if i > 0 else "🎬"  # Cut (or start)
-            start_frame_status = "New start_frame"
+            icon = "🎬"
+            ref_status = "No reference images"
 
-        print(f"\n   {continuity_icon} Scene {scene['scene_number']}: {scene['scene_type'].upper()} ({scene['duration_seconds']}s)")
+        print(f"\n   {icon} Scene {scene['scene_number']}: {scene['scene_type'].upper()} ({scene['duration_seconds']}s)")
         print(f"   Characters: {', '.join(scene['characters_present']) or 'None'}")
-        print(f"   Continuity: {start_frame_status}")
+        print(f"   References: {ref_status}")
+        if ref_images:
+            print(f"   Ref Images: {', '.join(ref_images)}")
         print(f"   Video Prompt: {scene['video_prompt'][:100]}...")
 
     print("\n" + "=" * 70)

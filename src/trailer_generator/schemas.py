@@ -73,6 +73,32 @@ class TrailerRequest(BaseModel):
 
 
 # Output schemas
+class CharacterDesign(BaseModel):
+    """Character design for reference image generation."""
+
+    character_name: str = Field(
+        ...,
+        description="Character name (used as filename, e.g., 'Dr_Elara_Vance')"
+    )
+
+    image_generation_prompt: str = Field(
+        ...,
+        description="COMPLETE prompt for generating character reference image on pure white background. Must specify: visual style (hyper-realistic/animated/etc matching movie), full physical description (height, build, age, hair, eyes, features, clothing), pose (standing, facing camera, neutral expression), lighting (soft, even, no harsh shadows). Minimum 6-8 sentences."
+    )
+
+    brief_identifier: str = Field(
+        ...,
+        description="Short 3-5 word identifier for use in video prompts",
+        examples=["slender woman, late 30s, dark hair", "imposing man, grey hair, military bearing"]
+    )
+
+    visual_style: str = Field(
+        ...,
+        description="Visual style matching movie aesthetic",
+        examples=["hyper-realistic", "3D animated", "hand-drawn 2D animation", "claymation"]
+    )
+
+
 class TrailerScene(BaseModel):
     """A single scene in the trailer."""
 
@@ -94,34 +120,34 @@ class TrailerScene(BaseModel):
         examples=["establishing", "character_introduction", "action", "dialogue", "tension", "climax_tease"]
     )
 
-    uses_previous_end_frame: bool = Field(
+    start_frame_prompt: str = Field(
         ...,
-        description="If true, this scene starts with the previous scene's end frame (continuous action). When true, start_frame_prompt must be null."
-    )
-
-    start_frame_prompt: Optional[str] = Field(
-        None,
-        description="SELF-CONTAINED prompt for start frame image generation. Must include ALL context: full character physical descriptions, absolute positioning, complete lighting/color details, setting. NO references to previous scenes. Null when uses_previous_end_frame=true. Minimum 4-5 sentences."
+        description="SELF-CONTAINED prompt for start frame image generation. Must include ALL context: full physical descriptions of ANY characters (using brief_identifier), absolute positioning, complete lighting/color details, setting. NO references to other scenes. Minimum 4-5 sentences."
     )
 
     end_frame_prompt: str = Field(
         ...,
-        description="SELF-CONTAINED prompt for end frame image generation. Must include ALL context independently. NO references to previous content or progression. Minimum 4-5 sentences."
+        description="SELF-CONTAINED prompt for end frame image generation. Must include ALL context independently. When characters present, identify using brief_identifier. NO references to other scenes. Minimum 4-5 sentences."
     )
 
     video_prompt: str = Field(
         ...,
-        description="SELF-CONTAINED comprehensive prompt for VEO 3.1 video generation. Must include: camera movement, motion direction, pacing, cinematography, specific actions/events, atmosphere, AND audio design naturally integrated (sound effects, music, dialogue, ambient sounds). NO references to previous scenes. Minimum 6-8 sentences."
+        description="SELF-CONTAINED comprehensive prompt for VEO 3.1 video generation. CRITICAL: When characters present, identify each as 'CharacterName (brief_identifier)' e.g., 'Dr. Vance (slender woman, late 30s, dark hair)'. Must include: camera movement, motion direction, pacing, cinematography, specific actions/events, atmosphere, AND audio design naturally integrated. NO references to other scenes. Minimum 6-8 sentences."
+    )
+
+    reference_images: List[str] = Field(
+        default_factory=list,
+        description="List of character names (matching character_designs) to pass as VEO 3.1 reference images. Max 3. Empty list = no reference images. When not empty, duration_seconds MUST be 8."
     )
 
     characters_present: List[str] = Field(
         default_factory=list,
-        description="List of character names appearing in this scene (metadata for consistency tracking, not sent to models)"
+        description="List of all character names in this scene (metadata for tracking, not sent to models)"
     )
 
     continuity_note: Optional[str] = Field(
         None,
-        description="Metadata note about continuity with previous/next scene (not sent to models)"
+        description="Optional metadata note about this scene (not sent to models)"
     )
 
 
@@ -162,6 +188,11 @@ class TrailerBreakdown(BaseModel):
     total_duration: int = Field(
         ...,
         description="Total trailer duration in seconds"
+    )
+
+    character_designs: List[CharacterDesign] = Field(
+        ...,
+        description="Character design prompts for generating reference images (generated BEFORE scenes)"
     )
 
     scenes: List[TrailerScene] = Field(
