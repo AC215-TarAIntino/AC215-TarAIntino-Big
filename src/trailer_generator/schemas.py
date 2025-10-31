@@ -94,34 +94,34 @@ class TrailerScene(BaseModel):
         examples=["establishing", "character_introduction", "action", "dialogue", "tension", "climax_tease"]
     )
 
-    start_frame_prompt: str = Field(
+    uses_previous_end_frame: bool = Field(
         ...,
-        description="Detailed prompt for generating the starting frame image. Includes: character physical descriptions, lighting, composition, color palette, camera angle. Minimum 4-5 sentences."
+        description="If true, this scene starts with the previous scene's end frame (continuous action). When true, start_frame_prompt must be null."
+    )
+
+    start_frame_prompt: Optional[str] = Field(
+        None,
+        description="SELF-CONTAINED prompt for start frame image generation. Must include ALL context: full character physical descriptions, absolute positioning, complete lighting/color details, setting. NO references to previous scenes. Null when uses_previous_end_frame=true. Minimum 4-5 sentences."
     )
 
     end_frame_prompt: str = Field(
         ...,
-        description="Detailed prompt for generating the ending frame image. Should show progression from start frame. Minimum 4-5 sentences."
+        description="SELF-CONTAINED prompt for end frame image generation. Must include ALL context independently. NO references to previous content or progression. Minimum 4-5 sentences."
     )
 
     video_prompt: str = Field(
         ...,
-        description="Comprehensive prompt for VEO 3.1 video generation. Must include: camera movement, motion direction, pacing, cinematography style, specific actions/events, atmosphere. Minimum 5-7 sentences with explicit motion descriptions."
+        description="SELF-CONTAINED comprehensive prompt for VEO 3.1 video generation. Must include: camera movement, motion direction, pacing, cinematography, specific actions/events, atmosphere, AND audio design naturally integrated (sound effects, music, dialogue, ambient sounds). NO references to previous scenes. Minimum 6-8 sentences."
     )
 
     characters_present: List[str] = Field(
         default_factory=list,
-        description="List of character names appearing in this scene (for consistency tracking)"
-    )
-
-    audio_notes: str = Field(
-        ...,
-        description="Audio design notes: sound effects, music style, dialogue snippets, ambient sounds"
+        description="List of character names appearing in this scene (metadata for consistency tracking, not sent to models)"
     )
 
     continuity_note: Optional[str] = Field(
         None,
-        description="Special note about continuity with previous/next scene"
+        description="Metadata note about continuity with previous/next scene (not sent to models)"
     )
 
 
@@ -174,8 +174,8 @@ class TrailerBreakdown(BaseModel):
         description="Full narration script for ElevenLabs (if requested)"
     )
 
-    continuity_guide: str = Field(
-        ...,
+    continuity_guide: Optional[str] = Field(
+        None,
         description="Guide for maintaining character consistency across scenes, including physical descriptions"
     )
 

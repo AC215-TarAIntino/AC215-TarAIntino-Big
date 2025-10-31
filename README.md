@@ -16,11 +16,81 @@ This service takes a complete movie description (from `mcp-screenplay` or simila
 ## Key Features
 
 - **Character Consistency Management**: Intelligent scene structuring to maintain character appearance consistency across trailer
-- **Detailed Prompts**: 5-7 sentence video prompts with explicit motion, camera movement, and cinematography instructions
-- **Continuity Tracking**: End frame of scene N becomes start frame of scene N+1
+- **Self-Contained Prompts**: Every prompt is completely independent with full context - no references to previous scenes
+- **Continuity System**: `uses_previous_end_frame` flag tells orchestrator when to reuse frames vs. generate new ones
+- **Audio Integration**: Sound design naturally woven into video prompts (VEO 3.1 generates audio)
+- **Validation Logic**: Ensures character consistency rules are followed
 - **Flexible Duration**: Generate 20-60 second trailers
 - **Multiple Interfaces**: REST API, Python library, or standalone CLI
 - **Docker Ready**: Easy containerization and deployment
+
+## How It Works: The Continuity System
+
+**Critical Concept**: Video generation models (VEO 3.1) have NO MEMORY between API calls. Each prompt must be completely self-contained.
+
+### Frame Continuity
+
+The service generates two types of scenes:
+
+1. **New Scene** (`uses_previous_end_frame: false`)
+   - Has a complete `start_frame_prompt`
+   - Represents a CUT in the trailer
+   - Orchestrator generates new start frame image
+
+2. **Continuous Scene** (`uses_previous_end_frame: true`)
+   - Has `start_frame_prompt: null`
+   - Continues from previous scene
+   - Orchestrator reuses previous `end_frame` as `start_frame`
+
+### Character Consistency Rule
+
+**If a character appears in multiple scenes, those scenes MUST be continuous.**
+
+Why? VEO 3.1 maintains character consistency through frame-to-frame continuity (end_frame → start_frame). Without this chain, the character will look different.
+
+**Example - Correct:**
+```
+Scene 1: Dr. Vance alone (uses_previous_end_frame: false) ✅ NEW
+Scene 2: Dr. Vance + Joric (uses_previous_end_frame: true) 🔗 CONTINUOUS
+Scene 3: Dr. Vance alone (uses_previous_end_frame: true) 🔗 CONTINUOUS
+Scene 4: General Kade (uses_previous_end_frame: false) ✅ CUT (new character)
+```
+
+**Example - Wrong:**
+```
+Scene 1: Dr. Vance (uses_previous_end_frame: false)
+Scene 2: Joric only (uses_previous_end_frame: false) ✂️ CUT
+Scene 3: Dr. Vance again (uses_previous_end_frame: false) ❌ WRONG!
+   → Character can't look the same across a cut!
+```
+
+### Self-Contained Prompts
+
+Every prompt includes COMPLETE context:
+
+❌ **Bad** (references previous):
+```
+"The camera has risen higher, revealing more of the facility..."
+```
+
+✅ **Good** (self-contained):
+```
+"Aerial view from 150 meters altitude of Project Cacophony research facility,
+a 300-meter tall brutalist grey structure rising from bioluminescent jungle on
+the moon Veridia..."
+```
+
+### Audio Integration
+
+Audio is integrated naturally into `video_prompt` (not separate):
+
+```
+"...Dr. Vance's fingers trace patterns in the glowing holographic display while
+the lab equipment emits a low 60Hz electronic hum. The Chrysalids begin pulsing,
+producing harmonic crystalline tones building from 440Hz to 880Hz. She whispers:
+'It's not a weapon... it's a language.' The tones crescendo, mixing with her
+controlled breathing."
+```
 
 ## Architecture
 
@@ -237,12 +307,23 @@ Generate a complete trailer scene breakdown.
         "scene_number": 1,
         "duration_seconds": 6,
         "scene_type": "establishing",
-        "start_frame_prompt": "Detailed 4-5 sentence description...",
-        "end_frame_prompt": "Detailed 4-5 sentence description...",
-        "video_prompt": "Detailed 5-7 sentence prompt with explicit camera movement...",
+        "uses_previous_end_frame": false,
+        "start_frame_prompt": "SELF-CONTAINED 4-5 sentence description with full context...",
+        "end_frame_prompt": "SELF-CONTAINED 4-5 sentence description...",
+        "video_prompt": "SELF-CONTAINED 6-8 sentence prompt with camera movement AND audio naturally integrated...",
         "characters_present": ["Character Name"],
-        "audio_notes": "Sound design description...",
-        "continuity_note": "Optional note"
+        "continuity_note": "Optional metadata note"
+      },
+      {
+        "scene_number": 2,
+        "duration_seconds": 7,
+        "scene_type": "character_introduction",
+        "uses_previous_end_frame": true,
+        "start_frame_prompt": null,
+        "end_frame_prompt": "SELF-CONTAINED description...",
+        "video_prompt": "SELF-CONTAINED with audio...",
+        "characters_present": ["Character Name"],
+        "continuity_note": "Continuous from scene 1"
       }
     ],
     "narration_script": "Compelling narration text...",
@@ -369,18 +450,33 @@ trailer_response = requests.post(
 trailer = trailer_response.json()["trailer"]
 
 # 3. Generate actual video (your orchestrator logic)
+previous_end_frame = None
+
 for scene in trailer["scenes"]:
-    # Generate start/end frames with DALL-E
-    start_img = generate_image(scene["start_frame_prompt"])
+    # Handle start frame based on continuity
+    if scene["uses_previous_end_frame"]:
+        # Reuse previous scene's end frame (maintains character consistency)
+        start_img = previous_end_frame
+        print(f"Scene {scene['scene_number']}: Reusing previous end_frame for continuity")
+    else:
+        # Generate new start frame (this is a CUT)
+        start_img = generate_image(scene["start_frame_prompt"])
+        print(f"Scene {scene['scene_number']}: Generated new start_frame (CUT)")
+
+    # Always generate end frame
     end_img = generate_image(scene["end_frame_prompt"])
 
     # Generate video with VEO 3.1
+    # Note: video_prompt already includes audio design
     video = generate_video(
         prompt=scene["video_prompt"],
         start_frame=start_img,
         end_frame=end_img,
         duration=scene["duration_seconds"]
     )
+
+    # Save for next iteration
+    previous_end_frame = end_img
 
     # Collect videos...
 ```

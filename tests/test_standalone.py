@@ -92,9 +92,18 @@ def display_trailer_summary(trailer_data: dict):
         print(f"   {char}: Scenes {', '.join(map(str, scenes))}")
 
     print(f"\n📋 Scene Breakdown:")
-    for scene in trailer_data['scenes']:
-        print(f"\n   Scene {scene['scene_number']}: {scene['scene_type'].upper()} ({scene['duration_seconds']}s)")
+    for i, scene in enumerate(trailer_data['scenes']):
+        # Continuity indicator
+        if scene.get('uses_previous_end_frame', False):
+            continuity_icon = "🔗" # Linked/continuous
+            start_frame_status = "Uses previous end_frame"
+        else:
+            continuity_icon = "✂️" if i > 0 else "🎬"  # Cut (or start)
+            start_frame_status = "New start_frame"
+
+        print(f"\n   {continuity_icon} Scene {scene['scene_number']}: {scene['scene_type'].upper()} ({scene['duration_seconds']}s)")
         print(f"   Characters: {', '.join(scene['characters_present']) or 'None'}")
+        print(f"   Continuity: {start_frame_status}")
         print(f"   Video Prompt: {scene['video_prompt'][:100]}...")
 
     print("\n" + "=" * 70)
