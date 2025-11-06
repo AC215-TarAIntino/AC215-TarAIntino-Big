@@ -1,12 +1,4 @@
-#### Project Milestone 2 Organization
-
-## Updates for Milestone 3 from Milestone 2 feedback
-- Slides of midterm presentation added in `hand-ins/reports/`.
-- Updated project architecture diagrams in `hand-ins/diagrams/` and `hand-ins/references/` with final modelling choices.
-- Corrected access to LLM with GCS permission issues.
-- Docker-compose file added for chromaDB setup.
-- Added ChromaCB folder to the gitignore.
-
+#### Project Milestone 4 Organization
 
 ```
 ├── README.md
@@ -43,7 +35,7 @@
         └── pyproject.toml
 ```
 
-# AC215 - Milestone2 - TarAIntino
+# AC215 - Milestone4 - TarAIntino
 
 **Team Members**
 Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vrancic
@@ -53,8 +45,6 @@ TarAIntino
 
 **Project**
 In this project, we aim to develop an avant-garde end-to-end AI movie trailer generation application. The app will feature an adaptive, Akinator-style quiz to elicit user preferences and include a modular pipeline connecting those preferences to generative APIs. Users can simply answer a short interactive quiz, and the app will produce a personalized, AI-generated movie trailer that reflects their cinematic taste. Additionally, a storytelling and trailer-planning agent will allow users to explore customized narratives and styles. It will be powered by a large language model for narrative generation and diffusion-based video models, making it a specialist in personalized cinematic creation.
-
-### Milestone2 ###
 
 **Hand-ins**
 This folder contains for the respective milestones:
@@ -109,25 +99,14 @@ You are now ready to run the containers below.
 **`src/datapipeline/similarity.py`**
    This script computes cosine similarity between movies embeddings from the ChromaDB vector database.
 
+**`src/datapipeline/tagquiz.py`**
+   This script implements the scale of 1 to 10 tag preference quiz.
+
+**`src/datapipeline/moviequiz.py`**
+   This script implements the movie A vs B comparison quiz. We will not be using this quiz version in the end product.
+
 **Deliverables for Data Pipeline Container**
 - The logs of running the above scripts can be found in the `src/datapipeline/logs` folder. 
 - The ChromaDB database is stored in the `src/datapipeline/chroma_db` folder.
 
-**LLM container**
-1. A container to be able to chat/have access to a running llm (using vertex ai).
-2. The **`src/llm/prompting.py`** file enables the access to a chat box to the LLM in your terminal.
-3. To access it:
-- Run within the `src/llm/` folder (change directory in your terminal)
-- Run `gcloud auth application-default login`
-- Then, run `gcloud config set project llm-service-account-474620`
-- IF you get the warning `ADC does not have the "serviceusage.services.use" permission on this project`, ask Robert Debbas for permission access before pursuing.
-- Check with `gcloud config list`, you should see `project = llm-service-account-474620` and `account = your@email.com`
-- Finally, check `gcloud services list --enabled | grep aiplatform` should return `aiplatform.googleapis.com`
-- And check `gcloud auth application-default set-quota-project llm-service-account-474620`
-- You are now ready to run the llm container in the instructions at the end of the `prompting.py` file.
-
-**Deliverables for LLM Container**
-- The logs of running the above prompting script can be found in the `src/llm/logs` folder. 
-
-**Models container** --> Not necessary for milestone 2 yet (empty)
 ...
