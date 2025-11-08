@@ -24,11 +24,6 @@ secrets/*
 # Remove accidentally committed ADC key
 src/adc.json
 
-# Remove uv.lock file
-uv.lock
-src/uv.lock
-**/uv.lock
-
 # ChromaDB local storage 
 chroma_db/
 src/datapipeline/chroma_db/
