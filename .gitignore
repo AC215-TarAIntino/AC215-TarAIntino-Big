@@ -25,7 +25,9 @@ secrets/*
 src/adc.json
 
 # Remove uv.lock file
+uv.lock
 src/uv.lock
+**/uv.lock
 
 # ChromaDB local storage 
 chroma_db/
