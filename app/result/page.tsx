@@ -9,12 +9,9 @@ import { TasteProfile } from "@/components/result/TasteProfile";
 import { Download, RotateCcw, Share2, Sparkles } from "lucide-react";
 import JSConfetti from "js-confetti";
 
-interface SwipeHistory {
-  direction: string;
-  movie: {
-    poster: string;
-    tags: string[];
-  };
+interface TagRating {
+  tag: string;
+  rating: number;
 }
 
 export default function ResultPage() {
@@ -47,7 +44,7 @@ export default function ResultPage() {
     // Load quiz results from sessionStorage
     const results = sessionStorage.getItem("quizResults");
     if (results) {
-      const swipeHistory = JSON.parse(results);
+      const tagRatings: TagRating[] = JSON.parse(results);
 
       // Generate mock title based on preferences
       const titles = [
@@ -64,36 +61,18 @@ export default function ResultPage() {
       const randomTitle = titles[Math.floor(Math.random() * titles.length)];
       setGeneratedTitle(randomTitle);
 
-      // Use the first liked/loved movie's poster
-      const likedMovie = swipeHistory.find(
-        (s: SwipeHistory) => s.direction === "right" || s.direction === "up"
-      );
-      if (likedMovie) {
-        setPosterUrl(likedMovie.movie.poster);
-      } else {
-        // Fallback poster
-        setPosterUrl("https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop");
-      }
+      // Use a cinematic poster for the video player
+      setPosterUrl("https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop");
 
-      // Calculate taste profile
-      const tagScores: { [key: string]: number } = {};
-      swipeHistory.forEach((swipe: SwipeHistory) => {
-        const weight =
-          swipe.direction === "up" ? 2 : swipe.direction === "right" ? 1 : 0;
-
-        if (weight > 0) {
-          swipe.movie.tags.forEach((tag: string) => {
-            tagScores[tag] = (tagScores[tag] || 0) + weight;
-          });
-        }
-      });
-
-      // Normalize scores
-      const maxScore = Math.max(...Object.values(tagScores));
-      const profile = Object.entries(tagScores).map(([name, score]) => ({
-        name,
-        score: score / maxScore,
+      // Calculate taste profile directly from ratings (no weighting needed)
+      const maxScore = 10; // Ratings are already 0-10
+      const profile = tagRatings.map((rating) => ({
+        name: rating.tag,
+        score: rating.rating / maxScore, // Normalize to 0-1 for the chart
       }));
+
+      // Sort by score descending
+      profile.sort((a, b) => b.score - a.score);
 
       setTasteProfile(profile);
     }
@@ -196,9 +175,9 @@ export default function ResultPage() {
             </div>
 
             <p className="text-white/80 leading-relaxed">
-              An AI-generated cinematic experience crafted from your unique preferences.
-              This trailer combines elements of your favorite genres, moods, and styles
-              into a personalized visual story.
+              An AI-generated cinematic experience crafted from your tag preferences.
+              This trailer combines your favorite genres, moods, and storytelling elements
+              into a personalized visual masterpiece.
             </p>
 
             {/* Stats */}

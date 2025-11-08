@@ -1,201 +1,254 @@
 "use client";
 
-import { motion, useMotionValue, useTransform } from "framer-motion";
-import { useGesture } from "@use-gesture/react";
-import { Movie } from "@/lib/data/movies";
-import { Heart, X, TrendingUp, TrendingDown } from "lucide-react";
-import { useState } from "react";
-import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { formatTagForDisplay } from "@/lib/data/tags";
+import { useState, useEffect } from "react";
+import { Minus, Plus, ChevronRight, Sparkles } from "lucide-react";
 
 interface SwipeCardProps {
-  movie: Movie;
-  onSwipe: (direction: "left" | "right" | "up" | "down") => void;
+  tag: string;
+  onRating: (rating: number) => void;
   style?: React.CSSProperties;
   index: number;
 }
 
-export function SwipeCard({ movie, onSwipe, style, index }: SwipeCardProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+export function SwipeCard({ tag, onRating, style, index }: SwipeCardProps) {
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Rotation based on horizontal drag (more subtle)
-  const rotate = useTransform(x, [-200, 200], [-15, 15]);
+  useEffect(() => {
+    // Detect mobile viewport
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
-  // Opacity for direction indicators
-  const opacityLeft = useTransform(x, [-120, -40, 0], [1, 0.3, 0]);
-  const opacityRight = useTransform(x, [0, 40, 120], [0, 0.3, 1]);
-  const opacityUp = useTransform(y, [-120, -40, 0], [1, 0.3, 0]);
-  const opacityDown = useTransform(y, [0, 40, 120], [0, 0.3, 1]);
+  const handleRatingSelect = (rating: number) => {
+    setSelectedRating(rating);
+  };
 
-  const bind = useGesture({
-    onDrag: ({ movement: [mx, my], dragging }) => {
-      setIsDragging(dragging ?? false);
-      x.set(mx);
-      y.set(my);
-    },
-    onDragEnd: ({ movement: [mx, my], velocity: [vx, vy] }) => {
-      setIsDragging(false);
+  const handleStepperChange = (delta: number) => {
+    const newRating = Math.max(0, Math.min(10, (selectedRating ?? 5) + delta));
+    setSelectedRating(newRating);
+  };
 
-      const threshold = 80;
-      const velocityThreshold = 0.4;
+  const handleNext = () => {
+    if (selectedRating !== null) {
+      onRating(selectedRating);
+    }
+  };
 
-      // Check for strong vertical swipes first
-      if (Math.abs(my) > Math.abs(mx)) {
-        if (my < -threshold || vy < -velocityThreshold) {
-          // Swipe up - Love it!
-          onSwipe("up");
-          return;
-        } else if (my > threshold || vy > velocityThreshold) {
-          // Swipe down - Hate it!
-          onSwipe("down");
-          return;
-        }
-      }
+  // Get color based on rating (0=cool blue, 10=hot magenta)
+  const getRatingColor = (rating: number) => {
+    const colors = [
+      "#3b82f6", // 0 - blue-500
+      "#60a5fa", // 1 - blue-400
+      "#6366f1", // 2 - indigo-500
+      "#8b5cf6", // 3 - violet-500
+      "#a855f7", // 4 - purple-500
+      "#c026d3", // 5 - fuchsia-600
+      "#d946ef", // 6 - fuchsia-500
+      "#e879f9", // 7 - fuchsia-400
+      "#f0abfc", // 8 - fuchsia-300
+      "#f9a8d4", // 9 - pink-300
+      "#ec4899", // 10 - pink-500
+    ];
+    return colors[rating];
+  };
 
-      // Check horizontal swipes
-      if (mx < -threshold || vx < -velocityThreshold) {
-        // Swipe left - Dislike
-        onSwipe("left");
-      } else if (mx > threshold || vx > velocityThreshold) {
-        // Swipe right - Like
-        onSwipe("right");
-      } else {
-        // Return to center
-        x.set(0);
-        y.set(0);
-      }
-    },
-  });
+  const getRatingGradient = (rating: number) => {
+    if (rating <= 3) return "from-blue-500 to-indigo-500";
+    if (rating <= 6) return "from-purple-500 to-fuchsia-500";
+    return "from-fuchsia-500 to-pink-500";
+  };
 
-  const scale = isDragging ? 1.02 : 1;
+  const formattedTag = formatTagForDisplay(tag);
 
   return (
     <motion.div
-      style={{
-        x,
-        y,
-        rotate,
-        scale,
-        ...style,
-        touchAction: "none",
-      }}
-      className="absolute w-full h-full cursor-grab active:cursor-grabbing"
-      transition={{
-        scale: {
-          type: "spring",
-          stiffness: 400,
-          damping: 30,
-        },
-      }}
+      style={style}
+      className="absolute w-full h-full"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 25 }}
     >
-      <div {...bind()} className="w-full h-full">
-      <div className="relative w-full h-full rounded-3xl overflow-hidden glass-strong grain shadow-2xl">
-        {/* Movie Poster Background */}
-        <div className="absolute inset-0">
-          <Image
-            src={movie.poster}
-            alt={movie.title}
-            fill
-            className="object-cover"
-            priority={index < 3}
-          />
-          {/* Gradient Overlays */}
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(circle at center, transparent 0%, ${movie.color}40 100%)`,
-            }}
-          />
-        </div>
+      <div className="relative w-full h-full rounded-3xl overflow-hidden glass-strong grain shadow-2xl flex flex-col">
+        {/* Animated gradient background based on rating */}
+        <AnimatePresence mode="wait">
+          {selectedRating !== null && (
+            <motion.div
+              key={selectedRating}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.15 }}
+              exit={{ opacity: 0 }}
+              className={`absolute inset-0 bg-gradient-to-br ${getRatingGradient(selectedRating)}`}
+            />
+          )}
+        </AnimatePresence>
 
-        {/* Swipe Direction Indicators */}
-        <motion.div
-          className="absolute top-6 left-6 rotate-[-15deg]"
-          style={{ opacity: opacityLeft }}
-        >
-          <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/90 border-2 border-white shadow-lg">
-            <X className="w-5 h-5 text-white" strokeWidth={3} />
-            <span className="text-white font-bold text-lg">NOPE</span>
+        {/* Content */}
+        <div className="relative z-10 flex flex-col h-full p-8">
+          {/* Tag Display */}
+          <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
+            {/* Decorative icon */}
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", delay: 0.2 }}
+            >
+              <Sparkles className="w-12 h-12 text-gradient-gold" />
+            </motion.div>
+
+            {/* Tag name */}
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-4xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-lg px-4"
+            >
+              {formattedTag}
+            </motion.h2>
+
+            {/* Rating prompt */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="text-white/70 text-base sm:text-lg max-w-md"
+            >
+              How important is this in your movies?
+            </motion.p>
+
+            {/* Selected rating display */}
+            <AnimatePresence mode="wait">
+              {selectedRating !== null && (
+                <motion.div
+                  key={selectedRating}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  className="flex items-center gap-3"
+                >
+                  <div
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-xl"
+                    style={{
+                      background: `linear-gradient(135deg, ${getRatingColor(selectedRating)}, ${getRatingColor(Math.min(10, selectedRating + 1))})`,
+                    }}
+                  >
+                    {selectedRating}
+                  </div>
+                  <div className="text-left">
+                    <p className="text-white font-semibold text-lg">
+                      {selectedRating === 0 && "Not at all"}
+                      {selectedRating >= 1 && selectedRating <= 3 && "Slightly"}
+                      {selectedRating >= 4 && selectedRating <= 6 && "Moderately"}
+                      {selectedRating >= 7 && selectedRating <= 9 && "Very important"}
+                      {selectedRating === 10 && "Essential!"}
+                    </p>
+                    <p className="text-white/50 text-sm">Rating: {selectedRating}/10</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </motion.div>
 
-        <motion.div
-          className="absolute top-6 right-6 rotate-[15deg]"
-          style={{ opacity: opacityRight }}
-        >
-          <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-500/90 border-2 border-white shadow-lg">
-            <Heart className="w-5 h-5 text-white fill-white" strokeWidth={3} />
-            <span className="text-white font-bold text-lg">LIKE</span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="absolute top-6 left-1/2 -translate-x-1/2"
-          style={{ opacity: opacityUp }}
-        >
-          <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 border-2 border-white shadow-lg">
-            <TrendingUp className="w-5 h-5 text-white" strokeWidth={3} />
-            <span className="text-white font-bold text-lg">LOVE!</span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="absolute bottom-24 left-1/2 -translate-x-1/2"
-          style={{ opacity: opacityDown }}
-        >
-          <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-900/90 border-2 border-red-500 shadow-lg">
-            <TrendingDown className="w-5 h-5 text-red-500" strokeWidth={3} />
-            <span className="text-red-500 font-bold text-lg">HATE</span>
-          </div>
-        </motion.div>
-
-        {/* Movie Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 space-y-3">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 drop-shadow-lg line-clamp-2">
-              {movie.title}
-            </h2>
-            <p className="text-sm text-white/90 drop-shadow">
-              {movie.director} • {movie.year}
-            </p>
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-1.5">
-            {movie.tags.slice(0, 5).map((tag) => (
-              <motion.span
-                key={tag}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: Math.random() * 0.2 }}
-                className="px-2.5 py-0.5 rounded-full text-xs font-medium glass border border-white/20 text-white/90"
-              >
-                {tag}
-              </motion.span>
-            ))}
-          </div>
-        </div>
-
-        {/* Touch Hint (shows on first card) */}
-        {index === 0 && (
+          {/* Rating Input */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: isDragging ? 0 : 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="space-y-4"
           >
-            <div className="glass-strong px-6 py-3 rounded-xl">
-              <p className="text-white text-base font-medium">
-                👆 Drag to rate
-              </p>
+            {isMobile ? (
+              // Mobile: Stepper UI
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => handleStepperChange(-1)}
+                  disabled={selectedRating === 0}
+                  className="glass-strong p-4 rounded-2xl text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100"
+                >
+                  <Minus className="w-6 h-6" />
+                </button>
+
+                <div className="glass-strong px-8 py-4 rounded-2xl min-w-[100px] text-center">
+                  <p className="text-4xl font-bold text-white">
+                    {selectedRating ?? "—"}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleStepperChange(1)}
+                  disabled={selectedRating === 10}
+                  className="glass-strong p-4 rounded-2xl text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100"
+                >
+                  <Plus className="w-6 h-6" />
+                </button>
+              </div>
+            ) : (
+              // Desktop: Number buttons grid
+              <div className="grid grid-cols-11 gap-2">
+                {Array.from({ length: 11 }, (_, i) => (
+                  <motion.button
+                    key={i}
+                    onClick={() => handleRatingSelect(i)}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.6 + i * 0.03 }}
+                    className={`aspect-square rounded-xl font-bold text-lg transition-all ${
+                      selectedRating === i
+                        ? "text-white shadow-xl scale-110"
+                        : "glass-strong text-white/70 hover:text-white hover:scale-105 active:scale-95"
+                    }`}
+                    style={
+                      selectedRating === i
+                        ? {
+                            background: `linear-gradient(135deg, ${getRatingColor(i)}, ${getRatingColor(Math.min(10, i + 1))})`,
+                          }
+                        : {}
+                    }
+                  >
+                    {i}
+                  </motion.button>
+                ))}
+              </div>
+            )}
+
+            {/* Scale labels */}
+            <div className="flex items-center justify-between text-xs text-white/50 px-1">
+              <span>Not at all</span>
+              <span>Essential</span>
             </div>
+
+            {/* Next button */}
+            <motion.button
+              onClick={handleNext}
+              disabled={selectedRating === null}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="w-full glass-strong py-4 rounded-2xl flex items-center justify-center gap-2 text-white font-semibold text-lg hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              <span>Next Tag</span>
+              <ChevronRight className="w-5 h-5" />
+            </motion.button>
+          </motion.div>
+        </div>
+
+        {/* First card hint */}
+        {index === 0 && selectedRating === null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="absolute top-4 left-1/2 -translate-x-1/2 glass-strong px-4 py-2 rounded-xl pointer-events-none"
+          >
+            <p className="text-white/80 text-sm font-medium flex items-center gap-2">
+              <span>👇</span>
+              <span>Select a rating below</span>
+            </p>
           </motion.div>
         )}
-      </div>
       </div>
     </motion.div>
   );

@@ -3,33 +3,29 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SwipeCard } from "./SwipeCard";
-import { Movie } from "@/lib/data/movies";
 
 interface CardStackProps {
-  movies: Movie[];
-  onSwipe: (movie: Movie, direction: "left" | "right" | "up" | "down") => void;
+  tags: string[];
+  onRating: (tag: string, rating: number) => void;
   onComplete: () => void;
 }
 
-export function CardStack({ movies, onSwipe, onComplete }: CardStackProps) {
-  const [cards, setCards] = useState(movies);
-  const [removedCards, setRemovedCards] = useState<number[]>([]);
+export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
+  const [cards, setCards] = useState(tags);
 
-  const handleSwipe = (direction: "left" | "right" | "up" | "down") => {
+  const handleRating = (rating: number) => {
     if (cards.length === 0) return;
 
-    const currentCard = cards[0];
-    onSwipe(currentCard, direction);
+    const currentTag = cards[0];
+    onRating(currentTag, rating);
 
     // Remove the card with animation
-    setRemovedCards([...removedCards, currentCard.id]);
-
     setTimeout(() => {
       const newCards = cards.slice(1);
       setCards(newCards);
 
       if (newCards.length === 0) {
-        // All cards swiped, quiz complete
+        // All tags rated, quiz complete
         setTimeout(onComplete, 300);
       }
     }, 300);
@@ -42,7 +38,7 @@ export function CardStack({ movies, onSwipe, onComplete }: CardStackProps) {
     <div className="relative w-full h-full flex items-center justify-center">
       <div className="relative w-full max-w-sm aspect-[2/3]" style={{ perspective: "1200px" }}>
         <AnimatePresence mode="popLayout">
-          {visibleCards.map((movie, index) => {
+          {visibleCards.map((tag, index) => {
             const isTop = index === 0;
             const zIndex = visibleCards.length - index;
             const scale = 1 - index * 0.04;
@@ -51,7 +47,7 @@ export function CardStack({ movies, onSwipe, onComplete }: CardStackProps) {
 
             return (
               <motion.div
-                key={movie.id}
+                key={`${tag}-${index}`}
                 initial={{
                   scale: 0.9,
                   opacity: 0,
@@ -84,20 +80,16 @@ export function CardStack({ movies, onSwipe, onComplete }: CardStackProps) {
               >
                 {isTop ? (
                   <SwipeCard
-                    movie={movie}
-                    onSwipe={handleSwipe}
+                    tag={tag}
+                    onRating={handleRating}
                     index={index}
                   />
                 ) : (
-                  // Non-interactive cards behind
-                  <div className="w-full h-full rounded-3xl overflow-hidden glass-strong shadow-2xl pointer-events-none">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center"
-                      style={{
-                        backgroundImage: `url(${movie.poster})`,
-                        filter: "blur(2px) brightness(0.7)",
-                      }}
-                    />
+                  // Non-interactive cards behind showing tag preview
+                  <div className="w-full h-full rounded-3xl overflow-hidden glass-strong shadow-2xl pointer-events-none flex items-center justify-center">
+                    <p className="text-white/30 text-2xl font-bold px-8 text-center capitalize">
+                      {tag}
+                    </p>
                   </div>
                 )}
               </motion.div>
@@ -113,12 +105,12 @@ export function CardStack({ movies, onSwipe, onComplete }: CardStackProps) {
             className="absolute inset-0 flex items-center justify-center"
           >
             <div className="glass-strong rounded-3xl p-12 text-center">
-              <div className="text-6xl mb-4">🎬</div>
+              <div className="text-6xl mb-4">✨</div>
               <h3 className="text-2xl font-bold text-white mb-2">
-                All Done!
+                All Set!
               </h3>
               <p className="text-white/70">
-                Generating your personalized trailer...
+                Creating your personalized recommendations...
               </p>
             </div>
           </motion.div>
