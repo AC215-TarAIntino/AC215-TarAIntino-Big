@@ -12,10 +12,12 @@ interface CardStackProps {
 
 export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
   const [cards, setCards] = useState(tags);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleRating = (rating: number) => {
-    if (cards.length === 0) return;
+    if (cards.length === 0 || isProcessing) return;
 
+    setIsProcessing(true);
     const currentTag = cards[0];
     onRating(currentTag, rating);
 
@@ -23,6 +25,7 @@ export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
     setTimeout(() => {
       const newCards = cards.slice(1);
       setCards(newCards);
+      setIsProcessing(false);
 
       if (newCards.length === 0) {
         // All tags rated, quiz complete
@@ -47,7 +50,7 @@ export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
 
             return (
               <motion.div
-                key={`${tag}-${index}`}
+                key={tag}
                 initial={{
                   scale: 0.9,
                   opacity: 0,
@@ -83,6 +86,7 @@ export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
                     tag={tag}
                     onRating={handleRating}
                     index={index}
+                    disabled={isProcessing}
                   />
                 ) : (
                   // Non-interactive cards behind showing tag preview

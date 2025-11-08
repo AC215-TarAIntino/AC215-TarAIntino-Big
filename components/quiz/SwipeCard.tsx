@@ -10,9 +10,10 @@ interface SwipeCardProps {
   onRating: (rating: number) => void;
   style?: React.CSSProperties;
   index: number;
+  disabled?: boolean;
 }
 
-export function SwipeCard({ tag, onRating, style, index }: SwipeCardProps) {
+export function SwipeCard({ tag, onRating, style, index, disabled = false }: SwipeCardProps) {
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -34,7 +35,7 @@ export function SwipeCard({ tag, onRating, style, index }: SwipeCardProps) {
   };
 
   const handleNext = () => {
-    if (selectedRating !== null) {
+    if (selectedRating !== null && !disabled) {
       onRating(selectedRating);
     }
   };
@@ -165,7 +166,7 @@ export function SwipeCard({ tag, onRating, style, index }: SwipeCardProps) {
               <div className="flex items-center justify-center gap-4">
                 <button
                   onClick={() => handleStepperChange(-1)}
-                  disabled={selectedRating === 0}
+                  disabled={selectedRating === 0 || disabled}
                   className="glass-strong p-4 rounded-2xl text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100"
                 >
                   <Minus className="w-6 h-6" />
@@ -179,7 +180,7 @@ export function SwipeCard({ tag, onRating, style, index }: SwipeCardProps) {
 
                 <button
                   onClick={() => handleStepperChange(1)}
-                  disabled={selectedRating === 10}
+                  disabled={selectedRating === 10 || disabled}
                   className="glass-strong p-4 rounded-2xl text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100"
                 >
                   <Plus className="w-6 h-6" />
@@ -192,6 +193,7 @@ export function SwipeCard({ tag, onRating, style, index }: SwipeCardProps) {
                   <motion.button
                     key={i}
                     onClick={() => handleRatingSelect(i)}
+                    disabled={disabled}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.6 + i * 0.03 }}
@@ -199,7 +201,7 @@ export function SwipeCard({ tag, onRating, style, index }: SwipeCardProps) {
                       selectedRating === i
                         ? "text-white shadow-xl scale-110"
                         : "glass-strong text-white/70 hover:text-white hover:scale-105 active:scale-95"
-                    }`}
+                    } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                     style={
                       selectedRating === i
                         ? {
@@ -223,13 +225,13 @@ export function SwipeCard({ tag, onRating, style, index }: SwipeCardProps) {
             {/* Next button */}
             <motion.button
               onClick={handleNext}
-              disabled={selectedRating === null}
+              disabled={selectedRating === null || disabled}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
               className="w-full glass-strong py-4 rounded-2xl flex items-center justify-center gap-2 text-white font-semibold text-lg hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              <span>Next Tag</span>
+              <span>{disabled ? "Processing..." : "Next Tag"}</span>
               <ChevronRight className="w-5 h-5" />
             </motion.button>
           </motion.div>
