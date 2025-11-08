@@ -46,6 +46,8 @@ Follow the steps below to reproduce the pipeline end-to-end and play the quiz fr
 
 ## 1) Repository Layout
 
+
+```bash
 .
 ├── README.md
 ├── docker-compose.yml
@@ -73,6 +75,7 @@ Follow the steps below to reproduce the pipeline end-to-end and play the quiz fr
     ├── Dockerfile                # base image for both app + quiz-service
     ├── docker-shell.sh
     └── pyproject.toml
+```
 
 
 ## 2) Code Files Description
