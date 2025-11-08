@@ -55,24 +55,23 @@ Follow the steps below to reproduce the pipeline end-to-end and play the quiz fr
 │   ├── hand-ins/
 │   │   ├── references/
 │   │   └── reports/
-│   │       └── TarAIntino AI Movie Generation Infrastructure.pdf
 │   └── notebooks/
 │       ├── requirements.txt
 │       ├── venv_setup.sh
 │       └── eda.ipynb
 └── src/
     ├── datapipeline/
-    │   ├── logs/                 # prior_mean.npy, prior_cov.npy, tag index, etc.
-    │   ├── downloader.py         # loads data from GCS to ChromaDB
-    │   └── uploader.py           # uploads data to GCS
+    │   ├── logs/                
+    │   ├── downloader.py 
+    │   └── uploader.py           
     ├── quiz_service/
-    │   ├── api.py                # FastAPI app
-    │   ├── config.py
-    │   ├── model.py              # Bayesian preference update logic
+    │   ├── api.py                
+    │   ├── config.py              
+    │   ├── model.py              
     │   ├── state.py
     │   ├── schemas.py
     │   └── utils.py
-    ├── Dockerfile                # base image for both app + quiz-service
+    ├── Dockerfile                
     ├── docker-shell.sh
     └── pyproject.toml
 ```
@@ -105,29 +104,7 @@ The commands assume macOS or Linux with Docker, Python 3.10+, and `gcloud` insta
 
 ---
 
-# 3.1) Authenticate with Google Cloud
-
-You must authenticate locally so that the datapipeline container can access the bucket.
-
-```bash
-gcloud auth application-default login
-```
-
-Check that authentication succeeded:
-
-```bash
-gcloud auth application-default print-access-token
-```
-
-If it prints a token, you're good.
-
-Make sure your environment variable is set correctly:
-
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS="YOUR_PATH/tarantAIno/secrets/llm-service-account.json"
-```
-
-# 3.2) Build and Start the Docker Services
+# 3.1) Build and Start the Docker Services
 
 From the project root directory:
 
@@ -142,22 +119,36 @@ This starts:
 - rag-app (datapipeline environment)
 - quiz-service (FastAPI backend)
 
-# 3.3) Run the Datapipeline
+# 3.2) Run the Datapipeline
 
-Upload your dataset to GCS:
+For this part, make sure that the Google Cloud service account secret key is stored in `secrets/llm-service-account.json`.
+
+For your reference, to upload your dataset to GCS:
 
 ```bash
-docker exec -it rag-app bash
-python3 datapipeline/uploader.py
+docker compose exec -T app /opt/venv/bin/python -m datapipeline.uploader \
+  --local_dir /app/data/tag_genome \
+  --bucket tag-genome-data \
+  --prefix datasets/tag_genome
 ```
-
 Download the dataset from GCS into the container and populate ChromaDB with embeddings:
 
 ```bash
-python3 datapipeline/downloader.py
+docker compose exec -T app /opt/venv/bin/python -m datapipeline.downloader \
+  --to_chroma \
+  --bucket tag-genome-data \
+  --object_name datasets/tag_genome/tag_relevance.dat \
+  --movies_object_name datasets/tag_genome/movies.dat \
+  --collection movie_tag_relevance_cos
+
+docker compose exec -T app /opt/venv/bin.python -m datapipeline.downloader \
+  --to_tagmeta \
+  --bucket tag-genome-data \
+  --tags_object_name datasets/tag_genome/tags.dat \
+  --tagmeta_collection tag_metadata
 ```
 
-# 3.4) Use the Quiz API from Your Terminal
+# 3.3) Use the Quiz API from Your Terminal
 
 Start a Quiz Session:
 
@@ -199,4 +190,10 @@ Get movie recommendations:
 curl -s -X POST http://localhost:8082/recommend \
     -H 'content-type: application/json' \
     -d "{\"session_id\":\"$SESSION_ID\",\"top_n\":10}" | jq .
+```
+
+# 3.4) Restart if needed
+
+```bash
+docker compose down
 ```
