@@ -1,4 +1,4 @@
-# OS/editor
+# OS / Editor
 .DS_Store
 .vscode/
 .idea/
@@ -21,19 +21,27 @@ notebooks/taraintino_env
 secrets/*
 !secrets/.gitkeep
 
+# Remove accidentally committed ADC key
+src/adc.json
+
 # ChromaDB local storage 
 chroma_db/
 src/datapipeline/chroma_db/
+
+# Datapipeline logs (ignore outputs)
+src/datapipeline/logs/*.npy
+src/datapipeline/logs/*.npz
+src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
 
 # Local data (keep only the placeholder)
 src/dataweb/*
 !src/dataweb/.gitkeep
 
-# Not in milestone 2 yet
+# Models (not part of MS2 yet)
 models/*
 !models/.gitkeep
 
+# Duplicate safety
 __pycache__/
 *.pyc
 
-src/datapipeline/logs/*.npy

@@ -53,6 +53,4 @@ services:
     depends_on: [chroma, app]
 
 volumes:
-  chroma_data:
-
-
+  chroma_data: 

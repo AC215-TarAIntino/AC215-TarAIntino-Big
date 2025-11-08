@@ -35,24 +35,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-####################
-# BUILD YOUR IMAGE #
-####################
-
-# docker build -t rag-pipeline -f src/datapipeline/Dockerfile .
-
-######################
-# RUN YOUR CONTAINER #
-######################
-
-# src/datapipeline/docker-shell.sh
-
-#######################################################
-# EXECUTE WITHIN YOUR CONTAINER TO UPLOAD DATA TO GCS #
-#######################################################
-
-# python datapipeline/preprocess_rag.py \
-#   --local_dir /app/local-ds \
-#   --bucket "$GCS_BUCKET" \
-#   --prefix "$GCS_PREFIX"

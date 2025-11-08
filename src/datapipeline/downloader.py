@@ -343,25 +343,3 @@ def cli():
 
 if __name__ == "__main__":
     cli()
-
-
-####################
-# BUILD YOUR IMAGE #
-####################
-
-# docker build -t rag-pipeline -f src/datapipeline/Dockerfile .
-
-######################
-# RUN YOUR CONTAINER #
-######################
-
-# src/datapipeline/docker-shell.sh
-
-############################################################################################
-# EXECUTE WITHIN YOUR CONTAINER TO DOWNLOAD DATA FROM GCS AND STORE IN THE VECTOR DATABASE #
-############################################################################################
-
-# python datapipeline/dataloader.py --to_chroma 
-#                                   --bucket "$GCS_BUCKET" 
-#                                   --object_name "$TAG_REL_OBJECT" 
-#                                   --collection "$CHROMA_COLLECTION"

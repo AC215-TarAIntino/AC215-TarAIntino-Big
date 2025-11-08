@@ -1,42 +1,3 @@
-#### Project Milestone 4 Organization
-
-```
-├── README.md
-├── docker-compose.yml
-├── notebooks
-    ├── requirements.txt
-    ├── venv_setup.sh
-│   └── eda.ipynb
-├── hand-ins
-│  ├── references
-│  └── reports
-│      └── TarAIntino AI Movie Generation Infrastructure.pdf
-└── src
-    ├── datapipeline
-    │   ├── logs/
-    │   ├── chroma_db/
-    │   ├── Dockerfile
-    │   ├── dataloader.py
-    │   ├── docker-shell.sh
-    │   ├── preprocess_rag.py
-    │   └── pyproject.toml
-    ├── llm
-    │   ├── logs/
-    │   ├── Dockerfile
-    │   ├── prompting.py
-    │   ├── docker-shell.sh
-    │   └── pyproject.toml
-    └── models (empty for milestone 2)
-        ├── Dockerfile
-        ├── docker-shell.sh
-        ├── infer_model.py
-        ├── model_rag.py
-        ├── train_model.py
-        └── pyproject.toml
-```
-
-# AC215 - Milestone4 - TarAIntino
-
 **Team Members**
 Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vrancic
 
@@ -45,13 +6,6 @@ TarAIntino
 
 **Project**
 In this project, we aim to develop an avant-garde end-to-end AI movie trailer generation application. The app will feature an adaptive, Akinator-style quiz to elicit user preferences and include a modular pipeline connecting those preferences to generative APIs. Users can simply answer a short interactive quiz, and the app will produce a personalized, AI-generated movie trailer that reflects their cinematic taste. Additionally, a storytelling and trailer-planning agent will allow users to explore customized narratives and styles. It will be powered by a large language model for narrative generation and diffusion-based video models, making it a specialist in personalized cinematic creation.
-
-**Hand-ins**
-This folder contains for the respective milestones:
-- All reports in the `reports` folder.
-   - The report for this milestone is `TarAIntino AI Movie Generation Infrastructure.pdf`.
-- Any other documents are the `references` folder.
-   - The graph of the architecture of the project is `TarAIntino System Architecture 1.jpeg` and `TarAIntino System Architecture 2.jpeg` (it was too big in one image).
 
 **User Interface**
 There is no specific folder for the UI in this repo, as it is in a separate git repo.
@@ -85,28 +39,161 @@ Make sure you have gcloud set up on your machine before working with the followi
 - Exit (Ctrl + O, Enter, Ctrl + X) and run `source ~/.zshrc` to refresh your shell.
 You are now ready to run the containers below.
 
-**Data Pipeline Container**
-1. From the nature of our data, we will not have much of a preprocessing step necessary.
-2. A container prepares data for the RAG model, by populating the vector database and allows for computing similarity scores between movies.
-3. Instructions for loading the data in your container can be found at the end of the dataloader.py, preprocess_rag.py and similarity.py files respectively.
+# Data Pipleine and Quiz Service
 
-**`src/datapipeline/preprocess_rag.py`**
-   This script stores the data in the GCS bucket.
+This repo hosts the **data ingestion** (GCS ➜ ChromaDB) and the **preference-quiz API** (FastAPI).  
+Follow the steps below to reproduce the pipeline end-to-end and play the quiz from your terminal.
 
-**`src/datapipeline/dataloader.py`**
-   This script downloads the data from the GCS bucket, formats it to vectors and then stores it in the ChromaDB vector database.
+## 1) Repository Layout
 
-**`src/datapipeline/similarity.py`**
-   This script computes cosine similarity between movies embeddings from the ChromaDB vector database.
+.
+├── README.md
+├── docker-compose.yml
+├── MS2/
+│   ├── hand-ins/
+│   │   ├── references/
+│   │   └── reports/
+│   │       └── TarAIntino AI Movie Generation Infrastructure.pdf
+│   └── notebooks/
+│       ├── requirements.txt
+│       ├── venv_setup.sh
+│       └── eda.ipynb
+└── src/
+    ├── datapipeline/
+    │   ├── logs/                 # prior_mean.npy, prior_cov.npy, tag index, etc.
+    │   ├── downloader.py         # loads data from GCS to ChromaDB
+    │   └── uploader.py           # uploads data to GCS
+    ├── quiz_service/
+    │   ├── api.py                # FastAPI app
+    │   ├── config.py
+    │   ├── model.py              # Bayesian preference update logic
+    │   ├── state.py
+    │   ├── schemas.py
+    │   └── utils.py
+    ├── Dockerfile                # base image for both app + quiz-service
+    ├── docker-shell.sh
+    └── pyproject.toml
 
-**`src/datapipeline/tagquiz.py`**
-   This script implements the scale of 1 to 10 tag preference quiz.
 
-**`src/datapipeline/moviequiz.py`**
-   This script implements the movie A vs B comparison quiz. We will not be using this quiz version in the end product.
+## 2) Code Files Description
 
-**Deliverables for Data Pipeline Container**
-- The logs of running the above scripts can be found in the `src/datapipeline/logs` folder. 
-- The ChromaDB database is stored in the `src/datapipeline/chroma_db` folder.
+| File | Description |
+| :--- | :--- |
+| `src/datapipeline/uploader.py` | **Uploads a local directory (e.g., dataset files) to a specified Google Cloud Storage (GCS) bucket/prefix.** |
+| `src/datapipeline/downloader.py` | **Downloads data from GCS and handles ingestion:** it prepares movie-tag relevance data and tag metadata, storing both as vectors/records in the **ChromaDB** vector database. |
+| `src/quiz_service/config.py` | **Manages core service configuration,** including Chroma connection, collection names, predefined quiz tags, and cached loading of prior mean/covariance NumPy arrays. |
+| `src/quiz_service/model.py` | **Implements the Bayesian preference update logic** (`FullCovarianceTasteModel`) to refine the user's taste vector based on sequential tag-preference quiz answers. |
+| `src/quiz_service/schemas.py` | **Defines data structures** (using Pydantic `BaseModel`) for all API requests and responses (e.g., `StartRequest`, `Question`, `AnswerResponse`) to ensure data validation. |
+| `src/quiz_service/state.py` | **Manages in-memory session state** (`InMemoryStore`) to link a user's session ID with their active `FullCovarianceTasteModel` instance, providing session persistence. |
+| `src/quiz_service/utils.py` | **Provides utility functions** for the quiz service: computes and saves the **prior mean/covariance** from Chroma embeddings, and calculates **top-N recommendations** via cosine similarity. |
+| `src/quiz_service/api.py` | **The main FastAPI application:** exposes endpoints (`/quiz/start`, `/quiz/answer`, `/recommend`) to manage the user's quiz session and generate movie recommendations using the updated taste vector. |
 
-...
+
+## 3) Run the Code
+
+
+Below are the full instructions to:  
+1) upload and download data from GCS  
+2) populate ChromaDB  
+3) start the quiz  
+4) get recommendations
+
+The commands assume macOS or Linux with Docker, Python 3.10+, and `gcloud` installed.
+
+---
+
+# 3.1) Authenticate with Google Cloud
+
+You must authenticate locally so that the datapipeline container can access the bucket.
+
+```bash
+gcloud auth application-default login
+```
+
+Check that authentication succeeded:
+
+```bash
+gcloud auth application-default print-access-token
+```
+
+If it prints a token, you're good.
+
+Make sure your environment variable is set correctly:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="YOUR_PATH/tarantAIno/secrets/llm-service-account.json"
+```
+
+# 3.2) Build and Start the Docker Services
+
+From the project root directory:
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+This starts:
+
+- chroma (vector database)
+- rag-app (datapipeline environment)
+- quiz-service (FastAPI backend)
+
+# 3.3) Run the Datapipeline
+
+Upload your dataset to GCS:
+
+```bash
+docker exec -it rag-app bash
+python3 datapipeline/uploader.py
+```
+
+Download the dataset from GCS into the container and populate ChromaDB with embeddings:
+
+```bash
+python3 datapipeline/downloader.py
+```
+
+# 3.4) Use the Quiz API from Your Terminal
+
+Start a Quiz Session:
+
+```bash
+SESSION_JSON=$(curl -s -X POST http://localhost:8082/quiz/start \
+    -H 'content-type: application/json' \
+    -d '{"num_questions":5}')
+
+echo "$SESSION_JSON" | jq .
+```
+
+Extract IDs:
+
+```bash
+SESSION_ID=$(jq -r '.session_id' <<< "$SESSION_JSON")
+QID=$(jq -r '.question.question_id' <<< "$SESSION_JSON")
+```
+
+Answer questions in loop (for testing):
+
+```bash
+for i in {1..5}; do
+  RESP=$(curl -s -X POST http://localhost:8082/quiz/answer \
+      -H 'content-type: application/json' \
+      -d "{\"session_id\":\"$SESSION_ID\",\"question_id\":$QID,\"answer\":8}")
+
+  echo "$RESP" | jq .
+
+  STATUS=$(jq -r '.status' <<< "$RESP")
+  [[ "$STATUS" == "complete" ]] && break
+
+  QID=$(jq -r '.next_question.question_id' <<< "$RESP")
+done
+```
+
+Get movie recommendations:
+
+```bash
+curl -s -X POST http://localhost:8082/recommend \
+    -H 'content-type: application/json' \
+    -d "{\"session_id\":\"$SESSION_ID\",\"top_n\":10}" | jq .
+```
