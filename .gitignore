@@ -32,3 +32,8 @@ src/dataweb/*
 # Not in milestone 2 yet
 models/*
 !models/.gitkeep
+
+__pycache__/
+*.pyc
+
+src/datapipeline/logs/*.npy

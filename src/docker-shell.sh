@@ -6,7 +6,7 @@ set -euo pipefail
 
 ########## Config ##########
 IMAGE="rag-pipeline"
-DOCKERFILE="src/datapipeline/Dockerfile"
+DOCKERFILE="src/Dockerfile"  
 PROJECT_DEFAULT="llm-service-account-474620"
 
 # GCS defaults
@@ -16,7 +16,7 @@ TAG_REL_OBJECT_DEFAULT="${TAG_REL_OBJECT:-datasets/tag_genome/tag_relevance.dat}
 
 # Host dirs (quoted to support spaces)
 DATA_HOST_DIR="${DATA_HOST_DIR:-$PWD/src/dataweb/tag-genome}"   # -> /app/local-ds (ro)
-LOG_HOST_DIR="${LOG_HOST_DIR:-$PWD/src/datapipeline/logs}"      # -> /app/logs (rw)
+LOG_HOST_DIR="${LOG_HOST_DIR:-$PWD/src/datapipeline/logs}"
 mkdir -p "$DATA_HOST_DIR" "$LOG_HOST_DIR"
 
 # Chroma server config (HTTP)
@@ -36,7 +36,7 @@ BATCH_SIZE="${BATCH_SIZE:-2000}"
 # Build app image if missing
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   echo "[build] $IMAGE not found – building…"
-  docker build -t "$IMAGE" -f "$DOCKERFILE" .
+  docker build -t "$IMAGE" -f "$DOCKERFILE" src  
 fi
 
 # Optionally ensure a Chroma server is running on the host
@@ -106,7 +106,7 @@ echo "[info] Bucket                   : $BUCKET"
 echo "[info] Prefix                   : $PREFIX"
 echo "[info] Tag file object          : $TAG_REL_OBJECT"
 echo "[info] Local DS (ro)            : $DATA_HOST_DIR -> /app/local-ds"
-echo "[info] Logs (rw)                : $LOG_HOST_DIR -> /app/logs"
+echo "[info] Logs (rw)                : $LOG_HOST_DIR -> /app/datapipeline/logs"
 echo "[info] Creds in container       : $CRED_PATH"
 echo "[info] Chroma server (HTTP)     : ${CHROMA_SERVER_HOST_DEFAULT}:${CHROMA_SERVER_PORT_DEFAULT}"
 echo "[info] Chroma collection        : $CHROMA_COLLECTION"
@@ -125,8 +125,8 @@ exec docker run --rm -it \
   -e CHROMA_SERVER_PORT="$CHROMA_SERVER_PORT_DEFAULT" \
   -e CHROMA_COLLECTION="$CHROMA_COLLECTION" \
   -e BATCH_SIZE="$BATCH_SIZE" \
-  -e LOG_DIR="/app/logs" \
-  -v "$LOG_HOST_DIR:/app/logs" \
+  -e LOG_DIR="/app/datapipeline/logs" \
+  -v "$LOG_HOST_DIR:/app/datapipeline/logs" \
   $CRED_MOUNT \
   -v "$DATA_HOST_DIR:/app/local-ds:ro" \
   "$IMAGE" \
