@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SwipeCard } from "./SwipeCard";
 
@@ -11,31 +11,42 @@ interface CardStackProps {
 }
 
 export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
-  const [cards, setCards] = useState(tags);
+  const [displayedTags, setDisplayedTags] = useState(tags);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Update displayed tags when parent tags change
+  useEffect(() => {
+    if (!isProcessing) {
+      setDisplayedTags(tags);
+    }
+  }, [tags, isProcessing]);
+
   const handleRating = (rating: number) => {
-    if (cards.length === 0 || isProcessing) return;
+    if (displayedTags.length === 0 || isProcessing) return;
 
     setIsProcessing(true);
-    const currentTag = cards[0];
-    onRating(currentTag, rating);
+    const currentTag = displayedTags[0];
+    const isLastTag = displayedTags.length === 1;
 
-    // Remove the card with animation
+    // Remove the card from displayed list immediately for animation
     setTimeout(() => {
-      const newCards = cards.slice(1);
-      setCards(newCards);
+      setDisplayedTags(displayedTags.slice(1));
+    }, 50);
+
+    // Then notify parent after animation completes
+    setTimeout(() => {
+      onRating(currentTag, rating);
       setIsProcessing(false);
 
-      if (newCards.length === 0) {
-        // All tags rated, quiz complete
+      if (isLastTag) {
+        // Last tag was just rated, quiz complete
         setTimeout(onComplete, 300);
       }
-    }, 300);
+    }, 350);
   };
 
   // Show top 3 cards for depth effect
-  const visibleCards = cards.slice(0, 3);
+  const visibleCards = displayedTags.slice(0, 3);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
@@ -102,7 +113,7 @@ export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
         </AnimatePresence>
 
         {/* Empty state */}
-        {cards.length === 0 && (
+        {displayedTags.length === 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

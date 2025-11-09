@@ -30,6 +30,8 @@ export default function QuizPage() {
 
   const handleRating = (tag: string, rating: number) => {
     setRatings([...ratings, { tag, rating }]);
+    // Remove the rated tag from the list
+    setTags(tags.slice(1));
   };
 
   const handleComplete = () => {
