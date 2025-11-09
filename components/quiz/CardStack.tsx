@@ -50,7 +50,7 @@ export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="relative w-full max-w-sm aspect-[2/3]" style={{ perspective: "1200px" }}>
+      <div className="relative w-full max-w-[320px] sm:max-w-sm aspect-[2/3]" style={{ perspective: "1200px" }}>
         <AnimatePresence mode="popLayout">
           {visibleCards.map((tag, index) => {
             const isTop = index === 0;
@@ -89,6 +89,7 @@ export function CardStack({ tags, onRating, onComplete }: CardStackProps) {
                 style={{
                   zIndex,
                   transformStyle: "preserve-3d",
+                  pointerEvents: isTop ? "auto" : "none",
                 }}
                 className="absolute inset-0"
               >

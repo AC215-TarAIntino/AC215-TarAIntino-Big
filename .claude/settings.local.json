@@ -5,7 +5,12 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nPrepare for Vercel deployment\n\n- Remove --turbopack from build script for better Vercel compatibility\n- Add vercel.json configuration\n- Refine card stack animations and swipe gestures\n- Improve UI responsiveness and visual feedback\nEOF\n)\")",
       "Bash(npm run build:*)",
       "Bash(git commit:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(uv venv:*)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

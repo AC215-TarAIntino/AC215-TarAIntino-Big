@@ -102,7 +102,7 @@ export default function QuizPage() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.4 }}
-        className="relative z-10 flex-1 flex items-center justify-center px-6 py-4 min-h-0"
+        className="relative z-20 flex-1 flex items-center justify-center px-6 py-4 min-h-0"
       >
         <CardStack
           tags={tags}
