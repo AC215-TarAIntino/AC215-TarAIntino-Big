@@ -1,0 +1,15 @@
+# Core dependencies
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# HTTP client
+requests==2.32.3
+httpx>=0.28.1
+
+# OpenAI SDK (used for OpenRouter)
+openai>=1.50.0
+
+# Python version requirement
+# Requires Python 3.10+
