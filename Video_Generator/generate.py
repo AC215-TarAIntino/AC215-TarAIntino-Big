@@ -6,6 +6,28 @@ from typing import Dict, List
 import requests
 OUTPUT_DIR = Path('./output')
 from google import genai
+from google.cloud import storage
+
+OUTPUT_DIR = Path("./output")
+
+GCS_BUCKET_NAME = "tarantaino-output"
+GCS_PREFIX = "video_generator_outputs"
+
+
+def upload_to_gcs(local_path: Path, dest_path: str) -> None:
+    """
+    Upload a local file to the configured GCS bucket.
+
+    Args:
+        local_path: Path to the file on disk (e.g. output/refs/char.png)
+        dest_path:  Path inside the bucket (e.g. refs/char.png)
+    """
+    client = storage.Client()  # uses GOOGLE_APPLICATION_CREDENTIALS
+    bucket = client.bucket(GCS_BUCKET_NAME)
+    blob = bucket.blob(f"{GCS_PREFIX}/{dest_path}" if GCS_PREFIX else dest_path)
+    blob.upload_from_filename(str(local_path))
+    print(f"    ☁ Uploaded to gs://{GCS_BUCKET_NAME}/{blob.name}")
+
 
 
 def generate_character_references(
@@ -36,10 +58,13 @@ def generate_character_references(
         image_path.parent.mkdir(exist_ok=True)
         image_path.write_bytes(image_data)
 
+        upload_to_gcs(image_path, f"refs/{char_name}.png")
+
         character_refs[char_name] = str(image_path)
         print(f"    ✓ Saved to {image_path}")
 
     return character_refs
+
 
 
 def generate_scene_videos(
@@ -96,6 +121,8 @@ def generate_scene_videos(
         video_path = OUTPUT_DIR / f"scenes/scene_{scene_num:02d}.mp4"
         video_path.parent.mkdir(exist_ok=True)
         video_path.write_bytes(video_data)
+
+        upload_to_gcs(video_path, f"scenes/scene_{scene_num:02d}.mp4")
 
         scene_videos.append(video_path)
         print(f"    ✓ Saved to {video_path}")
@@ -227,5 +254,7 @@ def stitch_videos(video_paths: List[Path]) -> Path:
             '-c', 'copy',
             str(output_path)
         ], check=True)
+
+        upload_to_gcs(output_path, f"trailers/{output_path.name}")
 
         return output_path
