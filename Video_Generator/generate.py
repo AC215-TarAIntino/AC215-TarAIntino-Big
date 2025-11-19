@@ -1,7 +1,7 @@
 import base64
 from pathlib import Path
 import time
-from typing import Dict, List
+from typing import Dict, List, TypedDict
 
 import requests
 OUTPUT_DIR = Path('./output')
@@ -14,7 +14,16 @@ GCS_BUCKET_NAME = "tarantaino-output"
 GCS_PREFIX = "video_generator_outputs"
 
 
-def upload_to_gcs(local_path: Path, dest_path: str) -> None:
+class UploadResult(TypedDict):
+    gcs_uri: str
+    public_url: str
+
+
+class AssetInfo(UploadResult):
+    path: str
+
+
+def upload_to_gcs(local_path: Path, dest_path: str) -> UploadResult:
     """
     Upload a local file to the configured GCS bucket.
 
@@ -26,13 +35,18 @@ def upload_to_gcs(local_path: Path, dest_path: str) -> None:
     bucket = client.bucket(GCS_BUCKET_NAME)
     blob = bucket.blob(f"{GCS_PREFIX}/{dest_path}" if GCS_PREFIX else dest_path)
     blob.upload_from_filename(str(local_path))
-    print(f"    ☁ Uploaded to gs://{GCS_BUCKET_NAME}/{blob.name}")
+    gcs_uri = f"gs://{GCS_BUCKET_NAME}/{blob.name}"
+    print(f"    ☁ Uploaded to {gcs_uri}")
+    blob.make_public()
+    url = blob.public_url
+    print(f"    ☁ Public URL: {url}")
+    return {"gcs_uri": gcs_uri, "public_url": url}
 
 
 
 def generate_character_references(
     image_api_key, character_designs: List[dict]
-) -> Dict[str, str]:
+) -> Dict[str, AssetInfo]:
     """
     Generate character reference images from designs.
 
@@ -40,7 +54,7 @@ def generate_character_references(
         character_designs: List of CharacterDesign objects
 
     Returns:
-        Dict mapping character_name to image path
+        Dict mapping character_name to asset metadata
     """
     character_refs = {}
 
@@ -58,9 +72,12 @@ def generate_character_references(
         image_path.parent.mkdir(exist_ok=True)
         image_path.write_bytes(image_data)
 
-        upload_to_gcs(image_path, f"refs/{char_name}.png")
+        upload_result = upload_to_gcs(image_path, f"refs/{char_name}.png")
 
-        character_refs[char_name] = str(image_path)
+        character_refs[char_name] = {
+            "path": str(image_path),
+            **upload_result,
+        }
         print(f"    ✓ Saved to {image_path}")
 
     return character_refs
@@ -69,7 +86,7 @@ def generate_character_references(
 
 def generate_scene_videos(
     image_api_key, veo_api_key, scenes: List[dict], character_refs: Dict[str, str]
-) -> List[Path]:
+) -> List[AssetInfo]:
     """
     Generate videos for all scenes.
 
@@ -78,7 +95,7 @@ def generate_scene_videos(
         character_refs: Dict of character_name -> image_path
 
     Returns:
-        List of video file paths
+        List of asset metadata for the rendered scene videos
     """
     scene_videos = []
 
@@ -122,9 +139,14 @@ def generate_scene_videos(
         video_path.parent.mkdir(exist_ok=True)
         video_path.write_bytes(video_data)
 
-        upload_to_gcs(video_path, f"scenes/scene_{scene_num:02d}.mp4")
+        upload_result = upload_to_gcs(video_path, f"scenes/scene_{scene_num:02d}.mp4")
 
-        scene_videos.append(video_path)
+        scene_videos.append(
+            {
+                "path": str(video_path),
+                **upload_result,
+            }
+        )
         print(f"    ✓ Saved to {video_path}")
 
     return scene_videos
@@ -224,37 +246,38 @@ def generate_video_veo(
     return generated_video.video.video_bytes
 
 
+def stitch_videos(video_paths: List[Path]) -> AssetInfo:
+    """Stitch scene videos together and upload the final trailer."""
+    import subprocess
 
-    
-def stitch_videos(video_paths: List[Path]) -> Path:
-        """
-        Stitch scene videos together.
+    # Create concat file for ffmpeg
+    concat_file = OUTPUT_DIR / "concat.txt"
+    with open(concat_file, "w") as f:
+        for video_path in video_paths:
+            f.write(f"file '{video_path.absolute()}'\n")
 
-        Args:
-            video_paths: List of scene video paths
+    # Stitch with ffmpeg
+    output_path = OUTPUT_DIR / "trailer_no_audio.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_file),
+            "-c",
+            "copy",
+            str(output_path),
+        ],
+        check=True,
+    )
 
-        Returns:
-            Path to stitched video
-        """
-        import subprocess
+    upload_result = upload_to_gcs(output_path, f"trailers/{output_path.name}")
 
-        # Create concat file for ffmpeg
-        concat_file = OUTPUT_DIR / "concat.txt"
-        with open(concat_file, 'w') as f:
-            for video_path in video_paths:
-                f.write(f"file '{video_path.absolute()}'\n")
-
-        # Stitch with ffmpeg
-        output_path = OUTPUT_DIR / "trailer_no_audio.mp4"
-        subprocess.run([
-            'ffmpeg', '-y',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', str(concat_file),
-            '-c', 'copy',
-            str(output_path)
-        ], check=True)
-
-        upload_to_gcs(output_path, f"trailers/{output_path.name}")
-
-        return output_path
+    return {
+        "path": str(output_path),
+        **upload_result,
+    }

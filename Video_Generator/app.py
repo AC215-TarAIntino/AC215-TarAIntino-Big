@@ -42,6 +42,12 @@ class Scene(BaseModel):
     reference_images: List[str] = Field(default_factory=list)
 
 
+class AssetInfo(BaseModel):
+    path: str = Field(..., description="Local filesystem path of the generated asset")
+    gcs_uri: str = Field(..., description="gs:// URI of the uploaded asset")
+    public_url: str = Field(..., description="Browser-accessible URL for downloading/streaming")
+
+
 class CharacterReferenceRequest(BaseModel):
     character_designs: List[CharacterDesign]
     image_api_key: Optional[str] = Field(
@@ -51,7 +57,7 @@ class CharacterReferenceRequest(BaseModel):
 
 
 class CharacterReferenceResponse(BaseModel):
-    character_refs: Dict[str, str]
+    character_refs: Dict[str, AssetInfo]
 
 
 class SceneVideoRequest(BaseModel):
@@ -70,7 +76,7 @@ class SceneVideoRequest(BaseModel):
 
 
 class SceneVideoResponse(BaseModel):
-    video_paths: List[str]
+    scene_videos: List[AssetInfo]
 
 
 class TrailerGenerationRequest(BaseModel):
@@ -85,9 +91,9 @@ class TrailerGenerationRequest(BaseModel):
 
 
 class TrailerGenerationResponse(BaseModel):
-    character_refs: Dict[str, str]
-    scene_videos: List[str]
-    trailer_path: Optional[str]
+    character_refs: Dict[str, AssetInfo]
+    scene_videos: List[AssetInfo]
+    trailer: Optional[AssetInfo]
 
 
 def _load_default_api_key() -> Optional[str]:
@@ -204,7 +210,7 @@ def create_scene_videos(request: SceneVideoRequest) -> SceneVideoResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    return SceneVideoResponse(video_paths=[str(path) for path in videos])
+    return SceneVideoResponse(scene_videos=videos)
 
 
 @app.post("/generate/trailer", response_model=TrailerGenerationResponse)
@@ -218,16 +224,20 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
             character_designs=[design.model_dump() for design in request.character_designs],
         )
 
-        scene_paths = generate_scene_videos(
+        character_ref_paths = {
+            name: asset["path"] for name, asset in character_refs.items()
+        }
+
+        scene_videos = generate_scene_videos(
             image_api_key=image_api_key,
             veo_api_key=veo_api_key,
             scenes=[scene.model_dump() for scene in request.scenes],
-            character_refs=character_refs,
+            character_refs=character_ref_paths,
         )
 
-        trailer_path: Optional[Path] = None
+        trailer_asset: Optional[AssetInfo] = None
         if request.stitch_trailer:
-            trailer_path = stitch_videos(scene_paths)
+            trailer_asset = stitch_videos([Path(video["path"]) for video in scene_videos])
 
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -236,8 +246,8 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
 
     return TrailerGenerationResponse(
         character_refs=character_refs,
-        scene_videos=[str(path) for path in scene_paths],
-        trailer_path=str(trailer_path) if trailer_path else None,
+        scene_videos=scene_videos,
+        trailer=trailer_asset,
     )
 
 

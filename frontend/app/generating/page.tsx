@@ -5,6 +5,22 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { GradientBackground } from "@/components/effects/GradientBackground";
 import { Sparkles, Film, Wand2, Check } from "lucide-react";
+import type { TrailerGenerationResponse } from "@/types/generation";
+
+const TRAILER_PUBLIC_URL =
+  process.env.NEXT_PUBLIC_TRAILER_URL ??
+  "https://storage.googleapis.com/tarantaino-output/video_generator_outputs/trailers/trailer_no_audio.mp4";
+const TRAILER_GCS_URI =
+  process.env.NEXT_PUBLIC_TRAILER_GCS_URI ??
+  "gs://tarantaino-output/video_generator_outputs/trailers/trailer_no_audio.mp4";
+const TRAILER_LOCAL_PATH =
+  process.env.NEXT_PUBLIC_TRAILER_LOCAL_PATH ?? "output/trailer_no_audio.mp4";
+const TRAILER_POLL_INTERVAL = Number(
+  process.env.NEXT_PUBLIC_TRAILER_POLL_INTERVAL ?? 10000,
+);
+const TRAILER_MAX_POLLS = Number(
+  process.env.NEXT_PUBLIC_TRAILER_MAX_POLLS ?? 60,
+);
 
 const PHASES = [
   {
@@ -45,45 +61,203 @@ export default function GeneratingPage() {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
+  const [isGenerationComplete, setIsGenerationComplete] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState(
+    "Contacting the TarAIntino studio...",
+  );
+  const [hasNavigated, setHasNavigated] = useState(false);
+  const [hasStoredResult, setHasStoredResult] = useState(false);
 
+  const buildPlaceholderResult = (publicUrl: string): TrailerGenerationResponse => ({
+    character_refs: {},
+    scene_videos: [],
+    trailer: {
+      path: TRAILER_LOCAL_PATH,
+      gcs_uri: TRAILER_GCS_URI,
+      public_url: publicUrl,
+    },
+  });
+
+  const appendCacheBust = (baseUrl: string) => {
+    const timestamp = Date.now().toString();
+    try {
+      const url = new URL(baseUrl);
+      url.searchParams.set("ts", timestamp);
+      return url.toString();
+    } catch {
+      const separator = baseUrl.includes("?") ? "&" : "?";
+      return `${baseUrl}${separator}ts=${timestamp}`;
+    }
+  };
+
+  // Drive the visual progress until we either hit 95% or complete the generation.
   useEffect(() => {
-    // Smooth progress animation over 8 seconds
-    const duration = 8000; // 8 seconds
-    const interval = 50; // Update every 50ms
-    const steps = duration / interval;
-    const increment = 100 / steps;
+    if (isGenerationComplete || generationError) {
+      setProgress(100);
+      return;
+    }
 
+    const duration = 8000;
+    const interval = 50;
+    const steps = duration / interval;
+    const increment = 95 / steps;
     let currentProgress = 0;
 
     const timer = setInterval(() => {
-      currentProgress += increment;
-
-      if (currentProgress >= 100) {
-        currentProgress = 100;
-        clearInterval(timer);
-        // Navigate to result page after completion
-        setTimeout(() => {
-          router.push("/result");
-        }, 1000);
-      }
-
-      setProgress(currentProgress);
-
-      // Update phase based on progress
-      let newPhaseIndex = 0;
-      if (currentProgress >= 75) {
-        newPhaseIndex = 3;
-      } else if (currentProgress >= 50) {
-        newPhaseIndex = 2;
-      } else if (currentProgress >= 25) {
-        newPhaseIndex = 1;
-      }
-
-      setCurrentPhaseIndex(newPhaseIndex);
+      currentProgress = Math.min(currentProgress + increment, 95);
+      setProgress((prev) => {
+        if (prev >= 95) {
+          clearInterval(timer);
+          return prev;
+        }
+        if (currentProgress >= 95) {
+          clearInterval(timer);
+        }
+        return Math.min(currentProgress, 95);
+      });
     }, interval);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, [isGenerationComplete, generationError]);
+
+  // Update the current phase based on progress value.
+  useEffect(() => {
+    if (progress >= 75) {
+      setCurrentPhaseIndex(3);
+    } else if (progress >= 50) {
+      setCurrentPhaseIndex(2);
+    } else if (progress >= 25) {
+      setCurrentPhaseIndex(1);
+    } else {
+      setCurrentPhaseIndex(0);
+    }
+  }, [progress]);
+
+  // Once the generator finishes, push to the result page.
+  useEffect(() => {
+    if (!isGenerationComplete || hasNavigated || generationError) {
+      return;
+    }
+
+    setProgress(100);
+    const timeout = setTimeout(() => {
+      setHasNavigated(true);
+      router.push("/result");
+    }, 1200);
+
+    return () => clearTimeout(timeout);
+  }, [isGenerationComplete, hasNavigated, router, generationError]);
+
+  useEffect(() => {
+    sessionStorage.removeItem("generationResult");
+
+    const quizResultsRaw = sessionStorage.getItem("quizResults");
+    let quizResults: unknown;
+    if (quizResultsRaw) {
+      try {
+        quizResults = JSON.parse(quizResultsRaw);
+      } catch (error) {
+        console.warn("Unable to parse quiz results", error);
+      }
+    }
+
+    const controller = new AbortController();
+    fetch("/api/generate-trailer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ quizResults }),
+      signal: controller.signal,
+    }).catch((error) => {
+      if ((error as Error).name === "AbortError") {
+        return;
+      }
+      console.warn("Failed to trigger trailer generation", error);
+    });
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!TRAILER_PUBLIC_URL || generationError || hasStoredResult) {
+      return;
+    }
+
+    let isCancelled = false;
+    let intervalId: NodeJS.Timeout | null = null;
+    let attempts = 0;
+
+    const maxPolls = TRAILER_MAX_POLLS > 0 ? TRAILER_MAX_POLLS : Infinity;
+
+    const checkTrailer = async () => {
+      if (isCancelled || hasStoredResult || generationError) {
+        return;
+      }
+
+      attempts += 1;
+      const attemptLabel = Number.isFinite(maxPolls)
+        ? ` (${Math.min(attempts, maxPolls)}/${maxPolls})`
+        : "";
+      setStatusMessage(
+        `Checking cloud storage for your trailer${attemptLabel}...`,
+      );
+
+      try {
+        const response = await fetch(appendCacheBust(TRAILER_PUBLIC_URL), {
+          method: "HEAD",
+          cache: "no-store",
+        });
+
+        if (response.ok) {
+          if (isCancelled) {
+            return;
+          }
+          sessionStorage.setItem(
+            "generationResult",
+            JSON.stringify(buildPlaceholderResult(TRAILER_PUBLIC_URL)),
+          );
+          setHasStoredResult(true);
+          setIsGenerationComplete(true);
+          setStatusMessage("Trailer uploaded! Preparing your results...");
+          if (intervalId) {
+            clearInterval(intervalId);
+          }
+          return;
+        }
+      } catch (error) {
+        console.warn("Trailer poll failed", error);
+      }
+
+      if (!isCancelled && Number.isFinite(maxPolls) && attempts >= maxPolls) {
+        setGenerationError(
+          "We haven't spotted your trailer yet. Please try again shortly.",
+        );
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      }
+    };
+
+    void checkTrailer();
+    intervalId = setInterval(() => {
+      void checkTrailer();
+    }, TRAILER_POLL_INTERVAL);
+
+    return () => {
+      isCancelled = true;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [generationError, hasStoredResult]);
+
+  const handleRetry = () => {
+    window.location.reload();
+  };
 
   const currentPhase = PHASES[currentPhaseIndex];
   const CurrentIcon = currentPhase.icon;
@@ -242,6 +416,24 @@ export default function GeneratingPage() {
                 className="absolute inset-0 w-32 bg-gradient-to-r from-transparent via-white/30 to-transparent"
               />
             </div>
+          </div>
+
+          <div className="text-center text-white/70 text-sm space-y-2 min-h-[60px] flex flex-col items-center justify-center">
+            {generationError ? (
+              <>
+                <p className="text-red-400 font-semibold">
+                  {generationError}
+                </p>
+                <button
+                  onClick={handleRetry}
+                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm"
+                >
+                  Try again
+                </button>
+              </>
+            ) : (
+              <p>{statusMessage}</p>
+            )}
           </div>
 
           {/* Phase Checklist */}

@@ -8,6 +8,7 @@ import { VideoPlayer } from "@/components/result/VideoPlayer";
 import { TasteProfile } from "@/components/result/TasteProfile";
 import { Download, RotateCcw, Share2, Sparkles } from "lucide-react";
 import JSConfetti from "js-confetti";
+import type { TrailerGenerationResponse } from "@/types/generation";
 
 interface TagRating {
   tag: string;
@@ -19,6 +20,12 @@ export default function ResultPage() {
   const [generatedTitle, setGeneratedTitle] = useState("");
   const [posterUrl, setPosterUrl] = useState("");
   const [tasteProfile, setTasteProfile] = useState<{ name: string; score: number }[]>([]);
+  const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
+  const [generationData, setGenerationData] = useState<TrailerGenerationResponse | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const sceneCount = generationData?.scene_videos?.length ?? 0;
+  const durationLabel = sceneCount ? `${sceneCount * 8}s` : "2:00";
+  const sceneCountLabel = sceneCount || 5;
 
   useEffect(() => {
     // Trigger confetti on load
@@ -76,6 +83,20 @@ export default function ResultPage() {
 
       setTasteProfile(profile);
     }
+
+    const generationResult = sessionStorage.getItem("generationResult");
+    if (generationResult) {
+      try {
+        const parsed: TrailerGenerationResponse = JSON.parse(generationResult);
+        setGenerationData(parsed);
+        setTrailerUrl(parsed.trailer?.public_url ?? null);
+      } catch (error) {
+        console.error("Failed to parse generation result", error);
+        setGenerationError("Unable to read your trailer. Please try again.");
+      }
+    } else {
+      setGenerationError("Trailer data missing. Please generate again.");
+    }
   }, []);
 
   const handleDownload = () => {
@@ -87,14 +108,20 @@ export default function ResultPage() {
       confettiNumber: 300,
     });
 
-    // Mock download
-    setTimeout(() => {
-      alert(`🎬 Your trailer "${generatedTitle}" is downloading!\n\n(This is a mock demo - no actual video file)`);
-    }, 500);
+    if (trailerUrl) {
+      window.open(trailerUrl, "_blank", "noopener,noreferrer");
+    } else {
+      setTimeout(() => {
+        alert(
+          `🎬 Your trailer "${generatedTitle}" is downloading!\n\n(This is a mock demo - no actual video file)`,
+        );
+      }, 500);
+    }
   };
 
   const handleCreateAnother = () => {
     sessionStorage.removeItem("quizResults");
+    sessionStorage.removeItem("generationResult");
     router.push("/");
   };
 
@@ -139,8 +166,23 @@ export default function ResultPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.7 }}
+            className="space-y-3"
           >
-            <VideoPlayer posterUrl={posterUrl} title={generatedTitle} />
+            <VideoPlayer
+              posterUrl={posterUrl}
+              title={generatedTitle}
+              videoUrl={trailerUrl ?? undefined}
+            />
+            {generationError && (
+              <p className="text-center text-red-400">
+                {generationError}
+              </p>
+            )}
+            {!generationError && !trailerUrl && (
+              <p className="text-center text-white/70 text-sm">
+                Preparing your playable trailer...
+              </p>
+            )}
           </motion.div>
 
           {/* Movie Details */}
@@ -183,12 +225,16 @@ export default function ResultPage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gold">2:00</div>
+                <div className="text-2xl font-bold text-gold">
+                  {durationLabel}
+                </div>
                 <div className="text-sm text-white/60">Duration</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-neon-magenta">4K</div>
-                <div className="text-sm text-white/60">Quality</div>
+                <div className="text-2xl font-bold text-neon-magenta">
+                  {sceneCountLabel}
+                </div>
+                <div className="text-sm text-white/60">Scenes</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-neon-cyan">AI</div>

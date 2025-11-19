@@ -2,36 +2,161 @@
 
 import { motion } from "framer-motion";
 import { Play, Pause, Volume2, VolumeX, Maximize2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 interface VideoPlayerProps {
   posterUrl: string;
   title: string;
+  videoUrl?: string;
 }
 
-export function VideoPlayer({ posterUrl, title }: VideoPlayerProps) {
+export function VideoPlayer({ posterUrl, title, videoUrl }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const mockIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasVideo = Boolean(videoUrl);
 
-  // Mock playback
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-    if (!isPlaying) {
-      // Simulate progress
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            setIsPlaying(false);
-            clearInterval(interval);
-            return 0;
-          }
-          return prev + 1;
-        });
-      }, 50);
+  useEffect(() => {
+    return () => {
+      if (mockIntervalRef.current) {
+        clearInterval(mockIntervalRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasVideo) {
+      return;
     }
+
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+
+    const handleTimeUpdate = () => {
+      const videoDuration = video.duration || 0;
+      setDuration(videoDuration);
+      setCurrentTime(video.currentTime);
+      setProgress(videoDuration ? (video.currentTime / videoDuration) * 100 : 0);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setProgress(100);
+    };
+
+    const handleLoadedMetadata = () => {
+      setDuration(video.duration || 0);
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("ended", handleEnded);
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+    };
+  }, [hasVideo, videoUrl]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (!hasVideo) {
+      setProgress(0);
+      setCurrentTime(0);
+      setDuration(0);
+      setIsPlaying(false);
+      return;
+    }
+
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+      setIsPlaying(false);
+      setProgress(0);
+      setCurrentTime(0);
+      setDuration(video.duration || 0);
+    }
+  }, [hasVideo, videoUrl]);
+
+  const startMockPlayback = () => {
+    if (mockIntervalRef.current) {
+      clearInterval(mockIntervalRef.current);
+    }
+    setIsPlaying(true);
+    mockIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          if (mockIntervalRef.current) {
+            clearInterval(mockIntervalRef.current);
+          }
+          setIsPlaying(false);
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, 50);
   };
+
+  const togglePlay = () => {
+    if (hasVideo && videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch((error) => {
+            console.error("Unable to start playback", error);
+          });
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+      return;
+    }
+
+    if (isPlaying) {
+      if (mockIntervalRef.current) {
+        clearInterval(mockIntervalRef.current);
+      }
+      setIsPlaying(false);
+      return;
+    }
+
+    startMockPlayback();
+  };
+
+  const formatTime = (value: number) => {
+    if (!Number.isFinite(value)) {
+      return "0:00";
+    }
+    const minutes = Math.floor(value / 60);
+    const seconds = Math.floor(value % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  };
+
+  const elapsedLabel = hasVideo
+    ? formatTime(currentTime)
+    : `${Math.floor(progress * 1.2)}s`;
+  const durationLabel = hasVideo
+    ? duration
+      ? formatTime(duration)
+      : "--:--"
+    : "2:00";
 
   return (
     <div className="relative w-full aspect-video rounded-2xl overflow-hidden glass-strong group">
@@ -55,12 +180,18 @@ export function VideoPlayer({ posterUrl, title }: VideoPlayerProps) {
 
       {/* Video Content */}
       <div className="relative w-full h-full bg-black">
-        <Image
-          src={posterUrl}
-          alt={title}
-          fill
-          className="object-cover"
-        />
+        {hasVideo ? (
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            poster={posterUrl}
+            className="w-full h-full object-cover"
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <Image src={posterUrl} alt={title} fill className="object-cover" />
+        )}
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
@@ -132,7 +263,7 @@ export function VideoPlayer({ posterUrl, title }: VideoPlayerProps) {
             </button>
 
             <span className="text-white text-sm font-medium">
-              {Math.floor(progress * 1.2)}s / 2:00
+              {elapsedLabel} / {durationLabel}
             </span>
           </div>
 

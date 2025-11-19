@@ -2,7 +2,7 @@ from generate import generate_character_references, generate_scene_videos, stitc
 from json import load
 from pathlib import Path
 
-with open('./secret.json') as f:
+with open('./secret _GCP.json') as f:
     secret = load(f)
 api_key = secret['project_api_key']
 
