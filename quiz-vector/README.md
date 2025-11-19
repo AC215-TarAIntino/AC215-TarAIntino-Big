@@ -192,7 +192,35 @@ curl -s -X POST http://localhost:8082/recommend \
     -d "{\"session_id\":\"$SESSION_ID\",\"top_n\":10}" | jq .
 ```
 
-# 3.4) Restart if needed
+# 3.4) Frontend Integration
+
+The quiz-vector service is designed to work with the TarAIntino frontend. The frontend:
+
+1. Calls `POST /quiz/start` when the user opens the quiz page
+2. Displays the returned `tag_label` and collects a 1-10 rating
+3. Calls `POST /quiz/answer` with the rating to get the next question
+4. Repeats until `status: "complete"` is returned
+5. Stores the `session_id` for the backend pipeline to retrieve recommendations
+
+**Environment Configuration:**
+
+The frontend expects the quiz service at:
+- Local development: `http://localhost:8082`
+- Docker deployment: `http://quiz-service:8082`
+
+**CORS:**
+
+The API allows all origins for development. In production, restrict this in `api.py`:
+
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://your-frontend-domain.com"],
+    ...
+)
+```
+
+# 3.5) Restart if needed
 
 ```bash
 docker compose down

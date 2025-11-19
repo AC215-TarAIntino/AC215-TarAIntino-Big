@@ -5,15 +5,14 @@ An ultra-premium, mobile-first interactive quiz demo showcasing the TarAIntino A
 ## ✨ Features
 
 ### Interactive Quiz Experience
-- **Tinder-style swipe gestures** - Drag cards left/right/up/down
-  - Swipe **right** → Like (green glow)
-  - Swipe **left** → Dislike (red glow)
-  - Pull **up** → Love it! (gold explosion)
-  - Pull **down** → Hate it (dark effect)
-- **3D card stack** with perspective depth
-- **Undo functionality** to go back to previous movies
-- **Dynamic question count** (randomly 5-10 questions per session)
+- **Rating-based tag quiz** - Rate movie tags from 1-10
+  - 1 = Not at all interested
+  - 10 = Absolutely must have
+- **Single question view** with animated transitions
+- **Bayesian-optimized questions** - Backend selects most informative tags
+- **5 questions per session** for optimal taste vector calculation
 - **Progress ring** showing quiz completion
+- **Real-time API integration** with quiz-vector backend
 
 ### Loading Animation
 - **Multi-phase progress animation** (8 seconds total)
@@ -56,21 +55,36 @@ An ultra-premium, mobile-first interactive quiz demo showcasing the TarAIntino A
 ### Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Copy environment file
+cp .env.example .env.local
+
 # Start development server
 npm run dev
 ```
 
 Open **http://localhost:3000** in your browser
 
+### Environment Configuration
+
+```bash
+# For local development (quiz-vector running on host)
+NEXT_PUBLIC_QUIZ_API_URL=http://localhost:8082
+
+# For Docker deployment (using service name)
+NEXT_PUBLIC_QUIZ_API_URL=http://quiz-service:8082
+```
+
 ## 📱 How to Use
 
-1. **Open the app** - Quiz starts immediately (no landing page)
-2. **Swipe through movies:**
-   - Drag right if you like it
-   - Drag left if you dislike it
-   - Pull up if you love it
-   - Pull down if you hate it
-3. **Complete 5-10 questions** (random each time)
+1. **Open the app** - Quiz initializes by connecting to backend
+2. **Rate tags from 1-10:**
+   - Backend returns one tag at a time
+   - Select a rating based on preference
+   - Click "Next Tag" to submit
+3. **Complete 5 questions** (Bayesian-optimized selection)
 4. **Watch the loading animation** (8 seconds)
 5. **See your results:**
    - Mock video player with your "generated" trailer
@@ -100,8 +114,7 @@ app/
 
 components/
 ├── quiz/
-│   ├── CardStack.tsx          # 3D card stack manager
-│   ├── SwipeCard.tsx          # Individual swipeable card
+│   ├── SwipeCard.tsx          # Rating card (1-10 scale)
 │   └── ProgressRing.tsx       # Circular progress indicator
 ├── result/
 │   ├── VideoPlayer.tsx        # Mock video player
@@ -110,8 +123,11 @@ components/
     └── GradientBackground.tsx # Animated gradient
 
 lib/
+├── api/
+│   ├── types.ts               # TypeScript API types
+│   └── quizService.ts         # Quiz-vector API client
 ├── data/
-│   └── movies.ts              # 45 mock movies with metadata
+│   └── tags.ts                # Tag Genome data
 └── utils/
     └── cn.ts                  # Utility function
 ```
@@ -176,12 +192,26 @@ npm run lint
 
 ## 📝 Notes
 
-- All data is **mock** - no real API calls or video generation
-- Quiz results stored in **sessionStorage** (page refresh clears)
-- Random 5-10 questions per session
-- Generated movie title is randomly selected
-- Download button shows alert (no actual file)
+- **Quiz connects to real backend** - quiz-vector service must be running
+- Session ID stored in **sessionStorage** (page refresh clears)
+- 5 questions per session (Bayesian-optimized by backend)
+- Generating/result pages show **mock UI** while backend pipeline runs
+- Generated movie title is randomly selected (placeholder)
+- Download button shows alert (no actual file yet)
 - Optimized for modern browsers (Chrome, Safari, Firefox, Edge)
+
+## 🔌 API Integration
+
+The quiz page connects to the quiz-vector backend:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/quiz/start` | POST | Start session, get first question |
+| `/quiz/answer` | POST | Submit rating, get next question |
+| `/health` | GET | Service health check |
+
+The backend uses these ratings to build a taste vector via Bayesian optimization,
+which is then used by the pipeline to generate personalized movie recommendations.
 
 ## 🎉 Demo Highlights
 
