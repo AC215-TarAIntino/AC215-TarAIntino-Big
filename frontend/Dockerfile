@@ -26,6 +26,10 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Quiz API URL (baked into the build for NEXT_PUBLIC_ vars)
+ARG NEXT_PUBLIC_QUIZ_API_URL=http://quiz-service:8082
+ENV NEXT_PUBLIC_QUIZ_API_URL=$NEXT_PUBLIC_QUIZ_API_URL
+
 # Build the application
 RUN npm run build
 
