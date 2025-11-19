@@ -1,0 +1,174 @@
+version: '3.8'
+
+services:
+  # ChromaDB Vector Database
+  chroma:
+    image: ghcr.io/chroma-core/chroma:0.6.1
+    container_name: chroma
+    environment:
+      CHROMA_SERVER_HOST: 0.0.0.0
+      CHROMA_SERVER_HTTP_PORT: 8000
+      ALLOW_RESET: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma
+    restart: unless-stopped
+    networks:
+      - tarantino-network
+
+  # Quiz Vector - RAG App (Data Pipeline)
+  quiz-rag-app:
+    build:
+      context: ./quiz-vector/src
+      dockerfile: Dockerfile
+    image: taraintino-base:latest
+    container_name: quiz-rag-app
+    stdin_open: true
+    tty: true
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/adc.json
+      CHROMA_SERVER_HOST: chroma
+      CHROMA_SERVER_PORT: "8000"
+      CHROMA_COLLECTION: movie_tag_relevance_cos
+      LOG_DIR: /app/datapipeline/logs
+    volumes:
+      - ./quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
+      - ./quiz-vector/src:/app
+    depends_on:
+      - chroma
+    networks:
+      - tarantino-network
+
+  # Quiz Service API
+  quiz-service:
+    image: taraintino-base:latest
+    container_name: quiz-service
+    command: uvicorn quiz_service.api:app --host 0.0.0.0 --port 8082
+    environment:
+      CHROMA_SERVER_HOST: chroma
+      CHROMA_SERVER_PORT: "8000"
+      CHROMA_COLLECTION: movie_tag_relevance_cos
+      PRIOR_MEAN_PATH: /app/datapipeline/logs/prior_mean.npy
+      PRIOR_COV_PATH: /app/datapipeline/logs/prior_cov.npy
+      TAG_INDEX_JSON: /app/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
+    volumes:
+      - ./quiz-vector/src:/app
+    ports:
+      - "8082:8082"
+    depends_on:
+      - chroma
+      - quiz-rag-app
+    restart: unless-stopped
+    networks:
+      - tarantino-network
+
+  # Screenplay Writer Service
+  screenplay-writer:
+    build:
+      context: ./screenplay-writer
+      dockerfile: Dockerfile
+    container_name: screenplay-writer
+    ports:
+      - "8080:8000"
+    environment:
+      - OMDB_API_KEY=${OMDB_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemini-2.0-flash-exp:free}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    env_file:
+      - ./screenplay-writer/.env
+    volumes:
+      - ./screenplay-writer/output:/app/output
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - tarantino-network
+
+  # Scene Decomposer / Trailer Generator Service
+  scene-decomposer:
+    build:
+      context: ./scene-decomposer
+      dockerfile: Dockerfile
+    container_name: scene-decomposer
+    ports:
+      - "8001:8001"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
+      - API_HOST=0.0.0.0
+      - API_PORT=8001
+      - DEFAULT_TRAILER_DURATION=${DEFAULT_TRAILER_DURATION:-35}
+      - INCLUDE_NARRATION=${INCLUDE_NARRATION:-true}
+    env_file:
+      - ./scene-decomposer/.env
+    volumes:
+      - ./scene-decomposer/outputs:/app/outputs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - tarantino-network
+
+  # Video Generator Service
+  video-generator:
+    build:
+      context: ./Video_Generator
+      dockerfile: Dockerfile
+    container_name: video-generator
+    ports:
+      - "8003:8003"
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets.json
+      - GCS_BUCKET_NAME=tarantaino-output
+      - GCS_PREFIX=video_generator_outputs
+    volumes:
+      - ./Video_Generator/output:/app/output
+      - ./Video_Generator/secrets.json:/app/secrets.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - tarantino-network
+
+  # Frontend - Next.js Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_QUIZ_API_URL=http://quiz-service:8082
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
+    restart: unless-stopped
+    depends_on:
+      - quiz-service
+      - screenplay-writer
+      - scene-decomposer
+      - video-generator
+    networks:
+      - tarantino-network
+
+volumes:
+  chroma_data:
+
+networks:
+  tarantino-network:
+    driver: bridge

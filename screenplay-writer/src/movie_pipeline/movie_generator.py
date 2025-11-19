@@ -85,7 +85,7 @@ Generate a comprehensive movie description in JSON format with the following fie
     {{
       "actor_name": "FICTIONAL actor name (completely made up, not a real person)",
       "character_name": "Character name in the movie",
-      "physical_description": "DETAILED physical appearance: height (e.g., 5'10\"), build (e.g., athletic, lean), age range, ethnicity, hair color and style, eye color, facial features (e.g., sharp jawline, warm eyes), distinctive characteristics (e.g., scar, tattoos, mannerisms). Minimum 5-7 sentences with vivid detail so an AI can visualize them.",
+      "physical_description": "DETAILED physical appearance: height in feet only (e.g., \"about 6 feet tall\"), build (e.g., athletic, lean), age range, ethnicity, hair color and style, eye color, facial features (e.g., sharp jawline, warm eyes), distinctive characteristics (e.g., scar, tattoos, mannerisms). Minimum 5-7 sentences with vivid detail so an AI can visualize them. Do NOT use apostrophes or quotes for measurements.",
       "personality_traits": ["trait1", "trait2", "trait3", "trait4"],
       "acting_style": "Description of their acting approach and screen presence (e.g., 'Intense method actor with exceptional emotional range' or 'Charismatic performer known for physical comedy and timing')",
       "role_description": "Detailed description of the character they play and their importance to the story (3-4 sentences)"
@@ -197,7 +197,23 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
                 if json_start != -1 and json_end > json_start:
                     content = content[json_start:json_end]
 
-                movie_data = json.loads(content)
+                # Try strict parsing first
+                try:
+                    movie_data = json.loads(content)
+                except json.JSONDecodeError:
+                    # If strict parsing fails, try to fix common JSON issues
+                    import re
+
+                    #Fix 1: Replace newlines within strings with spaces
+                    # This regex finds newlines that are inside quoted strings
+                    content = content.replace('\n\n', ' ')  # Double newlines first
+                    content = content.replace('\n', ' ')  # Then single newlines
+
+                    # Fix 2: Remove trailing commas before closing brackets/braces
+                    content = re.sub(r',(\s*[}\]])', r'\1', content)
+
+                    # Try parsing again
+                    movie_data = json.loads(content)
             except json.JSONDecodeError as e:
                 raise MovieGeneratorError(f"Failed to parse LLM response as JSON: {e}\nResponse: {content}")
 
