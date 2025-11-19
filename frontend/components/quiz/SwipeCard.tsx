@@ -30,7 +30,7 @@ export function SwipeCard({ tag, onRating, style, index, disabled = false }: Swi
   };
 
   const handleStepperChange = (delta: number) => {
-    const newRating = Math.max(0, Math.min(10, (selectedRating ?? 5) + delta));
+    const newRating = Math.max(1, Math.min(10, (selectedRating ?? 5) + delta));
     setSelectedRating(newRating);
   };
 
@@ -40,22 +40,21 @@ export function SwipeCard({ tag, onRating, style, index, disabled = false }: Swi
     }
   };
 
-  // Get color based on rating (0=cool blue, 10=hot magenta)
+  // Get color based on rating (1=cool blue, 10=hot magenta)
   const getRatingColor = (rating: number) => {
     const colors = [
-      "#3b82f6", // 0 - blue-500
-      "#60a5fa", // 1 - blue-400
-      "#6366f1", // 2 - indigo-500
-      "#8b5cf6", // 3 - violet-500
-      "#a855f7", // 4 - purple-500
-      "#c026d3", // 5 - fuchsia-600
-      "#d946ef", // 6 - fuchsia-500
-      "#e879f9", // 7 - fuchsia-400
-      "#f0abfc", // 8 - fuchsia-300
-      "#f9a8d4", // 9 - pink-300
+      "#3b82f6", // 1 - blue-500
+      "#60a5fa", // 2 - blue-400
+      "#6366f1", // 3 - indigo-500
+      "#8b5cf6", // 4 - violet-500
+      "#a855f7", // 5 - purple-500
+      "#c026d3", // 6 - fuchsia-600
+      "#d946ef", // 7 - fuchsia-500
+      "#e879f9", // 8 - fuchsia-400
+      "#f0abfc", // 9 - fuchsia-300
       "#ec4899", // 10 - pink-500
     ];
-    return colors[rating];
+    return colors[rating - 1] || colors[0];
   };
 
   const getRatingGradient = (rating: number) => {
@@ -141,8 +140,8 @@ export function SwipeCard({ tag, onRating, style, index, disabled = false }: Swi
                   </div>
                   <div className="text-left">
                     <p className="text-white font-semibold text-sm sm:text-base md:text-lg">
-                      {selectedRating === 0 && "Not at all"}
-                      {selectedRating >= 1 && selectedRating <= 3 && "Slightly"}
+                      {selectedRating === 1 && "Not at all"}
+                      {selectedRating >= 2 && selectedRating <= 3 && "Slightly"}
                       {selectedRating >= 4 && selectedRating <= 6 && "Moderately"}
                       {selectedRating >= 7 && selectedRating <= 9 && "Very important"}
                       {selectedRating === 10 && "Essential!"}
@@ -166,7 +165,7 @@ export function SwipeCard({ tag, onRating, style, index, disabled = false }: Swi
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => handleStepperChange(-1)}
-                  disabled={selectedRating === 0 || disabled}
+                  disabled={selectedRating === 1 || disabled}
                   className="glass-strong p-3 rounded-xl text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100"
                 >
                   <Minus className="w-5 h-5" />
@@ -187,30 +186,30 @@ export function SwipeCard({ tag, onRating, style, index, disabled = false }: Swi
                 </button>
               </div>
             ) : (
-              // Desktop: Number buttons grid
-              <div className="grid grid-cols-11 gap-2">
-                {Array.from({ length: 11 }, (_, i) => (
+              // Desktop: Number buttons grid (1-10)
+              <div className="grid grid-cols-10 gap-2">
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((rating) => (
                   <motion.button
-                    key={i}
-                    onClick={() => handleRatingSelect(i)}
+                    key={rating}
+                    onClick={() => handleRatingSelect(rating)}
                     disabled={disabled}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.6 + i * 0.03 }}
+                    transition={{ delay: 0.6 + (rating - 1) * 0.03 }}
                     className={`aspect-square rounded-xl font-bold text-lg transition-all ${
-                      selectedRating === i
+                      selectedRating === rating
                         ? "text-white shadow-xl scale-110"
                         : "glass-strong text-white/70 hover:text-white hover:scale-105 active:scale-95"
                     } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                     style={
-                      selectedRating === i
+                      selectedRating === rating
                         ? {
-                            background: `linear-gradient(135deg, ${getRatingColor(i)}, ${getRatingColor(Math.min(10, i + 1))})`,
+                            background: `linear-gradient(135deg, ${getRatingColor(rating)}, ${getRatingColor(Math.min(10, rating + 1))})`,
                           }
                         : {}
                     }
                   >
-                    {i}
+                    {rating}
                   </motion.button>
                 ))}
               </div>
