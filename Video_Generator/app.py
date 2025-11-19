@@ -1,10 +1,13 @@
 """FastAPI wrapper for the video generator pipeline."""
-
 from __future__ import annotations
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 import json
 from pathlib import Path
 from typing import Dict, List, Optional
+import logging
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -17,6 +20,10 @@ from generate import (
 )
 
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 app = FastAPI(
     title="Video Generator API",
     version="1.0.0",
@@ -24,6 +31,13 @@ app = FastAPI(
         "Wraps the local video generation pipeline so it can be called via HTTP. "
         "Provide prompts for characters and scenes to receive generated assets."
     ),
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -181,8 +195,10 @@ def create_character_references(request: CharacterReferenceRequest) -> Character
             character_designs=[design.model_dump() for design in request.character_designs],
         )
     except ValueError as exc:
+        logger.warning("Character reference generation failed: %s", exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover - pass through unexpected errors
+        logger.exception("Unexpected error during character reference generation")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return CharacterReferenceResponse(character_refs=character_refs)
@@ -206,8 +222,10 @@ def create_scene_videos(request: SceneVideoRequest) -> SceneVideoResponse:
             character_refs=character_refs,
         )
     except ValueError as exc:
+        logger.warning("Scene video generation failed: %s", exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        logger.exception("Unexpected error during scene video generation")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return SceneVideoResponse(scene_videos=videos)
@@ -240,8 +258,10 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
             trailer_asset = stitch_videos([Path(video["path"]) for video in scene_videos])
 
     except ValueError as exc:
+        logger.warning("Trailer generation failed: %s", exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        logger.exception("Unexpected error during trailer generation")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return TrailerGenerationResponse(
@@ -254,4 +274,4 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False, log_level="debug")

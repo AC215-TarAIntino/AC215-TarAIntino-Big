@@ -7,21 +7,6 @@ import { GradientBackground } from "@/components/effects/GradientBackground";
 import { Sparkles, Film, Wand2, Check } from "lucide-react";
 import type { TrailerGenerationResponse } from "@/types/generation";
 
-const TRAILER_PUBLIC_URL =
-  process.env.NEXT_PUBLIC_TRAILER_URL ??
-  "https://storage.googleapis.com/tarantaino-output/video_generator_outputs/trailers/trailer_no_audio.mp4";
-const TRAILER_GCS_URI =
-  process.env.NEXT_PUBLIC_TRAILER_GCS_URI ??
-  "gs://tarantaino-output/video_generator_outputs/trailers/trailer_no_audio.mp4";
-const TRAILER_LOCAL_PATH =
-  process.env.NEXT_PUBLIC_TRAILER_LOCAL_PATH ?? "output/trailer_no_audio.mp4";
-const TRAILER_POLL_INTERVAL = Number(
-  process.env.NEXT_PUBLIC_TRAILER_POLL_INTERVAL ?? 10000,
-);
-const TRAILER_MAX_POLLS = Number(
-  process.env.NEXT_PUBLIC_TRAILER_MAX_POLLS ?? 60,
-);
-
 const PHASES = [
   {
     id: 1,
@@ -67,29 +52,6 @@ export default function GeneratingPage() {
     "Contacting the TarAIntino studio...",
   );
   const [hasNavigated, setHasNavigated] = useState(false);
-  const [hasStoredResult, setHasStoredResult] = useState(false);
-
-  const buildPlaceholderResult = (publicUrl: string): TrailerGenerationResponse => ({
-    character_refs: {},
-    scene_videos: [],
-    trailer: {
-      path: TRAILER_LOCAL_PATH,
-      gcs_uri: TRAILER_GCS_URI,
-      public_url: publicUrl,
-    },
-  });
-
-  const appendCacheBust = (baseUrl: string) => {
-    const timestamp = Date.now().toString();
-    try {
-      const url = new URL(baseUrl);
-      url.searchParams.set("ts", timestamp);
-      return url.toString();
-    } catch {
-      const separator = baseUrl.includes("?") ? "&" : "?";
-      return `${baseUrl}${separator}ts=${timestamp}`;
-    }
-  };
 
   // Drive the visual progress until we either hit 95% or complete the generation.
   useEffect(() => {
@@ -150,110 +112,72 @@ export default function GeneratingPage() {
   }, [isGenerationComplete, hasNavigated, router, generationError]);
 
   useEffect(() => {
+    let isCancelled = false;
     sessionStorage.removeItem("generationResult");
 
-    const quizResultsRaw = sessionStorage.getItem("quizResults");
-    let quizResults: unknown;
-    if (quizResultsRaw) {
+    const runGeneration = async () => {
       try {
-        quizResults = JSON.parse(quizResultsRaw);
-      } catch (error) {
-        console.warn("Unable to parse quiz results", error);
-      }
-    }
+        setStatusMessage("Sending your prompts to TarAIntino's AI studio...");
 
-    const controller = new AbortController();
-    fetch("/api/generate-trailer", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ quizResults }),
-      signal: controller.signal,
-    }).catch((error) => {
-      if ((error as Error).name === "AbortError") {
-        return;
-      }
-      console.warn("Failed to trigger trailer generation", error);
-    });
+        const quizResultsRaw = sessionStorage.getItem("quizResults");
+        let quizResults: unknown;
+        if (quizResultsRaw) {
+          try {
+            quizResults = JSON.parse(quizResultsRaw);
+          } catch (error) {
+            console.warn("Unable to parse quiz results", error);
+          }
+        }
 
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!TRAILER_PUBLIC_URL || generationError || hasStoredResult) {
-      return;
-    }
-
-    let isCancelled = false;
-    let intervalId: NodeJS.Timeout | null = null;
-    let attempts = 0;
-
-    const maxPolls = TRAILER_MAX_POLLS > 0 ? TRAILER_MAX_POLLS : Infinity;
-
-    const checkTrailer = async () => {
-      if (isCancelled || hasStoredResult || generationError) {
-        return;
-      }
-
-      attempts += 1;
-      const attemptLabel = Number.isFinite(maxPolls)
-        ? ` (${Math.min(attempts, maxPolls)}/${maxPolls})`
-        : "";
-      setStatusMessage(
-        `Checking cloud storage for your trailer${attemptLabel}...`,
-      );
-
-      try {
-        const response = await fetch(appendCacheBust(TRAILER_PUBLIC_URL), {
-          method: "HEAD",
-          cache: "no-store",
+        const response = await fetch("/api/generate-trailer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ quizResults }),
         });
 
-        if (response.ok) {
-          if (isCancelled) {
-            return;
-          }
-          sessionStorage.setItem(
-            "generationResult",
-            JSON.stringify(buildPlaceholderResult(TRAILER_PUBLIC_URL)),
-          );
-          setHasStoredResult(true);
-          setIsGenerationComplete(true);
-          setStatusMessage("Trailer uploaded! Preparing your results...");
-          if (intervalId) {
-            clearInterval(intervalId);
-          }
+        const text = await response.text();
+        type GeneratorResponse = TrailerGenerationResponse | { error: string };
+        const payload = text ? (JSON.parse(text) as GeneratorResponse) : null;
+
+        if (!response.ok || !payload || "error" in payload) {
+          const errorMessage =
+            payload && "error" in payload
+              ? (payload.error as string)
+              : "Failed to generate trailer";
+          throw new Error(errorMessage);
+        }
+
+        if (isCancelled) {
           return;
         }
-      } catch (error) {
-        console.warn("Trailer poll failed", error);
-      }
 
-      if (!isCancelled && Number.isFinite(maxPolls) && attempts >= maxPolls) {
-        setGenerationError(
-          "We haven't spotted your trailer yet. Please try again shortly.",
+        sessionStorage.setItem(
+          "generationResult",
+          JSON.stringify(payload as TrailerGenerationResponse),
         );
-        if (intervalId) {
-          clearInterval(intervalId);
+        setStatusMessage("Polishing your cinematic trailer...");
+        setIsGenerationComplete(true);
+      } catch (error) {
+        if (isCancelled) {
+          return;
         }
+        console.error(error);
+        setGenerationError(
+          error instanceof Error
+            ? error.message
+            : "Unexpected error during generation",
+        );
+        setStatusMessage("We hit a snag while generating your trailer.");
       }
     };
 
-    void checkTrailer();
-    intervalId = setInterval(() => {
-      void checkTrailer();
-    }, TRAILER_POLL_INTERVAL);
-
+    void runGeneration();
     return () => {
       isCancelled = true;
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
     };
-  }, [generationError, hasStoredResult]);
+  }, []);
 
   const handleRetry = () => {
     window.location.reload();

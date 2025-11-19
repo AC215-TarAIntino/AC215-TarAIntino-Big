@@ -1,4 +1,5 @@
 import base64
+from datetime import timedelta
 from pathlib import Path
 import time
 from typing import Dict, List, TypedDict
@@ -37,10 +38,15 @@ def upload_to_gcs(local_path: Path, dest_path: str) -> UploadResult:
     blob.upload_from_filename(str(local_path))
     gcs_uri = f"gs://{GCS_BUCKET_NAME}/{blob.name}"
     print(f"    ☁ Uploaded to {gcs_uri}")
-    blob.make_public()
-    url = blob.public_url
-    print(f"    ☁ Public URL: {url}")
-    return {"gcs_uri": gcs_uri, "public_url": url}
+
+    signed_url = blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(days=7),
+        method="GET",
+    )
+    print(f"    ☁ Signed URL (valid 7 days): {signed_url}")
+    return {"gcs_uri": gcs_uri, "public_url": signed_url}
+    
 
 
 
@@ -54,7 +60,7 @@ def generate_character_references(
         character_designs: List of CharacterDesign objects
 
     Returns:
-        Dict mapping character_name to asset metadata
+        Dict mapping character_name to image path
     """
     character_refs = {}
 
@@ -95,7 +101,7 @@ def generate_scene_videos(
         character_refs: Dict of character_name -> image_path
 
     Returns:
-        List of asset metadata for the rendered scene videos
+        List of video file paths
     """
     scene_videos = []
 
@@ -177,6 +183,11 @@ def generate_image(image_api_key, prompt: str) -> bytes:
             image = part.as_image()
             return image.image_bytes
 
+    raise RuntimeError(
+        "Gemini image API returned no binary data for prompt: "
+        f"{prompt[:80]}{'...' if len(prompt) > 80 else ''}"
+    )
+
 
 
 def generate_video_veo(
@@ -240,44 +251,51 @@ def generate_video_veo(
         time.sleep(10)
         operation = client.operations.get(operation)
 
-    # Download the generated video.
+    if operation.error:
+        print(
+            "❌ VEO operation failed:",
+            f"code={getattr(operation.error, 'code', None)}",
+            f"message={getattr(operation.error, 'message', None)}",
+        )
+        raise RuntimeError(
+            f"VEO generation failed: {getattr(operation.error, 'message', 'Unknown error')}"
+        )
+
+    if not operation.response or not getattr(operation.response, "generated_videos", None):
+        print("❌ VEO operation completed without generated videos. Response:", operation.response)
+        raise RuntimeError("VEO generation returned no videos")
+
     generated_video = operation.response.generated_videos[0]
     client.files.download(file=generated_video.video)
     return generated_video.video.video_bytes
 
 
+
+    
 def stitch_videos(video_paths: List[Path]) -> AssetInfo:
-    """Stitch scene videos together and upload the final trailer."""
-    import subprocess
+        """Stitch scene videos together and upload the trailer."""
+        import subprocess
 
-    # Create concat file for ffmpeg
-    concat_file = OUTPUT_DIR / "concat.txt"
-    with open(concat_file, "w") as f:
-        for video_path in video_paths:
-            f.write(f"file '{video_path.absolute()}'\n")
+        # Create concat file for ffmpeg
+        concat_file = OUTPUT_DIR / "concat.txt"
+        with open(concat_file, 'w') as f:
+            for video_path in video_paths:
+                f.write(f"file '{video_path.absolute()}'\n")
 
-    # Stitch with ffmpeg
-    output_path = OUTPUT_DIR / "trailer_no_audio.mp4"
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-y",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
-            "-i",
-            str(concat_file),
-            "-c",
-            "copy",
-            str(output_path),
-        ],
-        check=True,
-    )
+        # Stitch with ffmpeg
+        output_path = OUTPUT_DIR / "trailer_no_audio.mp4"
+        subprocess.run([
+            'ffmpeg', '-y',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', str(concat_file),
+            '-c', 'copy',
+            str(output_path)
+        ], check=True)
 
-    upload_result = upload_to_gcs(output_path, f"trailers/{output_path.name}")
+        upload_result = upload_to_gcs(output_path, f"trailers/{output_path.name}")
 
-    return {
-        "path": str(output_path),
-        **upload_result,
-    }
+        return {
+            "path": str(output_path),
+            **upload_result,
+        }
