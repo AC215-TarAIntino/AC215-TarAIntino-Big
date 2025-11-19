@@ -3,9 +3,12 @@ Scene generator using OpenRouter LLM for trailer breakdown.
 """
 
 import json
+import logging
 import time
 from typing import Optional, Dict, List
 from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 from .config import settings
 from .schemas import (
@@ -104,7 +107,7 @@ Before creating scenes, generate character designs for the top 4 main characters
 - image_generation_prompt: 6-8 sentence COMPLETE prompt for generating character reference image
   - MUST include: "standing on a pure white background"
   - MUST specify visual style matching movie (hyper-realistic, 3D animated, hand-drawn 2D animation, claymation, etc.)
-  - Full physical description: height, build, age, hair (style/color), eyes, facial features, clothing
+  - Full physical description: height (e.g., "about 6 feet tall", NOT "6'0\""), build, age, hair (style/color), eyes, facial features, clothing
   - Pose: standing, facing camera, neutral expression
   - Lighting: soft, even, no harsh shadows
   - Camera: straight-on, full body or 3/4 body shot
@@ -113,7 +116,7 @@ Before creating scenes, generate character designs for the top 4 main characters
 
 ### PHASE 2: SCENE GENERATION
 
-Create a trailer breakdown with {num_scenes} scenes. Each scene should be 4-8 seconds long (total ~{target_duration} seconds).
+Create a trailer breakdown with {num_scenes} scenes. **CRITICAL**: Each scene MUST be at least 4 seconds and at most 10 seconds. If using reference_images, MUST be exactly 8 seconds. Total ~{target_duration} seconds.
 
 ## ⚠️ VEO 3.1 REFERENCE IMAGES SYSTEM
 
@@ -233,7 +236,7 @@ Classic trailer flow (adapt to story):
     }},
     {{
       "scene_number": 2,
-      "duration_seconds": 6,
+      "duration_seconds": 6,  // MUST be 4-10 seconds (8 if reference_images is not empty)
       "scene_type": "establishing",
       "start_frame_prompt": "SELF-CONTAINED description, no characters...",
       "end_frame_prompt": "SELF-CONTAINED complete description...",
@@ -264,7 +267,7 @@ Classic trailer flow (adapt to story):
 4. **Character identification**: In ALL prompts, identify characters as "Name (brief_identifier)"
 5. **Self-contained prompts**: ZERO references to other scenes, COMPLETE context every time
 6. **Audio integration**: Naturally woven into video_prompt (no separate audio_notes field)
-7. **Duration**: 4-8 seconds per scene (8 if using reference_images), total ~{target_duration} seconds
+7. **Duration**: MINIMUM 4 seconds per scene, MAXIMUM 10 seconds. If using reference_images, MUST be exactly 8 seconds. Total ~{target_duration} seconds
 8. **Prompt length**: start/end 4-5 sentences, video 6-8 sentences
 9. **Absolute descriptions**: No relative terms ("higher", "closer", "remains"), only absolute measurements
 10. **Aspect ratio**: Use 16:9 for technical_specs (VEO 3.1 requirement with reference images)
@@ -326,7 +329,7 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
             if not content:
                 raise SceneGeneratorError("Empty response from LLM")
 
-            # Parse JSON response
+            # Parse JSON response with aggressive cleanup
             try:
                 # Try to extract JSON if there's extra text
                 json_start = content.find('{')
@@ -334,7 +337,39 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
                 if json_start != -1 and json_end > json_start:
                     content = content[json_start:json_end]
 
-                trailer_data = json.loads(content)
+                # Try strict parsing first
+                try:
+                    trailer_data = json.loads(content)
+                except json.JSONDecodeError:
+                    # If strict parsing fails, apply aggressive fixes
+                    import re
+
+                    # Save original for debugging
+                    original_content = content
+
+                    # Fix 1: Replace all newlines with spaces (more aggressive)
+                    content = re.sub(r'\s+', ' ', content)
+
+                    # Fix 2: Remove trailing commas before closing brackets/braces
+                    content = re.sub(r',(\s*[}\]])', r'\1', content)
+
+                    # Fix 3: Fix common quote escaping issues
+                    # Replace smart quotes with regular quotes
+                    content = content.replace('"', '"').replace('"', '"')
+                    content = content.replace(''', "'").replace(''', "'")
+
+                    # Try parsing again
+                    try:
+                        trailer_data = json.loads(content)
+                    except json.JSONDecodeError as e:
+                        # Last resort: try to find and log the specific error location
+                        error_pos = getattr(e, 'pos', None)
+                        if error_pos:
+                            context_start = max(0, error_pos - 100)
+                            context_end = min(len(content), error_pos + 100)
+                            error_context = content[context_start:context_end]
+                            logger.error(f"JSON error at position {error_pos}: {error_context}")
+                        raise
             except json.JSONDecodeError as e:
                 raise SceneGeneratorError(
                     f"Failed to parse LLM response as JSON: {e}\nResponse: {content[:500]}..."
