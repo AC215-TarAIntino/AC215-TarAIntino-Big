@@ -1,29 +1,30 @@
 # =============================================================================
-# TarAIntino Project - Git Ignore
+# AC215-TarAIntino-Big - Git Ignore
+# Centralized ignore patterns for the entire monorepo
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Environment & Secrets (CRITICAL - Never commit these!)
+# Environment & Secrets
 # -----------------------------------------------------------------------------
 .env
 *.env
 .env.*
+.env.local
+.env.*.local
+!.env.example
 *key.json
 *-key.json
+*.pem
+*.key
+*.crt
 secrets/
+!secrets/.gitkeep
 credentials/
 service-account*.json
-
-# -----------------------------------------------------------------------------
-# Test Files & Outputs
-# -----------------------------------------------------------------------------
-test_*.py
-check_*.py
-test_output/
-*.test.json
-outputs/
-generated_videos/
-temp_videos/
+adc.json
+secret.json
+credentials*.json
+API_call_test.json
 
 # -----------------------------------------------------------------------------
 # Python
@@ -51,47 +52,192 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-*.log
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
 
-# -----------------------------------------------------------------------------
 # Virtual Environments
-# -----------------------------------------------------------------------------
+.env
+.venv
+env/
 venv/
 ENV/
-env/
-.venv
+env.bak/
+venv.bak/
+.python-version
+
+# Package managers
+.uv/
+uv.lock
+.pdm-python
+.pdm-build/
+.pixi
+__pypackages__/
 
 # -----------------------------------------------------------------------------
-# IDE & Editor
+# IDEs & Editors
 # -----------------------------------------------------------------------------
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
 .DS_Store
+Thumbs.db
+desktop.ini
+.cursorignore
+.cursorindexingignore
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+profile_default/
+ipython_config.py
 
 # -----------------------------------------------------------------------------
-# Docker
+# Testing & Coverage
 # -----------------------------------------------------------------------------
-*.log
-docker-compose.override.yml
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.cover
+*.py.cover
+.hypothesis/
+cover/
+nosetests.xml
+coverage.xml
 
-# -----------------------------------------------------------------------------
-# ChromaDB / Vector Database
-# -----------------------------------------------------------------------------
-chroma_data/
-*.db
-*.sqlite
+# Test files
+test_*.py
+check_*.py
+test_output/
+*.test.json
 
 # -----------------------------------------------------------------------------
 # Logs & Temporary Files
 # -----------------------------------------------------------------------------
-logs/
 *.log
+logs/
+*.out
 tmp/
 temp/
 .cache/
+
+# -----------------------------------------------------------------------------
+# Docker
+# -----------------------------------------------------------------------------
+docker-compose.override.yml
+
+# -----------------------------------------------------------------------------
+# Database
+# -----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3-journal
+postgres-data/
+pgdata/
+
+# ChromaDB / Vector Database
+chroma_data/
+chroma_db/
+src/datapipeline/chroma_db/
+
+# -----------------------------------------------------------------------------
+# ML & Data
+# -----------------------------------------------------------------------------
+*.h5
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+data/
+!data/.gitkeep
+datasets/
+models/
+!models/.gitkeep
+checkpoints/
+wandb/
+mlruns/
+
+# Project-specific data
+src/dataweb/*
+!src/dataweb/.gitkeep
+
+# Datapipeline outputs
+src/datapipeline/logs/*.npy
+src/datapipeline/logs/*.npz
+src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
+
+# -----------------------------------------------------------------------------
+# Service Outputs
+# -----------------------------------------------------------------------------
+outputs/
+!outputs/.gitkeep
+output/
+!output/**/.gitkeep
+generated_videos/
+temp_videos/
+generated_movie.json
+
+# Video generator outputs
+/output/**/*.mp4
+/output/**/*.png
+sample_videos/
+
+# Screenplay writer / Scene decomposer
+screenplay-writer/outputs/*.json
+scene-decomposer/outputs/*.json
+
+# -----------------------------------------------------------------------------
+# Node.js / Frontend (Next.js specific)
+# -----------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.pnp.*
+.yarn/
+dist/
+build/
+.next/
+out/
+
+# Frontend specific (covered by frontend/.gitignore but listed for clarity)
+# See frontend/.gitignore for detailed Next.js patterns
+
+# -----------------------------------------------------------------------------
+# Documentation & Hand-ins
+# -----------------------------------------------------------------------------
+docs/
+hand-ins/*.png
+hand-ins/*.jpg
+hand-ins/*.jpeg
+# Keep README and markdown files in hand-ins
+
+# -----------------------------------------------------------------------------
+# Type Checkers & Linters
+# -----------------------------------------------------------------------------
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# -----------------------------------------------------------------------------
+# Project Management
+# -----------------------------------------------------------------------------
+.abstra/
 
 # -----------------------------------------------------------------------------
 # OS Files
@@ -99,26 +245,19 @@ temp/
 .DS_Store
 Thumbs.db
 desktop.ini
+*~
 
 # -----------------------------------------------------------------------------
-# Coverage & Testing
+# Marimo
 # -----------------------------------------------------------------------------
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
+marimo/_static/
+marimo/_lsp/
+__marimo__/
 
 # -----------------------------------------------------------------------------
-# Node.js (for frontend)
+# Exceptions (files to keep even if they match patterns above)
 # -----------------------------------------------------------------------------
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.next/
-out/
-
-# -----------------------------------------------------------------------------
-# Exceptions
-# -----------------------------------------------------------------------------
+!package.json
+!package-lock.json
+!tsconfig.json
 !frontend/lib/
