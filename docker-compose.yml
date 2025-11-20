@@ -123,7 +123,7 @@ services:
   # Video Generator Service
   video-generator:
     build:
-      context: ./Video_Generator
+      context: ./video-generator
       dockerfile: Dockerfile
     container_name: video-generator
     ports:
@@ -133,8 +133,8 @@ services:
       - GCS_BUCKET_NAME=tarantaino-output
       - GCS_PREFIX=video_generator_outputs
     volumes:
-      - ./Video_Generator/output:/app/output
-      - ./Video_Generator/secrets.json:/app/secrets.json:ro
+      - ./video-generator/output:/app/output
+      - ./video-generator/secrets.json:/app/secrets.json:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/health"]

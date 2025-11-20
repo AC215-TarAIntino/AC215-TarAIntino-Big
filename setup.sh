@@ -47,8 +47,8 @@ if [ ! -f "quiz-vector/secrets/llm-service-account.json" ]; then
     echo "     Please add your GCS service account JSON file"
 fi
 
-if [ ! -f "Video_Generator/secrets.json" ]; then
-    echo "  ⚠️  Video_Generator/secrets.json not found"
+if [ ! -f "video-generator/secrets.json" ]; then
+    echo "  ⚠️  video-generator/secrets.json not found"
     echo "     Please add your GCS service account JSON file"
 fi
 echo ""
