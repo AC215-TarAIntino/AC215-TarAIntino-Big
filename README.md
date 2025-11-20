@@ -52,11 +52,13 @@ AC215-TarAIntino-Big/
 │   ├── src/                        # Source code
 │   ├── tests/                      # Unit tests
 │   ├── outputs/                    # Generated outputs
+│   ├── .env.example                # Environment template
 │   └── README.md                   # Screenplay service docs
 ├── scene-decomposer/               # Trailer breakdown service
 │   ├── src/                        # Source code
 │   ├── tests/                      # Unit tests
 │   ├── outputs/                    # Generated outputs
+│   ├── .env.example                # Environment template
 │   └── README.md                   # Scene decomposer docs
 ├── video-generator/                # Video generation service
 │   ├── output/                     # Generated videos
@@ -100,30 +102,23 @@ cd AC215-TarAIntino-Big
 
 #### 2. Configure API Keys
 
-Edit `.env` with your credentials:
-
+**Screenplay Writer Service:**
 ```bash
-# OpenRouter API Configuration
-OPENROUTER_API_KEY=sk-or-v1-YOUR_KEY_HERE
-OPENROUTER_MODEL=anthropic/claude-3-haiku
+cd screenplay-writer
+cp .env.example .env
+# Edit .env and add your API keys:
+# - OPENROUTER_API_KEY
+# - OMDB_API_KEY
+cd ..
+```
 
-# OMDb API Configuration
-OMDB_API_KEY=YOUR_KEY_HERE
-
-# Google Cloud Configuration
-GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-GCS_BUCKET_NAME=tarantaino-output
-GCS_PREFIX=video_generator_outputs
-
-# Service Configuration
-DEFAULT_TRAILER_DURATION=35
-INCLUDE_NARRATION=true
-
-# ChromaDB Configuration
-CHROMA_SERVER_HOST=chroma
-CHROMA_SERVER_PORT=8000
-CHROMA_COLLECTION=movie_tag_relevance_cos
+**Scene Decomposer Service:**
+```bash
+cd scene-decomposer
+cp .env.example .env
+# Edit .env and add your API keys:
+# - OPENROUTER_API_KEY
+cd ..
 ```
 
 **Get your API keys:**
@@ -151,12 +146,6 @@ cat > video-generator/secret.json << 'EOF'
 EOF
 ```
 
-**Copy .env to services:**
-```bash
-cp .env screenplay-writer/.env
-cp .env scene-decomposer/.env
-```
-
 #### 4. Create GCS Bucket
 
 ```bash
@@ -182,6 +171,8 @@ docker-compose up --build -d
 # Check service status
 docker-compose ps
 ```
+
+**Note:** On first startup, the `chroma-init` service will automatically populate ChromaDB with movie tag data from GCS. This process may take 1-2 minutes. The quiz service will wait for this initialization to complete before starting.
 
 ### Verify Services
 
@@ -269,6 +260,7 @@ For detailed implementation information, see the README files in each service di
 - Store and retrieve movie tag embeddings
 - Similarity search for recommendations
 - Persistent storage for taste vectors
+- **Automatic initialization**: Database is automatically populated from GCS on first startup via the `chroma-init` service
 
 ## Pipeline Usage
 
@@ -456,17 +448,22 @@ result = generate_trailer(taste_vector)
 
 ## Environment Variables
 
-All configuration is managed through environment variables. Copy `.env.example` to `.env` and configure:
+Configuration is managed through service-specific `.env` files and docker-compose environment variables.
+
+**Service-specific configuration:**
+- `screenplay-writer/.env` - OpenRouter and OMDb API keys
+- `scene-decomposer/.env` - OpenRouter API key and trailer settings
+- `video-generator/secret.json` - Google Gemini API key
+- `quiz-vector/secrets/llm-service-account.json` - GCS service account
 
 **Key variables:**
-- `OPENROUTER_API_KEY` - LLM service API key
-- `OMDB_API_KEY` - Movie metadata API key
-- `GOOGLE_APPLICATION_CREDENTIALS` - Path to service account key
+- `OPENROUTER_API_KEY` - LLM service API key (screenplay-writer, scene-decomposer)
+- `OMDB_API_KEY` - Movie metadata API key (screenplay-writer)
+- `GOOGLE_APPLICATION_CREDENTIALS` - Path to service account key (quiz-vector, video-generator)
 - `GCS_BUCKET_NAME` - Google Cloud Storage bucket
-- `CHROMA_SERVER_HOST` - ChromaDB host
-- `DEFAULT_TRAILER_DURATION` - Target trailer length in seconds
+- `DEFAULT_TRAILER_DURATION` - Target trailer length in seconds (scene-decomposer)
 
-**Important:** Never commit `.env` or service account keys to Git!
+**Important:** Never commit `.env` files, `secret.json`, or service account keys to Git!
 
 ## Troubleshooting
 
@@ -557,36 +554,24 @@ docker build --no-cache -t service-name .
 
 ```
 AC215-TarAIntino-Big/
-├── .env                              # Root environment (copy to services)
-├── .env.example                      # Template
 ├── docker-compose.yml                # Service orchestration
 ├── pipeline2.py                      # Full orchestration pipeline
 │
 ├── quiz-vector/
 │   └── secrets/
-│       └── llm-service-account.json  # GCS credentials
+│       └── llm-service-account.json  # GCS service account (required)
 │
 ├── screenplay-writer/
-│   └── .env                          # Service config
+│   ├── .env.example                  # Template
+│   └── .env                          # API keys (create from .env.example)
 │
 ├── scene-decomposer/
-│   └── .env                          # Service config
+│   ├── .env.example                  # Template
+│   └── .env                          # API keys (create from .env.example)
 │
 └── video-generator/
-    └── secret.json                   # Gemini API credentials
+    └── secret.json                   # Gemini API key (required)
 ```
-
-## Resource Requirements
-
-**Minimum:**
-- RAM: 8GB
-- Disk: 2GB for Docker images + 500MB per trailer
-- Network: Stable internet for API calls
-
-**Recommended:**
-- RAM: 16GB
-- Disk: 10GB
-- Network: High-speed connection
 
 ## Updating Subtree Repositories
 
@@ -603,27 +588,7 @@ git subtree pull --prefix=<repo_name> <repo_name> main -m "chore: subtree pull <
 git push origin main
 ```
 
-## Best Practices
-
-### Security
-- Use environment variables for all secrets
-- Never commit `.env` or credential files
-- Store service account keys outside repository
-- Use `.gitignore` for sensitive files
-
-### Docker
-- Health checks for monitoring
-- Non-root users for security
-- Volume mounts for persistent data
-- Network isolation with Docker networks
-
-### Testing
-- Test each service independently
-- Use health endpoints to verify status
-- Monitor logs during development
-- Test full pipeline before deployment
-
-## Resources
+## References
 
 ### Documentation
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
@@ -638,27 +603,18 @@ git push origin main
 - [Scene Decomposer Service](scene-decomposer/README.md)
 - [Frontend Application](frontend/README.md)
 
-## Support
-
-For questions or issues:
-
-1. Check the service-specific READMEs
-2. Review the troubleshooting section
-3. Check Docker logs for error messages
-4. Verify all API keys and credentials
-5. Contact the team maintainers
-
 ## Summary Checklist
 
 Before running the full system:
 
-- [ ] `.env` file configured with all API keys
+- [ ] `screenplay-writer/.env` created from `.env.example` with API keys
+- [ ] `scene-decomposer/.env` created from `.env.example` with API keys
 - [ ] `video-generator/secret.json` created with Gemini API key
-- [ ] Google Cloud service account key downloaded and path set
-- [ ] GCS bucket created (`tarantaino-output`)
+- [ ] `quiz-vector/secrets/llm-service-account.json` - GCS service account key added
+- [ ] GCS bucket created (`tarantaino-output`) with tag genome data uploaded
 - [ ] All Docker services started (`docker-compose up -d`)
+- [ ] ChromaDB initialization completed (check logs: `docker logs chroma-init`)
 - [ ] All health endpoints responding (`/health`)
-- [ ] Test script runs successfully (`python test_full_simple.py`)
 
 **Estimated setup time:** 30-45 minutes (first time)
 
@@ -666,4 +622,4 @@ Before running the full system:
 
 ---
 
-**Happy Building!**
+**Happy Trailer Generating!**
