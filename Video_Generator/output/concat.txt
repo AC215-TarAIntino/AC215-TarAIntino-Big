@@ -1,5 +1,2 @@
 file '/Users/jwy/Desktop/Advanced DS APCOMP 215/Groupproject/AC215-TarAIntino-Big/Video_Generator/output/scenes/scene_01.mp4'
 file '/Users/jwy/Desktop/Advanced DS APCOMP 215/Groupproject/AC215-TarAIntino-Big/Video_Generator/output/scenes/scene_02.mp4'
-file '/Users/jwy/Desktop/Advanced DS APCOMP 215/Groupproject/AC215-TarAIntino-Big/Video_Generator/output/scenes/scene_03.mp4'
-file '/Users/jwy/Desktop/Advanced DS APCOMP 215/Groupproject/AC215-TarAIntino-Big/Video_Generator/output/scenes/scene_04.mp4'
-file '/Users/jwy/Desktop/Advanced DS APCOMP 215/Groupproject/AC215-TarAIntino-Big/Video_Generator/output/scenes/scene_05.mp4'
