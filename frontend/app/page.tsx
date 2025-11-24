@@ -1,4 +1,5 @@
 "use client";
+// Test comment for pre-commit hook verification
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
