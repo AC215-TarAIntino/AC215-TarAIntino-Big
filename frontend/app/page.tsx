@@ -1,5 +1,4 @@
 "use client";
-// Testing Husky pre-commit hook
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
