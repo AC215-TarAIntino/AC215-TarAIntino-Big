@@ -27,6 +27,7 @@ secrets.json
 credentials*.json
 API_call_test.json
 gcp-credentials.json
+Sample.json
 
 # -----------------------------------------------------------------------------
 # Python

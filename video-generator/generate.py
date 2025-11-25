@@ -207,15 +207,19 @@ def generate_video_veo(
         for img_bytes in reference_images:
             # Convert bytes to Image type
             img = types.Image(image_bytes=img_bytes)
+            # Use proper reference config - no need to specify type, it defaults correctly
             ref_img = types.SubjectReferenceImage(referenceImage=img)
             ref_images.append(ref_img)
         config = {"reference_images": ref_images}
+
+    # Convert start frame to Image type (not Part)
+    start_image = types.Image(image_bytes=start_frame) if start_frame else None
 
     # Generate video using generate_videos (correct method for VEO)
     operation = client.models.generate_videos(
         model="veo-3.1-generate-preview",
         prompt=prompt,
-        image=types.Part.from_bytes(data=start_frame, mime_type="image/png") if start_frame else None,
+        image=start_image,
         config=config,
     )
 
