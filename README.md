@@ -147,30 +147,14 @@ cat > video-generator/secret.json << 'EOF'
 EOF
 ```
 
-#### 4. Create GCS Bucket
-
-```bash
-# Set your project
-gcloud config set project your-project-id
-
-# Create bucket
-gsutil mb -l us-central1 gs://tarantaino-output
-
-# Verify
-gsutil ls gs://tarantaino-output
-```
-
 ### Start All Services
 
 ```bash
-# Build and start all services
-docker-compose up --build
-
-# Or run in background
+# Build and start all services (in background)
 docker-compose up --build -d
 
 # Check service status
-docker-compose ps
+docker-compose ps -a
 ```
 
 **Note:** On first startup, the `chroma-init` service will automatically populate ChromaDB with movie tag data from GCS. This process may take 1-2 minutes. The quiz service will wait for this initialization to complete before starting.
@@ -185,8 +169,6 @@ curl http://localhost:8001/health  # Scene Decomposer
 curl http://localhost:8003/health  # Video Generator
 curl http://localhost:3000         # Frontend
 ```
-
-All should return `{"status":"ok"}` or display the frontend.
 
 ## Services
 
