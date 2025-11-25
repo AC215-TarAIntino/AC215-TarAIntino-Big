@@ -1,10 +1,10 @@
-# Trailer Generator API
+# Scene Decomposer Service
 
 AI-powered microservice that generates detailed scene-by-scene trailer breakdowns from movie descriptions. Creates production-ready prompts for video generation (VEO 3.1), image generation (DALL-E/Flux), and narration (ElevenLabs).
 
 ## Overview
 
-This service takes a complete movie description (from `mcp-screenplay` or similar) and generates a detailed trailer breakdown with:
+This service takes a complete movie description (from `screenplay-writer` or similar) and generates a detailed trailer breakdown with:
 
 - **Character reference images**: Generates design prompts for up to 4 main characters (white background, visual style-matched)
 - **Scene-by-scene structure**: 4-8 scenes, each 4-8 seconds long (8s when using character references)
@@ -111,11 +111,11 @@ controlled breathing."
 Part of a larger AI movie production pipeline:
 
 ```
-mcp-screenplay → movie.json
+screenplay-writer → movie.json
     ↓
-mcp-trailer-generator → trailer_scenes.json
+scene-decomposer → trailer_scenes.json
     ↓
-orchestrator-service → actual video (VEO 3.1 API calls)
+video-generator → actual video (VEO 3.1 API calls)
 ```
 
 **Design Philosophy**: This service handles creative decisions (what scenes, what prompts). Actual API calls to VEO, DALL-E, and ElevenLabs are handled by a separate orchestration service for:
@@ -133,10 +133,9 @@ orchestrator-service → actual video (VEO 3.1 API calls)
 
 ### Option 1: Local Development
 
-1. **Clone the repository**
+1. **Navigate to service directory**
 ```bash
-git clone <repository-url>
-cd mcp-trailer-generator
+cd scene-decomposer
 ```
 
 2. **Create virtual environment**
@@ -147,7 +146,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. **Install dependencies**
 ```bash
-pip install -r requirements.txt
+pip install -e .
+# Or for development with testing tools:
+pip install -e ".[dev]"
 ```
 
 4. **Configure environment variables**
@@ -253,7 +254,7 @@ python tests/test_standalone.py \
 **Example:**
 ```bash
 python tests/test_standalone.py \
-  --movie-file ../mcp-screenplay/outputs/test_scifi.json \
+  --movie-file ../screenplay-writer/outputs/test_scifi.json \
   --duration 45 \
   --output outputs/scifi_trailer.json
 ```
@@ -459,19 +460,19 @@ All scenes maintain character consistency via reference images!
 
 ```
 ┌─────────────────┐
-│ mcp-screenplay  │ → Generates movie descriptions
+│ screenplay-     │ → Generates movie descriptions
+│ writer          │
 └────────┬────────┘
          │
          ↓ movie.json
 ┌─────────────────────┐
-│ mcp-trailer-        │ → Generates scene breakdown
-│ generator           │
+│ scene-decomposer    │ → Generates scene breakdown
 └────────┬────────────┘
          │
          ↓ trailer_scenes.json
 ┌─────────────────────┐
-│ Orchestrator        │ → Calls VEO, DALL-E, ElevenLabs APIs
-│ Service             │ → Stitches video
+│ video-generator     │ → Calls VEO, DALL-E, ElevenLabs APIs
+│                     │ → Stitches video
 └────────┬────────────┘
          │
          ↓
@@ -487,14 +488,14 @@ from typing import Dict
 
 # 1. Generate movie description
 movie_response = requests.post(
-    "http://mcp-screenplay:8000/generate-movie",
+    "http://screenplay-writer:8080/generate-movie",
     json={"movie_names": ["Inception", "The Matrix"]}
 )
 movie = movie_response.json()["movie"]
 
 # 2. Generate trailer breakdown
 trailer_response = requests.post(
-    "http://mcp-trailer-generator:8001/generate-trailer",
+    "http://scene-decomposer:8001/generate-trailer",
     json={"movie": movie, "target_duration": 35}
 )
 trailer = trailer_response.json()["trailer"]
@@ -558,7 +559,7 @@ for scene in trailer["scenes"]:
 ## Project Structure
 
 ```
-mcp-trailer-generator/
+scene-decomposer/
 ├── src/
 │   └── trailer_generator/
 │       ├── __init__.py           # Package initialization
@@ -570,11 +571,10 @@ mcp-trailer-generator/
 ├── tests/
 │   └── test_standalone.py         # CLI testing script
 ├── outputs/                       # Generated trailer JSONs
-├── requirements.txt               # Python dependencies
+├── pyproject.toml                 # Python dependencies and config
 ├── Dockerfile                     # Docker container config
 ├── docker-compose.yml             # Docker Compose config
 ├── .env.example                   # Environment template
-├── .gitignore                     # Git ignore rules
 └── README.md                      # This file
 ```
 
@@ -660,6 +660,6 @@ For issues, questions, or suggestions, please open an issue on the repository.
 ---
 
 **Part of the AI Movie Production Pipeline**
-- Movie Generator: [mcp-screenplay](../mcp-screenplay)
-- Trailer Generator: [mcp-trailer-generator](.) (this service)
-- Orchestrator: Coming soon
+- Movie Generator: [screenplay-writer](../screenplay-writer)
+- Trailer Generator: [scene-decomposer](.) (this service)
+- Video Generator: [video-generator](../video-generator)

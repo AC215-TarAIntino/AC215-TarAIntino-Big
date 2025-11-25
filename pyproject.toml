@@ -1,0 +1,68 @@
+[project]
+name = "ac215-tarantino-big"
+version = "1.0.0"
+description = "End-to-end AI movie trailer generation application with adaptive quiz and modular pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "Mathilde Cros"},
+    {name = "Robert Debbas"},
+    {name = "Maddy Jin"},
+    {name = "Karlo Vrancic"},
+]
+
+dependencies = [
+    # HTTP requests
+    "requests>=2.32.5",
+    # Google Cloud Storage
+    "google-cloud-storage>=2.19.0",
+    # Logging and utilities
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    # Linting and formatting
+    "ruff>=0.14.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "--verbose",
+    "--cov=.",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+]

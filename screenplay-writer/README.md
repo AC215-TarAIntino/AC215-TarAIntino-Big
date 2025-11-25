@@ -1,6 +1,6 @@
-# Movie Pipeline
+# Screenplay Writer Service
 
-A movie inspiration pipeline that generates new movie concepts based on existing movies. Uses OMDb API for movie data and OpenRouter for LLM-powered generation.
+A movie concept generation service that creates new movie ideas based on existing films. Uses OMDb API for movie data and OpenRouter for LLM-powered generation.
 
 ## Overview
 
@@ -36,10 +36,9 @@ Input: Movie Names → OMDb API → Data Aggregation → OpenRouter LLM → Gene
 
 ### Option 1: Local Development
 
-1. **Clone the repository**
+1. **Navigate to service directory**
 ```bash
-git clone <repository-url>
-cd mcp-screenplay
+cd screenplay-writer
 ```
 
 2. **Create virtual environment**
@@ -50,7 +49,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. **Install dependencies**
 ```bash
-pip install -r requirements.txt
+pip install -e .
+# Or for development with testing tools:
+pip install -e ".[dev]"
 ```
 
 4. **Configure environment variables**
@@ -228,7 +229,7 @@ Generate a new movie concept based on existing movies.
 ## Project Structure
 
 ```
-mcp-screenplay/
+screenplay-writer/
 ├── src/
 │   └── movie_pipeline/
 │       ├── __init__.py           # Package initialization
@@ -239,12 +240,11 @@ mcp-screenplay/
 │       └── api.py                 # FastAPI application
 ├── tests/
 │   └── test_standalone.py         # CLI testing script
-├── docs/                          # Documentation
-├── requirements.txt               # Python dependencies
+├── outputs/                       # Generated movie JSONs
+├── pyproject.toml                 # Python dependencies and config
 ├── Dockerfile                     # Docker container config
 ├── docker-compose.yml             # Docker Compose config
 ├── .env.example                   # Environment template
-├── .gitignore                     # Git ignore rules
 └── README.md                      # This file
 ```
 

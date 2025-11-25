@@ -1,0 +1,44 @@
+[project]
+name = "screenplay-writer"
+version = "1.0.0"
+description = "Movie concept generation service using OMDb API and OpenRouter LLM"
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    # Core API Framework
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.30.6",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.5.2",
+    # HTTP client
+    "requests==2.32.3",
+    "httpx>=0.28.1",
+    # OpenAI SDK (used for OpenRouter)
+    "openai>=1.50.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "httpx>=0.28.1",
+    "ruff>=0.14.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = ["--verbose", "--cov=src", "--cov-report=term-missing"]

@@ -10,10 +10,10 @@ services:
     volumes: [chroma_data:/chroma]
     restart: unless-stopped
 
-  # Build once from src/
+  # Build from quiz-vector root
   app:
     build:
-      context: ./src
+      context: .
       dockerfile: Dockerfile
     image: taraintino-base:latest
     container_name: rag-app
@@ -21,7 +21,7 @@ services:
     tty: true
     environment:
 
-      # GCS auth (you placed adc.json under src/)
+      # GCS auth
       GOOGLE_APPLICATION_CREDENTIALS: /app/adc.json
 
       # Chroma over HTTP
@@ -31,9 +31,9 @@ services:
 
       LOG_DIR: /app/datapipeline/logs
     volumes:
-      # mount your src so edits reflect inside containers
+      # mount service directory so edits reflect inside containers
       - ./secrets/llm-service-account.json:/app/adc.json:ro
-      - ./src:/app
+      - .:/app
     depends_on: [chroma]
 
   quiz-service:
@@ -48,7 +48,7 @@ services:
       PRIOR_COV_PATH: /app/datapipeline/logs/prior_cov.npy
       TAG_INDEX_JSON: /app/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
     volumes:
-      - ./src:/app
+      - .:/app
     ports: ["8082:8082"]
     depends_on: [chroma, app]
 

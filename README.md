@@ -71,8 +71,9 @@ AC215-TarAIntino-Big/
 │   └── README.md                   # Frontend documentation
 ├── docker-compose.yml              # Service orchestration
 ├── pipeline2.py                    # Full orchestration pipeline
+├── pyproject.toml                  # Python dependencies and config
+├── .env.example                    # Environment template
 ├── .gitignore                      # Git ignore rules
-├── requirements.txt                # Python dependencies
 ├── setup.sh                        # Setup script
 └── README.md                       # This file
 ```

@@ -26,7 +26,7 @@ services:
   # ChromaDB Initialization - Populate database on startup
   chroma-init:
     build:
-      context: ./quiz-vector/src
+      context: ./quiz-vector
       dockerfile: Dockerfile
     image: taraintino-base:latest
     container_name: chroma-init
@@ -50,7 +50,7 @@ services:
       BATCH_SIZE: "2000"
     volumes:
       - ./quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
-      - ./quiz-vector/src:/app
+      - ./quiz-vector:/app
     depends_on:
       chroma:
         condition: service_healthy
@@ -61,7 +61,7 @@ services:
   # Quiz Vector - RAG App (Data Pipeline)
   quiz-rag-app:
     build:
-      context: ./quiz-vector/src
+      context: ./quiz-vector
       dockerfile: Dockerfile
     image: taraintino-base:latest
     container_name: quiz-rag-app
@@ -75,7 +75,7 @@ services:
       LOG_DIR: /app/datapipeline/logs
     volumes:
       - ./quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
-      - ./quiz-vector/src:/app
+      - ./quiz-vector:/app
     depends_on:
       chroma-init:
         condition: service_completed_successfully
@@ -95,7 +95,7 @@ services:
       PRIOR_COV_PATH: /app/datapipeline/logs/prior_cov.npy
       TAG_INDEX_JSON: /app/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
     volumes:
-      - ./quiz-vector/src:/app
+      - ./quiz-vector:/app
     ports:
       - "8082:8082"
     depends_on:

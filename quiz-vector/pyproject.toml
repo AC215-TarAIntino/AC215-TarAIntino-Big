@@ -1,8 +1,8 @@
 [project]
-name = "tarAIntino-datapipeline"
+name = "quiz-vector"
 version = "0.1.0"
-description = "Data ingestion and preprocessing pipeline for the TarAIntino project."
-readme = "../README.md"
+description = "Quiz service and RAG system with Bayesian preference learning for the TarAIntino project"
+readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
