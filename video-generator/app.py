@@ -30,6 +30,8 @@ app = FastAPI(
 class CharacterDesign(BaseModel):
     character_name: str = Field(..., description="Used as the filename under output/refs")
     image_generation_prompt: str
+    brief_identifier: Optional[str] = Field(None, description="Brief identifier for the character")
+    visual_style: Optional[str] = Field(None, description="Visual style description")
 
 
 class Scene(BaseModel):
@@ -40,6 +42,8 @@ class Scene(BaseModel):
     end_frame_prompt: str
     video_prompt: str
     reference_images: List[str] = Field(default_factory=list)
+    characters_present: Optional[List[str]] = Field(None, description="List of characters in this scene")
+    continuity_note: Optional[str] = Field(None, description="Continuity notes for this scene")
 
 
 class CharacterReferenceRequest(BaseModel):
@@ -90,23 +94,29 @@ class TrailerGenerationResponse(BaseModel):
     trailer_path: Optional[str]
 
 
-def _load_default_api_key() -> Optional[str]:
-    secret_path = Path("secret.json")
+def _load_default_api_key(key_name: str = "image_api_key") -> Optional[str]:
+    """Load API key from secrets.json file"""
+    secret_path = Path("secrets.json")  # Changed from secret.json to secrets.json
     if not secret_path.exists():
-        return None
+        # Fallback to old name
+        secret_path = Path("secret.json")
+        if not secret_path.exists():
+            return None
     try:
         payload = json.loads(secret_path.read_text())
     except json.JSONDecodeError as exc:
         raise HTTPException(status_code=500, detail=f"Invalid secret.json format: {exc}") from exc
-    return payload.get("project_api_key")
+
+    # Try the requested key name first, then fallback to project_api_key
+    return payload.get(key_name) or payload.get("project_api_key")
 
 
 def _resolve_api_key(provided: Optional[str], key_name: str) -> str:
-    api_key = provided or _load_default_api_key()
+    api_key = provided or _load_default_api_key(key_name)
     if not api_key:
         raise HTTPException(
             status_code=400,
-            detail=f"{key_name} is required. Provide it in the request body or secret.json.",
+            detail=f"{key_name} is required. Provide it in the request body or secrets.json.",
         )
     return api_key
 
@@ -230,8 +240,14 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
             trailer_path = stitch_videos(scene_paths)
 
     except ValueError as exc:
+        print(f"❌ ValueError in trailer generation: {exc}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        print(f"❌ Exception in trailer generation: {exc}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return TrailerGenerationResponse(

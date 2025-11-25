@@ -41,7 +41,7 @@ services:
       CHROMA_SERVER_HOST: chroma
       CHROMA_SERVER_PORT: "8000"
       CHROMA_COLLECTION: movie_tag_relevance_cos
-      GCS_BUCKET: ${GCS_BUCKET_NAME:-tarantaino-output}
+      GCS_BUCKET: ${GCS_BUCKET_NAME:-tag-genome-data}
       TAG_REL_OBJECT: datasets/tag_genome/tag_relevance.dat
       MOVIES_OBJECT: datasets/tag_genome/movies.dat
       TAGS_OBJECT: datasets/tag_genome/tags.dat
@@ -115,14 +115,11 @@ services:
     container_name: screenplay-writer
     ports:
       - "8080:8000"
-    environment:
-      - OMDB_API_KEY=${OMDB_API_KEY}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemini-2.0-flash-exp:free}
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
     env_file:
       - ./screenplay-writer/.env
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
     volumes:
       - ./screenplay-writer/output:/app/output
     restart: unless-stopped
@@ -143,15 +140,11 @@ services:
     container_name: scene-decomposer
     ports:
       - "8001:8001"
-    environment:
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
-      - API_HOST=0.0.0.0
-      - API_PORT=8001
-      - DEFAULT_TRAILER_DURATION=${DEFAULT_TRAILER_DURATION:-35}
-      - INCLUDE_NARRATION=${INCLUDE_NARRATION:-true}
     env_file:
       - ./scene-decomposer/.env
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8001
     volumes:
       - ./scene-decomposer/outputs:/app/outputs
     restart: unless-stopped
@@ -173,12 +166,13 @@ services:
     ports:
       - "8003:8003"
     environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
       - GCS_BUCKET_NAME=tarantaino-output
       - GCS_PREFIX=video_generator_outputs
     volumes:
       - ./video-generator/output:/app/output
       - ./video-generator/secrets.json:/app/secrets.json:ro
+      - ./video-generator/gcp-credentials.json:/app/gcp-credentials.json:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
@@ -194,12 +188,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_QUIZ_API_URL: http://localhost:8082
     container_name: frontend
     ports:
-      - "3000:3000"
+      - "3000:3002"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_QUIZ_API_URL=http://quiz-service:8082
+      - NEXT_PUBLIC_QUIZ_API_URL=http://localhost:8082
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
     restart: unless-stopped
     depends_on:

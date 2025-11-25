@@ -62,8 +62,26 @@ export default function QuizPage() {
         setProgress(response.progress);
 
         if (response.status === "complete" || response.next_question === null) {
-          // Quiz complete - navigate to generating page
-          router.push("/generating");
+          // Quiz complete - get taste vector and navigate to generating page
+          const { completeQuiz } = await import("@/lib/api/quizService");
+
+          try {
+            const completeResponse = await completeQuiz(sessionId);
+
+            // Store session data for video generation
+            sessionStorage.setItem("sessionId", sessionId);
+            sessionStorage.setItem("tasteVector", JSON.stringify(completeResponse.taste_vector));
+
+            console.log("Quiz completed - taste vector:", completeResponse.taste_vector.length, "dimensions");
+
+            // Navigate to generating page
+            router.push("/generating");
+          } catch (completeErr) {
+            console.error("Failed to complete quiz:", completeErr);
+            // Still navigate even if complete fails - we have the sessionId
+            sessionStorage.setItem("sessionId", sessionId);
+            router.push("/generating");
+          }
         } else {
           // Show next question
           setCurrentQuestion(response.next_question);

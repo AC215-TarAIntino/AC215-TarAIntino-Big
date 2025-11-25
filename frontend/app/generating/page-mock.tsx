@@ -26,17 +26,17 @@ const PHASES = [
   {
     id: 3,
     title: "Generating AI scenes...",
-    description: "Creating visual sequences (this may take 5-15 minutes)",
+    description: "Creating visual sequences",
     icon: Film,
-    progress: [50, 90],
+    progress: [50, 75],
     color: "#ffd700",
   },
   {
     id: 4,
-    title: "Finalizing your trailer...",
-    description: "Polishing and uploading to GCS",
+    title: "Adding final cinematic touches...",
+    description: "Polishing your trailer",
     icon: Sparkles,
-    progress: [90, 100],
+    progress: [75, 100],
     color: "#00ffff",
   },
 ];
@@ -45,148 +45,44 @@ export default function GeneratingPage() {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
-  const [statusMessage, setStatusMessage] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState("15-20 minutes");
 
   useEffect(() => {
-    // Start elapsed time counter
-    const startTime = Date.now();
-    const timeInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      setElapsedTime(elapsed);
-    }, 1000);
+    // Smooth progress animation over 8 seconds
+    const duration = 8000; // 8 seconds
+    const interval = 50; // Update every 50ms
+    const steps = duration / interval;
+    const increment = 100 / steps;
 
-    const startGeneration = async () => {
-      try {
-        // Get session data from sessionStorage
-        const sessionId = sessionStorage.getItem("sessionId");
-        const tasteVectorStr = sessionStorage.getItem("tasteVector");
+    let currentProgress = 0;
 
-        if (!sessionId || !tasteVectorStr) {
-          console.error("Missing session data");
-          setError("Session expired. Please start the quiz again.");
-          setTimeout(() => router.push("/"), 3000);
-          clearInterval(timeInterval);
-          return;
-        }
+    const timer = setInterval(() => {
+      currentProgress += increment;
 
-        const tasteVector = JSON.parse(tasteVectorStr);
-        console.log("Starting video generation for session:", sessionId);
-
-        // Import the video service dynamically
-        const { startVideoGeneration, pollForVideo } = await import("@/lib/api/videoService");
-
-        setStatusMessage("Initiating pipeline...");
-        setProgress(5);
-
-        // Start video generation (triggers backend pipeline)
-        setStatusMessage("🎬 Connecting to AI services...");
-        const result = await startVideoGeneration(sessionId, tasteVector);
-
-        if (!result.success) {
-          clearInterval(timeInterval);
-          throw new Error(result.error || "Failed to start video generation");
-        }
-
-        setStatusMessage("✅ Pipeline started! Getting movie recommendations...");
-        setProgress(10);
-        setCurrentPhaseIndex(0);
-        setEstimatedTimeRemaining("15-20 minutes");
-
-        // Poll for completion
-        const videoStatus = await pollForVideo(sessionId, {
-          maxAttempts: 360, // 30 minutes at 5 second intervals (increased from 15 min)
-          intervalMs: 5000,
-          onProgress: (status) => {
-            console.log("Video status:", status);
-
-            // Update progress based on status
-            if (status.progress !== undefined) {
-              setProgress(status.progress);
-
-              // Update phase based on progress with detailed messages
-              if (status.progress < 25) {
-                setCurrentPhaseIndex(0);
-                setStatusMessage("🔍 Analyzing your taste preferences and finding matching movies...");
-                setEstimatedTimeRemaining("12-18 minutes");
-              } else if (status.progress < 50) {
-                setCurrentPhaseIndex(1);
-                setStatusMessage("✍️ AI is writing your personalized movie concept...");
-                setEstimatedTimeRemaining("10-15 minutes");
-              } else if (status.progress < 90) {
-                setCurrentPhaseIndex(2);
-                setStatusMessage("🎥 Generating AI video scenes (this is the longest step - please be patient)...");
-                setEstimatedTimeRemaining("8-12 minutes");
-              } else {
-                setCurrentPhaseIndex(3);
-                setStatusMessage("☁️ Finalizing and uploading to cloud storage...");
-                setEstimatedTimeRemaining("1-2 minutes");
-              }
-            } else {
-              // Estimate progress based on time
-              const elapsed = Math.floor((Date.now() - startTime) / 1000);
-              let estimatedProgress = 50; // Default to middle of video generation
-
-              if (elapsed < 60) {
-                estimatedProgress = Math.min(10 + elapsed / 2, 25);
-                setCurrentPhaseIndex(0);
-                setStatusMessage("🔍 Getting movie recommendations from your taste profile...");
-              } else if (elapsed < 180) {
-                estimatedProgress = Math.min(25 + (elapsed - 60) / 5, 50);
-                setCurrentPhaseIndex(1);
-                setStatusMessage("✍️ AI is crafting your unique movie story...");
-              } else if (elapsed < 900) {
-                estimatedProgress = Math.min(50 + (elapsed - 180) / 20, 85);
-                setCurrentPhaseIndex(2);
-                setStatusMessage(`🎥 Generating video with AI (${Math.floor(elapsed / 60)} min elapsed - hang tight!)...`);
-              } else {
-                estimatedProgress = Math.min(85 + (elapsed - 900) / 30, 95);
-                setCurrentPhaseIndex(3);
-                setStatusMessage("☁️ Almost done! Uploading your trailer...");
-              }
-
-              setProgress(estimatedProgress);
-            }
-          },
-        });
-
-        // Video is ready!
-        if (videoStatus.videoUrl) {
-          clearInterval(timeInterval);
-          setProgress(100);
-          setCurrentPhaseIndex(3);
-          setStatusMessage("🎉 Success! Your trailer is ready!");
-
-          // Store video URL for result page
-          sessionStorage.setItem("videoUrl", videoStatus.videoUrl);
-          if (videoStatus.gcsUrl) {
-            sessionStorage.setItem("gcsUrl", videoStatus.gcsUrl);
-          }
-
-          // Navigate to result page
-          setTimeout(() => {
-            router.push("/result");
-          }, 1500);
-        }
-      } catch (error) {
-        clearInterval(timeInterval);
-        console.error("Video generation error:", error);
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Video generation failed. Please try again."
-        );
-        setStatusMessage("An error occurred");
+      if (currentProgress >= 100) {
+        currentProgress = 100;
+        clearInterval(timer);
+        // Navigate to result page after completion
+        setTimeout(() => {
+          router.push("/result");
+        }, 1000);
       }
-    };
 
-    startGeneration();
+      setProgress(currentProgress);
 
-    return () => {
-      clearInterval(timeInterval);
-    };
+      // Update phase based on progress
+      let newPhaseIndex = 0;
+      if (currentProgress >= 75) {
+        newPhaseIndex = 3;
+      } else if (currentProgress >= 50) {
+        newPhaseIndex = 2;
+      } else if (currentProgress >= 25) {
+        newPhaseIndex = 1;
+      }
+
+      setCurrentPhaseIndex(newPhaseIndex);
+    }, interval);
+
+    return () => clearInterval(timer);
   }, [router]);
 
   const currentPhase = PHASES[currentPhaseIndex];
@@ -204,13 +100,6 @@ export default function GeneratingPage() {
           transition={{ duration: 0.5 }}
           className="glass-strong rounded-3xl p-6 md:p-8 space-y-6"
         >
-          {/* Error Display */}
-          {error && (
-            <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-center">
-              <p className="text-red-200 font-medium">❌ {error}</p>
-            </div>
-          )}
-
           {/* Phase Indicator */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -253,13 +142,6 @@ export default function GeneratingPage() {
               <p className="text-white/70 text-lg">
                 {currentPhase.description}
               </p>
-
-              {/* Status Message */}
-              {statusMessage && (
-                <p className="text-white/50 text-sm italic">
-                  {statusMessage}
-                </p>
-              )}
             </motion.div>
           </AnimatePresence>
 
@@ -298,8 +180,8 @@ export default function GeneratingPage() {
                       strokeDashoffset: 2 * Math.PI * 88 * (1 - progress / 100),
                     }}
                     transition={{
-                      duration: 0.5,
-                      ease: "easeInOut",
+                      duration: 0.1,
+                      ease: "linear",
                     }}
                   />
 
@@ -344,7 +226,7 @@ export default function GeneratingPage() {
                   width: `${progress}%`,
                   boxShadow: `0 0 20px ${currentPhase.color}80`,
                 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
+                transition={{ duration: 0.1, ease: "linear" }}
               />
 
               {/* Shimmer effect */}
@@ -401,7 +283,7 @@ export default function GeneratingPage() {
                     {phase.title}
                   </span>
 
-                  {isCurrent && !error && (
+                  {isCurrent && (
                     <motion.div
                       animate={{ rotate: 360 }}
                       transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -413,46 +295,16 @@ export default function GeneratingPage() {
             })}
           </div>
 
-          {/* Info Message with Elapsed Time */}
+          {/* Fun Fact / Tip */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="text-center space-y-3"
+            className="text-center text-white/50 text-sm italic"
           >
-            {/* Elapsed Time */}
-            <div className="glass-strong px-6 py-4 rounded-xl inline-block">
-              <div className="flex items-center gap-4">
-                <div className="text-left">
-                  <p className="text-white/50 text-xs uppercase tracking-wide">Elapsed Time</p>
-                  <p className="text-white text-2xl font-bold font-mono">
-                    {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
-                  </p>
-                </div>
-                <div className="h-12 w-px bg-white/20" />
-                <div className="text-left">
-                  <p className="text-white/50 text-xs uppercase tracking-wide">Est. Remaining</p>
-                  <p className="text-white text-lg font-medium">
-                    {estimatedTimeRemaining}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Message */}
-            <p className="text-white/50 text-sm italic">
-              ✨ Using AI to create your personalized trailer...
+            <p>
+              ✨ Fun fact: We&apos;re using your taste vector to find the perfect cinematic blend!
             </p>
-            {progress < 50 && (
-              <p className="text-white/40 text-xs">
-                This takes 15-20 minutes. Feel free to grab a coffee! ☕
-              </p>
-            )}
-            {progress >= 50 && progress < 85 && (
-              <p className="text-white/40 text-xs">
-                🎥 Video generation is the slowest step - thank you for your patience!
-              </p>
-            )}
           </motion.div>
         </motion.div>
       </div>

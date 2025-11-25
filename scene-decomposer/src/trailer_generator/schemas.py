@@ -109,9 +109,9 @@ class TrailerScene(BaseModel):
 
     duration_seconds: int = Field(
         ...,
-        ge=4,
+        ge=2,  # Reduced from 3 to allow very short scenes
         le=10,
-        description="Duration of this scene (typically 4-8 seconds, flexible)"
+        description="Duration of this scene (typically 2-8 seconds, flexible)"
     )
 
     scene_type: str = Field(

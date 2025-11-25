@@ -6,6 +6,7 @@ from typing import Dict, List
 import requests
 OUTPUT_DIR = Path('./output')
 from google import genai
+from google.genai import types
 from google.cloud import storage
 
 OUTPUT_DIR = Path("./output")
@@ -145,15 +146,19 @@ def generate_image(image_api_key, prompt: str) -> bytes:
 
     client = genai.Client(api_key = image_api_key)
     response = client.models.generate_content(
-        model="gemini-2.5-flash-image", contents=[prompt]#, size="1024x1024", quality="standard", n=1
+        model="gemini-2.5-flash-image", contents=[prompt]
     )
 
-    for part in response.parts:
-        if part.text is not None:
-            print(part.text)
-        elif part.inline_data is not None:
-            image = part.as_image()
-            return image.image_bytes
+    # Access parts through the candidates
+    if hasattr(response, 'candidates') and response.candidates:
+        for part in response.candidates[0].content.parts:
+            if part.text is not None:
+                print(part.text)
+            elif hasattr(part, 'inline_data') and part.inline_data is not None:
+                # Access the raw bytes from inline_data
+                return part.inline_data.data
+
+    raise ValueError("No image data found in response")
 
 
 
@@ -178,16 +183,7 @@ def generate_video_veo(
     Returns:
         Video data as bytes
     """
-    # Build VEO 3.1 API request
-    veo_params = {
-        "prompt": prompt,
-        "image": base64.b64encode(start_frame).decode(),
-        "lastFrame": base64.b64encode(end_frame).decode(),
-        "duration": duration,
-        "aspectRatio": "16:9",
-    }
-
-    # Add reference images if present
+    # Validate inputs
     if reference_images:
         # CRITICAL: Must be exactly 8 seconds with references
         if duration != 8:
@@ -201,27 +197,43 @@ def generate_video_veo(
                 f"Max 3 reference images allowed (got {len(reference_images)})"
             )
 
-        veo_params["referenceImages"] = [
-            base64.b64encode(img).decode() for img in reference_images
-        ]
-        veo_params["personGeneration"] = "allow_adult"
-
+    # Initialize client
     client = genai.Client(api_key=veo_api_key)
+
+    # Build config dict with reference images if provided
+    config = None
+    if reference_images:
+        ref_images = []
+        for img_bytes in reference_images:
+            # Convert bytes to Image type
+            img = types.Image(image_bytes=img_bytes)
+            ref_img = types.SubjectReferenceImage(referenceImage=img)
+            ref_images.append(ref_img)
+        config = {"reference_images": ref_images}
+
+    # Generate video using generate_videos (correct method for VEO)
     operation = client.models.generate_videos(
         model="veo-3.1-generate-preview",
         prompt=prompt,
+        image=types.Part.from_bytes(data=start_frame, mime_type="image/png") if start_frame else None,
+        config=config,
     )
 
-    # Poll the operation status until the video is ready.
+    # Poll the operation status until the video is ready
+    print(f"      [VEO] Video generation started, polling for completion...")
     while not operation.done:
-        print("Waiting for video generation to complete...")
+        print(f"      [VEO] Waiting for video generation to complete...")
         time.sleep(10)
         operation = client.operations.get(operation)
 
-    # Download the generated video.
+    print(f"      [VEO] Video generation complete!")
+
+    # Download the generated video
     generated_video = operation.response.generated_videos[0]
     client.files.download(file=generated_video.video)
-    return generated_video.video.video_bytes
+
+    # Return video bytes
+    return generated_video.video.read()
 
 
 

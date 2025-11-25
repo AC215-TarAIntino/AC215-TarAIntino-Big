@@ -23,8 +23,10 @@ credentials/
 service-account*.json
 adc.json
 secret.json
+secrets.json
 credentials*.json
 API_call_test.json
+gcp-credentials.json
 
 # -----------------------------------------------------------------------------
 # Python
@@ -223,6 +225,16 @@ hand-ins/*.png
 hand-ins/*.jpg
 hand-ins/*.jpeg
 # Keep README and markdown files in hand-ins
+
+# Root-level markdown files (except README)
+/*.md
+!README.md
+
+# Root-level shell scripts
+/*.sh
+
+# Root-level test files
+/test*.py
 
 # -----------------------------------------------------------------------------
 # Type Checkers & Linters
