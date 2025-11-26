@@ -257,6 +257,53 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
     )
 
 
+@app.post("/generate/trailer/mock", response_model=TrailerGenerationResponse)
+def generate_trailer_mock(request: TrailerGenerationRequest) -> TrailerGenerationResponse:
+    """
+    Mock endpoint for testing - uses existing pre-generated videos.
+    Bypasses API calls to test the complete pipeline without quota limits.
+    """
+    print("🧪 MOCK MODE: Using pre-generated videos for testing")
+
+    try:
+        # Mock character refs (pretend we generated them)
+        character_refs = {
+            design.character_name: f"output/refs/{design.character_name}.png"
+            for design in request.character_designs
+        }
+        print(f"  Mock character refs: {list(character_refs.keys())}")
+
+        # Use existing scene videos (already generated from previous runs)
+        scene_paths = []
+        existing_scenes = list(OUTPUT_DIR.glob("scenes/scene_*.mp4"))
+        existing_scenes.sort()
+
+        # Use as many existing scenes as requested (or all if fewer requested)
+        num_scenes = min(len(request.scenes), len(existing_scenes))
+        scene_paths = existing_scenes[:num_scenes]
+
+        print(f"  Using {len(scene_paths)} existing scene videos: {[p.name for p in scene_paths]}")
+
+        # Stitch videos together (this is real, not mocked)
+        trailer_path: Optional[Path] = None
+        if request.stitch_trailer and scene_paths:
+            print(f"  Stitching {len(scene_paths)} videos together...")
+            trailer_path = stitch_videos(scene_paths)
+            print(f"  ✅ Trailer created: {trailer_path}")
+
+        return TrailerGenerationResponse(
+            character_refs=character_refs,
+            scene_videos=[str(path) for path in scene_paths],
+            trailer_path=str(trailer_path) if trailer_path else None,
+        )
+
+    except Exception as exc:
+        print(f"❌ Exception in mock trailer generation: {exc}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
 if __name__ == "__main__":
     import uvicorn
 

@@ -233,6 +233,7 @@ hand-ins/*.jpeg
 
 # Root-level shell scripts
 /*.sh
+!monitor_pipeline.sh
 
 # Root-level test files
 /test*.py

@@ -5,6 +5,9 @@ const SCENE_DECOMPOSER_URL = "http://scene-decomposer:8001";
 const VIDEO_GENERATOR_URL = "http://video-generator:8003";
 const QUIZ_SERVICE_URL = "http://quiz-service:8082";
 
+// Set to true to use mock/test mode (uses pre-generated videos, bypasses API quota)
+const USE_MOCK_MODE = true;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -118,8 +121,12 @@ async function generateVideoAsync(sessionId: string, tasteVector: number[]) {
     console.log(`[${sessionId}] Trailer breakdown generated: ${trailer.scenes.length} scenes`);
 
     // Step 4: Generate video
-    console.log(`[${sessionId}] Starting video generation (this may take 5-15 minutes)...`);
-    const videoResponse = await fetch(`${VIDEO_GENERATOR_URL}/generate/trailer`, {
+    const videoEndpoint = USE_MOCK_MODE
+      ? `${VIDEO_GENERATOR_URL}/generate/trailer/mock`
+      : `${VIDEO_GENERATOR_URL}/generate/trailer`;
+
+    console.log(`[${sessionId}] Starting video generation${USE_MOCK_MODE ? ' (MOCK MODE)' : ''} (this may take 5-15 minutes)...`);
+    const videoResponse = await fetch(videoEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
