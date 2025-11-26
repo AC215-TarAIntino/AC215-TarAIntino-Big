@@ -31,7 +31,7 @@ services:
     command: >
       sh -c "
         echo 'ChromaDB is ready, starting data ingestion...' &&
-        python -m datapipeline.downloader --to_chroma --to_tagmeta &&
+        python -m src.datapipeline.downloader --to_chroma --to_tagmeta &&
         echo 'ChromaDB initialization complete!'
       "
     environment:
@@ -44,7 +44,7 @@ services:
       MOVIES_OBJECT: datasets/tag_genome/movies.dat
       TAGS_OBJECT: datasets/tag_genome/tags.dat
       TAGMETA_COLLECTION: tag_metadata
-      LOG_DIR: /app/datapipeline/logs
+      LOG_DIR: /app/src/datapipeline/logs
       BATCH_SIZE: "2000"
     volumes:
       - ./quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
@@ -70,7 +70,7 @@ services:
       CHROMA_SERVER_HOST: chroma
       CHROMA_SERVER_PORT: "8000"
       CHROMA_COLLECTION: movie_tag_relevance_cos
-      LOG_DIR: /app/datapipeline/logs
+      LOG_DIR: /app/src/datapipeline/logs
     volumes:
       - ./quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
       - ./quiz-vector:/app
@@ -84,14 +84,14 @@ services:
   quiz-service:
     image: taraintino-base:latest
     container_name: quiz-service
-    command: uvicorn quiz_service.api:app --host 0.0.0.0 --port 8082
+    command: uvicorn src.quiz_service.api:app --host 0.0.0.0 --port 8082
     environment:
       CHROMA_SERVER_HOST: chroma
       CHROMA_SERVER_PORT: "8000"
       CHROMA_COLLECTION: movie_tag_relevance_cos
-      PRIOR_MEAN_PATH: /app/datapipeline/logs/prior_mean.npy
-      PRIOR_COV_PATH: /app/datapipeline/logs/prior_cov.npy
-      TAG_INDEX_JSON: /app/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
+      PRIOR_MEAN_PATH: /app/src/datapipeline/logs/prior_mean.npy
+      PRIOR_COV_PATH: /app/src/datapipeline/logs/prior_cov.npy
+      TAG_INDEX_JSON: /app/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
     volumes:
       - ./quiz-vector:/app
     ports:

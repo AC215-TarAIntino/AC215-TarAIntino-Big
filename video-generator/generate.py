@@ -14,7 +14,6 @@ OUTPUT_DIR = Path("./output")
 GCS_BUCKET_NAME = "tarantaino-output"
 GCS_PREFIX = "video_generator_outputs"
 
-
 def upload_to_gcs(local_path: Path, dest_path: str) -> None:
     """
     Upload a local file to the configured GCS bucket.
@@ -28,8 +27,6 @@ def upload_to_gcs(local_path: Path, dest_path: str) -> None:
     blob = bucket.blob(f"{GCS_PREFIX}/{dest_path}" if GCS_PREFIX else dest_path)
     blob.upload_from_filename(str(local_path))
     print(f"    ☁ Uploaded to gs://{GCS_BUCKET_NAME}/{blob.name}")
-
-
 
 def generate_character_references(
     image_api_key, character_designs: List[dict]
@@ -65,8 +62,6 @@ def generate_character_references(
         print(f"    ✓ Saved to {image_path}")
 
     return character_refs
-
-
 
 def generate_scene_videos(
     image_api_key, veo_api_key, scenes: List[dict], character_refs: Dict[str, str]
@@ -142,8 +137,6 @@ def generate_image(image_api_key, prompt: str) -> bytes:
         Image data as bytes
     """
 
-
-
     client = genai.Client(api_key = image_api_key)
     response = client.models.generate_content(
         model="gemini-2.5-flash-image", contents=[prompt]
@@ -159,8 +152,6 @@ def generate_image(image_api_key, prompt: str) -> bytes:
                 return part.inline_data.data
 
     raise ValueError("No image data found in response")
-
-
 
 def generate_video_veo(
     veo_api_key,
@@ -238,9 +229,6 @@ def generate_video_veo(
 
     # Return video bytes
     return generated_video.video.read()
-
-
-
     
 def stitch_videos(video_paths: List[Path]) -> Path:
         """

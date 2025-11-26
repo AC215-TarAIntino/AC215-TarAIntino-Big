@@ -6,10 +6,8 @@ with open('./secret.json') as f:
     secret = load(f)
 api_key = secret['project_api_key']
 
-
 with open('./trailer_breakdown_samples/breakdown_8_sec.json') as f:
     samples = load(f)    
-
 
 generate_character_references(image_api_key=api_key, character_designs=samples['character_designs'])
 

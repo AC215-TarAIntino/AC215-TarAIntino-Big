@@ -1,18 +1,20 @@
 # AC215-TarAIntino-Big
 
 **Team Members**
+
 Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vrancic
 
 **Group Name**
+
 TarAIntino
 
 **Abstract**
+
 TarAIntino is an end-to-end machine learning pipeline that creates personalized movie trailers based on user preferences. Indeed, in this project we aim to develop a comprehensive MLOps system for generating personalized movie trailers using taste vectors, LLMs, and video generation AI. The app will feature an adaptive quiz to elicit user preferences and include a modular pipeline connecting those preferences to generative APIs. Users can simply answer a short interactive quiz, and the app will produce a personalized, AI-generated movie trailer that reflects their cinematic taste. Additionally, a storytelling and trailer-planning agent will allow users to explore customized narratives and styles. It will be powered by a large language model for narrative generation and diffusion-based video models, making it a specialist in personalized cinematic creation.
 
 ## Overview
 
 The system works as follows:
-
 - **Analyzes user taste** through an interactive quiz interface
 - **Generates movie concepts** using LLM-powered screenplay writing
 - **Creates trailer breakdowns** with detailed scene descriptions
@@ -79,7 +81,7 @@ AC215-TarAIntino-Big/
 └── README.md                       # This file
 ```
 
-## Run the Project Locally
+## Running the Project Locally
 
 ### Prerequisites
 
@@ -170,10 +172,10 @@ docker-compose down -v
 
 ```bash
 # Check health endpoints
-curl http://localhost:8082/health  # Quiz Service
-curl http://localhost:8080/health  # Screenplay Writer
-curl http://localhost:8001/health  # Scene Decomposer
-curl http://localhost:8003/health  # Video Generator
+curl http://localhost:8082/health  # Quiz Service --> should return {"ok":true}
+curl http://localhost:8080/health  # Screenplay Writer --> should return {"status":"healthy","omdb_configured":true,"openrouter_configured":true,"model":"google/gemini-2.0-flash-exp:free"}
+curl http://localhost:8001/health  # Scene Decomposer --> should return {"status":"healthy","openrouter_configured":true,"model":"anthropic/claude-3.5-sonnet","default_duration":35,"include_narration":true}
+curl http://localhost:8003/health  # Video Generator --> should return {"status":"ok"}
 ```
 
 ### 5. Access Frontend and Run the App
@@ -253,7 +255,7 @@ Open your browser at `http://localhost:3000` (opens Frontend service) and now yo
 - Persistent storage for taste vectors
 - **Automatic initialization**: Database is automatically populated from GCS on first startup via the `chroma-init` service
 
-**Testing Pipeline Locally**
+## Testing Pipeline Locally
 ...
 
-**Happy Trailer Generating!**
+## Happy Trailer Generating!

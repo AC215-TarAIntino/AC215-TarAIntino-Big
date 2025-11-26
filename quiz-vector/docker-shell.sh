@@ -106,7 +106,7 @@ echo "[info] Bucket                   : $BUCKET"
 echo "[info] Prefix                   : $PREFIX"
 echo "[info] Tag file object          : $TAG_REL_OBJECT"
 echo "[info] Local DS (ro)            : $DATA_HOST_DIR -> /app/local-ds"
-echo "[info] Logs (rw)                : $LOG_HOST_DIR -> /app/datapipeline/logs"
+echo "[info] Logs (rw)                : $LOG_HOST_DIR -> /app/src/datapipeline/logs"
 echo "[info] Creds in container       : $CRED_PATH"
 echo "[info] Chroma server (HTTP)     : ${CHROMA_SERVER_HOST_DEFAULT}:${CHROMA_SERVER_PORT_DEFAULT}"
 echo "[info] Chroma collection        : $CHROMA_COLLECTION"
@@ -125,8 +125,8 @@ exec docker run --rm -it \
   -e CHROMA_SERVER_PORT="$CHROMA_SERVER_PORT_DEFAULT" \
   -e CHROMA_COLLECTION="$CHROMA_COLLECTION" \
   -e BATCH_SIZE="$BATCH_SIZE" \
-  -e LOG_DIR="/app/datapipeline/logs" \
-  -v "$LOG_HOST_DIR:/app/datapipeline/logs" \
+  -e LOG_DIR="/app/src/datapipeline/logs" \
+  -v "$LOG_HOST_DIR:/app/src/datapipeline/logs" \
   $CRED_MOUNT \
   -v "$DATA_HOST_DIR:/app/local-ds:ro" \
   "$IMAGE" \
