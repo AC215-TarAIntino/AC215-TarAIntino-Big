@@ -47,59 +47,60 @@ The system works as follows:
 AC215-TarAIntino-Big/
 ├── .github/
 │   └── workflows/                  # CI/CD pipelines
-├── quiz-vector/                    # Quiz service and RAG system
-│   ├── src/
-│   │   ├── datapipeline/           # Data ingestion to ChromaDB
-│   │   │   ├── downloader.py       # GCS to ChromaDB ingestion
-│   │   │   └── uploader.py         # Upload data to GCS
-│   │   └── quiz_service/           # Quiz API and preference model
-│   │       ├── api.py              # FastAPI endpoints
-│   │       ├── config.py           # Configuration
-│   │       ├── model.py            # Bayesian taste model
-│   │       ├── schemas.py          # Request/response schemas
-│   │       ├── state.py            # Session management
-│   │       └── utils.py            # Utility functions
-│   ├── secrets/                    # GCS credentials
-│   ├── docker-compose.yml          # Local orchestration
-│   └── README.md                   # Quiz service documentation
-├── screenplay-writer/              # Movie concept generation
-│   ├── src/
-│   │   └── movie_pipeline/         # Screenplay generation module
-│   │       ├── api.py              # FastAPI endpoints
-│   │       ├── config.py           # Configuration
-│   │       ├── movie_fetcher.py    # OMDb API integration
-│   │       ├── movie_generator.py  # LLM screenplay writer
-│   │       └── schemas.py          # Request/response schemas
-│   ├── tests/                      # Unit tests
-│   ├── output/                     # Generated screenplays
-│   ├── .env.example                # Environment template
-│   └── README.md                   # Screenplay service docs
-├── scene-decomposer/               # Trailer breakdown service
-│   ├── src/
-│   │   └── trailer_generator/      # Scene decomposition module
-│   │       ├── api.py              # FastAPI endpoints
-│   │       ├── config.py           # Configuration
-│   │       ├── scene_analyzer.py   # Screenplay analysis
-│   │       ├── scene_generator.py  # Scene breakdown logic
-│   │       └── schemas.py          # Request/response schemas
-│   ├── tests/                      # Unit tests
-│   ├── outputs/                    # Generated breakdowns
-│   ├── .env.example                # Environment template
-│   └── README.md                   # Scene decomposer docs
-├── video-generator/                # Video generation service
-│   ├── app.py                      # FastAPI application
-│   ├── generate.py                 # Video generation logic
-│   ├── test.py                     # Test utilities
-│   ├── output/                     # Generated videos
-│   │   ├── refs/                   # Character references
-│   │   └── scenes/                 # Generated scenes
-│   ├── secrets.json                # Gemini API credentials
-│   └── gcp-credentials.json        # GCS credentials
-├── frontend/                       # React frontend application
-│   ├── app/                        # Next.js app directory
-│   ├── components/                 # React components
-│   ├── public/                     # Static assets
-│   └── README.md                   # Frontend documentation
+├── src/                            # All microservices
+│   ├── quiz-vector/                # Quiz service and RAG system
+│   │   ├── src/
+│   │   │   ├── datapipeline/       # Data ingestion to ChromaDB
+│   │   │   │   ├── downloader.py   # GCS to ChromaDB ingestion
+│   │   │   │   └── uploader.py     # Upload data to GCS
+│   │   │   └── quiz_service/       # Quiz API and preference model
+│   │   │       ├── api.py          # FastAPI endpoints
+│   │   │       ├── config.py       # Configuration
+│   │   │       ├── model.py        # Bayesian taste model
+│   │   │       ├── schemas.py      # Request/response schemas
+│   │   │       ├── state.py        # Session management
+│   │   │       └── utils.py        # Utility functions
+│   │   ├── secrets/                # GCS credentials
+│   │   ├── docker-compose.yml      # Local orchestration
+│   │   └── README.md               # Quiz service documentation
+│   ├── screenplay-writer/          # Movie concept generation
+│   │   ├── src/
+│   │   │   └── movie_pipeline/     # Screenplay generation module
+│   │   │       ├── api.py          # FastAPI endpoints
+│   │   │       ├── config.py       # Configuration
+│   │   │       ├── movie_fetcher.py # OMDb API integration
+│   │   │       ├── movie_generator.py # LLM screenplay writer
+│   │   │       └── schemas.py      # Request/response schemas
+│   │   ├── tests/                  # Unit tests
+│   │   ├── output/                 # Generated screenplays
+│   │   ├── .env.example            # Environment template
+│   │   └── README.md               # Screenplay service docs
+│   ├── scene-decomposer/           # Trailer breakdown service
+│   │   ├── src/
+│   │   │   └── trailer_generator/  # Scene decomposition module
+│   │   │       ├── api.py          # FastAPI endpoints
+│   │   │       ├── config.py       # Configuration
+│   │   │       ├── scene_analyzer.py # Screenplay analysis
+│   │   │       ├── scene_generator.py # Scene breakdown logic
+│   │   │       └── schemas.py      # Request/response schemas
+│   │   ├── tests/                  # Unit tests
+│   │   ├── outputs/                # Generated breakdowns
+│   │   ├── .env.example            # Environment template
+│   │   └── README.md               # Scene decomposer docs
+│   ├── video-generator/            # Video generation service
+│   │   ├── app.py                  # FastAPI application
+│   │   ├── generate.py             # Video generation logic
+│   │   ├── test.py                 # Test utilities
+│   │   ├── output/                 # Generated videos
+│   │   │   ├── refs/               # Character references
+│   │   │   └── scenes/             # Generated scenes
+│   │   ├── secrets.json            # Gemini API credentials
+│   │   └── gcp-credentials.json    # GCS credentials
+│   └── frontend/                   # React frontend application
+│       ├── app/                    # Next.js app directory
+│       ├── components/             # React components
+│       ├── public/                 # Static assets
+│       └── README.md               # Frontend documentation
 ├── docker-compose.yml              # Service orchestration
 ├── pyproject.toml                  # Python dependencies and config
 ├── .env.example                    # Environment template
@@ -140,33 +141,33 @@ cd AC215-TarAIntino-Big
 
 **Screenplay Writer Service:**
 ```bash
-cd screenplay-writer
+cd src/screenplay-writer
 cp .env.example .env
 # Edit .env and add your API keys:
 # - OPENROUTER_API_KEY
 # - OMDB_API_KEY
-cd ..
+cd ../..
 ```
 
 **Scene Decomposer Service:**
 ```bash
-cd scene-decomposer
+cd src/scene-decomposer
 cp .env.example .env
 # Edit .env and add your API keys:
 # - OPENROUTER_API_KEY
-cd ..
+cd ../..
 ```
 
 **Quiz Vector Service:**
 ```bash
 # Place service account key
-cp /path/to/your-key.json quiz-vector/secrets/llm-service-account.json
+cp /path/to/your-key.json src/quiz-vector/secrets/llm-service-account.json
 ```
 
 **Video Generator Service:**
 ```bash
 # Create Gemini API config
-cat > video-generator/secret.json << 'EOF'
+cat > src/video-generator/secret.json << 'EOF'
 {
   "project_api_key": "YOUR_GEMINI_API_KEY_HERE"
 }
@@ -204,8 +205,16 @@ curl http://localhost:8001/health  # Scene Decomposer --> should return {"status
 curl http://localhost:8003/health  # Video Generator --> should return {"status":"ok"}
 ```
 
-### 5. Access Frontend and Run the App
-Open your browser at `http://localhost:3000` (opens Frontend service) and now you can start the quiz and generate your personalized movie trailer!
+### 5. Access Frontend, Run the App & Supervise Video Generation
+First run
+```bash
+./monitor_pipeline.sh
+```
+to monitor the video generation process status in real-time.
+
+Then launch the frontend in your browser at `http://localhost:3000` (opens Frontend service) and now you can start the quiz and generate your personalized movie trailer!
+
+You will be able to see when the generation process is at in the terminal where you ran `monitor_pipeline.sh`.
 
 ## Services
 
@@ -215,7 +224,7 @@ Open your browser at `http://localhost:3000` (opens Frontend service) and now yo
 - Generate taste vectors from user preferences
 - Retrieve movie recommendations using RAG
 - Vector database integration with ChromaDB
-- More detailed information in `quiz-vector/README.md`
+- More detailed information in `src/quiz-vector/README.md`
 
 **Endpoints:**
 - `POST /quiz/start` - Start new quiz session
@@ -229,7 +238,7 @@ Open your browser at `http://localhost:3000` (opens Frontend service) and now yo
 - Generate original movie concepts using LLMs
 - Fetch movie metadata from OMDb API
 - Create detailed storylines and character descriptions
-- More detailed information in `screenplay-writer/README.md`
+- More detailed information in `src/screenplay-writer/README.md`
 
 **Endpoints:**
 - `POST /generate-movie` - Generate movie concept
@@ -242,7 +251,7 @@ Open your browser at `http://localhost:3000` (opens Frontend service) and now yo
 - Break down movie concepts into trailer scenes
 - Generate character designs and scene descriptions
 - Optimize for visual storytelling
-- More detailed information in `scene-decomposer/README.md`
+- More detailed information in `src/scene-decomposer/README.md`
 
 **Endpoints:**
 - `POST /generate-trailer` - Generate trailer breakdown
@@ -256,7 +265,7 @@ Open your browser at `http://localhost:3000` (opens Frontend service) and now yo
 - Create scene videos using Google VEO 3.1
 - Stitch scenes into complete trailers
 - Upload results to Google Cloud Storage
-- More detailed information in `video-generator/README.md`
+- More detailed information in `src/video-generator/README.md`
 
 **Endpoints:**
 - `POST /generate/character-references` - Generate character images
@@ -271,7 +280,7 @@ Open your browser at `http://localhost:3000` (opens Frontend service) and now yo
 - Real-time video player
 - Results visualization
 - GCS polling for generated videos
-- More detailed information in `frontend/README.md`
+- More detailed information in `src/frontend/README.md`
 
 ### ChromaDB (:8000)
 **Vector database for embeddings**

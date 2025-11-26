@@ -24,7 +24,7 @@ services:
   # ChromaDB Initialization - Populate database on startup
   chroma-init:
     build:
-      context: ./quiz-vector
+      context: ./src/quiz-vector
       dockerfile: Dockerfile
     image: taraintino-base:latest
     container_name: chroma-init
@@ -47,8 +47,8 @@ services:
       LOG_DIR: /app/src/datapipeline/logs
       BATCH_SIZE: "2000"
     volumes:
-      - ./quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
-      - ./quiz-vector:/app
+      - ./src/quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
+      - ./src/quiz-vector:/app
     depends_on:
       chroma:
         condition: service_healthy
@@ -59,7 +59,7 @@ services:
   # Quiz Vector - RAG App (Data Pipeline)
   quiz-rag-app:
     build:
-      context: ./quiz-vector
+      context: ./src/quiz-vector
       dockerfile: Dockerfile
     image: taraintino-base:latest
     container_name: quiz-rag-app
@@ -72,8 +72,8 @@ services:
       CHROMA_COLLECTION: movie_tag_relevance_cos
       LOG_DIR: /app/src/datapipeline/logs
     volumes:
-      - ./quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
-      - ./quiz-vector:/app
+      - ./src/quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
+      - ./src/quiz-vector:/app
     depends_on:
       chroma-init:
         condition: service_completed_successfully
@@ -93,7 +93,7 @@ services:
       PRIOR_COV_PATH: /app/src/datapipeline/logs/prior_cov.npy
       TAG_INDEX_JSON: /app/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
     volumes:
-      - ./quiz-vector:/app
+      - ./src/quiz-vector:/app
     ports:
       - "8082:8082"
     depends_on:
@@ -108,18 +108,18 @@ services:
   # Screenplay Writer Service
   screenplay-writer:
     build:
-      context: ./screenplay-writer
+      context: ./src/screenplay-writer
       dockerfile: Dockerfile
     container_name: screenplay-writer
     ports:
       - "8080:8000"
     env_file:
-      - ./screenplay-writer/.env
+      - ./src/screenplay-writer/.env
     environment:
       - API_HOST=0.0.0.0
       - API_PORT=8000
     volumes:
-      - ./screenplay-writer/output:/app/output
+      - ./src/screenplay-writer/output:/app/output
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -133,18 +133,18 @@ services:
   # Scene Decomposer / Trailer Generator Service
   scene-decomposer:
     build:
-      context: ./scene-decomposer
+      context: ./src/scene-decomposer
       dockerfile: Dockerfile
     container_name: scene-decomposer
     ports:
       - "8001:8001"
     env_file:
-      - ./scene-decomposer/.env
+      - ./src/scene-decomposer/.env
     environment:
       - API_HOST=0.0.0.0
       - API_PORT=8001
     volumes:
-      - ./scene-decomposer/outputs:/app/outputs
+      - ./src/scene-decomposer/outputs:/app/outputs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
@@ -158,7 +158,7 @@ services:
   # Video Generator Service
   video-generator:
     build:
-      context: ./video-generator
+      context: ./src/video-generator
       dockerfile: Dockerfile
     container_name: video-generator
     ports:
@@ -168,9 +168,9 @@ services:
       - GCS_BUCKET_NAME=tarantaino-output
       - GCS_PREFIX=video_generator_outputs
     volumes:
-      - ./video-generator/output:/app/output
-      - ./video-generator/secrets.json:/app/secrets.json:ro
-      - ./video-generator/gcp-credentials.json:/app/gcp-credentials.json:ro
+      - ./src/video-generator/output:/app/output
+      - ./src/video-generator/secrets.json:/app/secrets.json:ro
+      - ./src/video-generator/gcp-credentials.json:/app/gcp-credentials.json:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
@@ -184,7 +184,7 @@ services:
   # Frontend - Next.js Application
   frontend:
     build:
-      context: ./frontend
+      context: ./src/frontend
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_QUIZ_API_URL: http://localhost:8082
