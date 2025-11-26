@@ -48,36 +48,62 @@ AC215-TarAIntino-Big/
 ├── .github/
 │   └── workflows/                  # CI/CD pipelines
 ├── quiz-vector/                    # Quiz service and RAG system
-│   ├── src/                        # Source code
+│   ├── src/
+│   │   ├── datapipeline/           # Data ingestion to ChromaDB
+│   │   │   ├── downloader.py       # GCS to ChromaDB ingestion
+│   │   │   └── uploader.py         # Upload data to GCS
+│   │   └── quiz_service/           # Quiz API and preference model
+│   │       ├── api.py              # FastAPI endpoints
+│   │       ├── config.py           # Configuration
+│   │       ├── model.py            # Bayesian taste model
+│   │       ├── schemas.py          # Request/response schemas
+│   │       ├── state.py            # Session management
+│   │       └── utils.py            # Utility functions
 │   ├── secrets/                    # GCS credentials
+│   ├── docker-compose.yml          # Local orchestration
 │   └── README.md                   # Quiz service documentation
 ├── screenplay-writer/              # Movie concept generation
-│   ├── src/                        # Source code
+│   ├── src/
+│   │   └── movie_pipeline/         # Screenplay generation module
+│   │       ├── api.py              # FastAPI endpoints
+│   │       ├── config.py           # Configuration
+│   │       ├── movie_fetcher.py    # OMDb API integration
+│   │       ├── movie_generator.py  # LLM screenplay writer
+│   │       └── schemas.py          # Request/response schemas
 │   ├── tests/                      # Unit tests
-│   ├── outputs/                    # Generated outputs
+│   ├── output/                     # Generated screenplays
 │   ├── .env.example                # Environment template
 │   └── README.md                   # Screenplay service docs
 ├── scene-decomposer/               # Trailer breakdown service
-│   ├── src/                        # Source code
+│   ├── src/
+│   │   └── trailer_generator/      # Scene decomposition module
+│   │       ├── api.py              # FastAPI endpoints
+│   │       ├── config.py           # Configuration
+│   │       ├── scene_analyzer.py   # Screenplay analysis
+│   │       ├── scene_generator.py  # Scene breakdown logic
+│   │       └── schemas.py          # Request/response schemas
 │   ├── tests/                      # Unit tests
-│   ├── outputs/                    # Generated outputs
+│   ├── outputs/                    # Generated breakdowns
 │   ├── .env.example                # Environment template
 │   └── README.md                   # Scene decomposer docs
 ├── video-generator/                # Video generation service
+│   ├── app.py                      # FastAPI application
+│   ├── generate.py                 # Video generation logic
+│   ├── test.py                     # Test utilities
 │   ├── output/                     # Generated videos
-│   ├── trailer_breakdown_samples/  # Sample inputs
-│   └── secret.json                 # Gemini API credentials
+│   │   ├── refs/                   # Character references
+│   │   └── scenes/                 # Generated scenes
+│   ├── secrets.json                # Gemini API credentials
+│   └── gcp-credentials.json        # GCS credentials
 ├── frontend/                       # React frontend application
 │   ├── app/                        # Next.js app directory
 │   ├── components/                 # React components
 │   ├── public/                     # Static assets
 │   └── README.md                   # Frontend documentation
 ├── docker-compose.yml              # Service orchestration
-├── pipeline2.py                    # Full orchestration pipeline
 ├── pyproject.toml                  # Python dependencies and config
 ├── .env.example                    # Environment template
 ├── .gitignore                      # Git ignore rules
-├── setup.sh                        # Setup script
 └── README.md                       # This file
 ```
 
