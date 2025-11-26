@@ -75,14 +75,18 @@ class SceneGenerator:
         character_designs_context = analyzer.format_character_designs_for_llm()
 
         # Calculate recommended number of scenes
-        if target_duration <= 25:
-            num_scenes = "4-5"
-        elif target_duration <= 35:
-            num_scenes = "5-6"
-        elif target_duration <= 45:
-            num_scenes = "6-8"
-        else:
-            num_scenes = "8-10"
+        # TEMPORARY: Reduced to 2 scenes for quota management
+        num_scenes = "2"
+
+        # Original logic (commented out for now):
+        # if target_duration <= 25:
+        #     num_scenes = "4-5"
+        # elif target_duration <= 35:
+        #     num_scenes = "5-6"
+        # elif target_duration <= 45:
+        #     num_scenes = "6-8"
+        # else:
+        #     num_scenes = "8-10"
 
         narration_instruction = ""
         if include_narration:
