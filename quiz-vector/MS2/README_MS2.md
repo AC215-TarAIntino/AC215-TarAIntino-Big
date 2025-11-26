@@ -39,7 +39,7 @@ Make sure you have gcloud set up on your machine before working with the followi
 - Exit (Ctrl + O, Enter, Ctrl + X) and run `source ~/.zshrc` to refresh your shell.
 You are now ready to run the containers below.
 
-# Data Pipleine and Quiz Service
+# Data Pipeline and Quiz Service
 
 This repo hosts the **data ingestion** (GCS ➜ ChromaDB) and the **preference-quiz API** (FastAPI).  
 Follow the steps below to reproduce the pipeline end-to-end and play the quiz from your terminal.
