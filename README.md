@@ -79,7 +79,7 @@ AC215-TarAIntino-Big/
 └── README.md                       # This file
 ```
 
-## Quick Start
+## Run the Project Locally
 
 ### Prerequisites
 
@@ -145,7 +145,7 @@ cat > video-generator/secret.json << 'EOF'
 EOF
 ```
 
-### Start All Services
+### 3. Start All Services
 
 ```bash
 # Build and start all services (in background)
@@ -166,7 +166,7 @@ docker-compose down -v
 
 **Note:** On first startup, the `chroma-init` service will automatically populate ChromaDB with movie tag data from GCS. This process may take 1-2 minutes. The quiz service will wait for this initialization to complete before starting.
 
-### Verify Services
+### 4. Verify Services
 
 ```bash
 # Check health endpoints
@@ -174,8 +174,10 @@ curl http://localhost:8082/health  # Quiz Service
 curl http://localhost:8080/health  # Screenplay Writer
 curl http://localhost:8001/health  # Scene Decomposer
 curl http://localhost:8003/health  # Video Generator
-curl http://localhost:3000         # Frontend
 ```
+
+### 5. Access Frontend and Run the App
+Open your browser at `http://localhost:3000` (opens Frontend service) and now you can start the quiz and generate your personalized movie trailer!
 
 ## Services
 
@@ -185,6 +187,7 @@ curl http://localhost:3000         # Frontend
 - Generate taste vectors from user preferences
 - Retrieve movie recommendations using RAG
 - Vector database integration with ChromaDB
+- More detailed information in `quiz-vector/README.md`
 
 **Endpoints:**
 - `POST /quiz/start` - Start new quiz session
@@ -198,6 +201,7 @@ curl http://localhost:3000         # Frontend
 - Generate original movie concepts using LLMs
 - Fetch movie metadata from OMDb API
 - Create detailed storylines and character descriptions
+- More detailed information in `screenplay-writer/README.md`
 
 **Endpoints:**
 - `POST /generate-movie` - Generate movie concept
@@ -210,6 +214,7 @@ curl http://localhost:3000         # Frontend
 - Break down movie concepts into trailer scenes
 - Generate character designs and scene descriptions
 - Optimize for visual storytelling
+- More detailed information in `scene-decomposer/README.md`
 
 **Endpoints:**
 - `POST /generate-trailer` - Generate trailer breakdown
@@ -223,6 +228,7 @@ curl http://localhost:3000         # Frontend
 - Create scene videos using Google VEO 3.1
 - Stitch scenes into complete trailers
 - Upload results to Google Cloud Storage
+- More detailed information in `video-generator/README.md`
 
 **Endpoints:**
 - `POST /generate/character-references` - Generate character images
@@ -237,6 +243,7 @@ curl http://localhost:3000         # Frontend
 - Real-time video player
 - Results visualization
 - GCS polling for generated videos
+- More detailed information in `frontend/README.md`
 
 ### ChromaDB (:8000)
 **Vector database for embeddings**
@@ -246,21 +253,7 @@ curl http://localhost:3000         # Frontend
 - Persistent storage for taste vectors
 - **Automatic initialization**: Database is automatically populated from GCS on first startup via the `chroma-init` service
 
-## Pipeline Usage
-
-The orchestration pipeline coordinates all microservices to generate complete trailers from taste vectors.
-Pipeline Flow: taste_vector → recommendations → movie concept → trailer breakdown → video generation → GCS upload.
-
-**Expected timing:**
-- Step 1 (Movie Generation): ~10-20 seconds
-- Step 2 (Trailer Breakdown): ~30-60 seconds
-- Step 3 (Video Generation): 5-15 minutes
-- Step 4 (GCS Upload): ~5-10 seconds
-
-**Running Pipeline:**
-...
-
-**Testing Pipeline:**
+**Testing Pipeline Locally**
 ...
 
 **Happy Trailer Generating!**
