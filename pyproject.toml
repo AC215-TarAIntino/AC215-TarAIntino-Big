@@ -3,7 +3,7 @@ name = "ac215-tarantino-big"
 version = "1.0.0"
 description = "End-to-end AI movie trailer generation application with adaptive quiz and modular pipeline"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 authors = [
     {name = "Mathilde Cros"},
     {name = "Robert Debbas"},
@@ -18,24 +18,63 @@ dependencies = [
     "google-cloud-storage>=2.19.0",
     # Logging and utilities
     "python-dotenv>=1.0.0",
+    # API Framework (needed by microservices)
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.6",
+    "pydantic>=2.9.2",
+    "pydantic-settings>=2.5.2",
+    # OpenAI SDK (for OpenRouter compatibility)
+    "openai>=1.50.0",
+    # Utilities
+    "python-multipart>=0.0.12",
+    "httpx>=0.27.2",
 ]
 
 [project.optional-dependencies]
 dev = [
-    # Testing
-    "pytest>=8.3.0",
-    "pytest-cov>=6.0.0",
-    # Linting and formatting
-    "ruff>=0.14.0",
+    "pytest",
+    "pytest-cov",
+    "black",
+    "ruff",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "src",
+]
+testpaths = [
+    "src",
+    "tests",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+  | node_modules
+)/
+'''
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.ruff]
-line-length = 100
+line-length = 88
+src = ["src"]
 target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "build",
+    "dist",
+    "node_modules",
+]
 
 [tool.ruff.lint]
 select = [
@@ -52,17 +91,13 @@ ignore = [
     "B008",  # do not perform function calls in argument defaults
 ]
 
+[tool.ruff.isort]
+known-first-party = [
+    "quiz_service",
+    "movie_pipeline",
+    "trailer_generator",
+]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # Allow unused imports in __init__.py
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-addopts = [
-    "--verbose",
-    "--cov=.",
-    "--cov-report=term-missing",
-    "--cov-report=xml",
-]

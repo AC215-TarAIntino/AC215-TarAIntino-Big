@@ -18,8 +18,8 @@ from src.movie_pipeline.movie_generator import MovieGenerator, MovieGeneratorErr
 from src.movie_pipeline.config import settings
 
 
-def test_movie_fetching(movie_names):
-    """Test fetching movies from OMDb."""
+def fetch_movies(movie_names):
+    """Fetch movies from OMDb."""
     print("\n" + "="*80)
     print("STEP 1: Fetching Movie Data from OMDb")
     print("="*80)
@@ -41,8 +41,8 @@ def test_movie_fetching(movie_names):
     return movies
 
 
-def test_movie_generation(movies, model=None):
-    """Test generating a new movie concept."""
+def generate_movie(movies, model=None):
+    """Generate a new movie concept."""
     print("\n" + "="*80)
     print("STEP 2: Generating New Movie Concept")
     print("="*80)
@@ -181,14 +181,14 @@ def main():
     print(f"Output File: {args.output if not args.no_save else 'None (display only)'}")
 
     # Test fetching
-    movies = test_movie_fetching(movie_names)
+    movies = fetch_movies(movie_names)
 
     if not movies:
         print("\n✗ Failed to fetch any movies. Please check your movie names and OMDb API key.")
         return 1
 
     # Test generation
-    generated_movie = test_movie_generation(movies, model=args.model)
+    generated_movie = generate_movie(movies, model=args.model)
 
     if not generated_movie:
         print("\n✗ Failed to generate movie. Please check your OpenRouter API key and settings.")

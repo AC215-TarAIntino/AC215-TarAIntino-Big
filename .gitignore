@@ -115,9 +115,7 @@ cover/
 nosetests.xml
 coverage.xml
 
-# Test files
-test_*.py
-check_*.py
+# Test output files (but keep test source files!)
 test_output/
 *.test.json
 
@@ -234,9 +232,6 @@ hand-ins/*.jpeg
 # Root-level shell scripts
 /*.sh
 !monitor_pipeline.sh
-
-# Root-level test files
-/test*.py
 
 # -----------------------------------------------------------------------------
 # Type Checkers & Linters

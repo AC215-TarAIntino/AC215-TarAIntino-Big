@@ -44,7 +44,7 @@ uv.lock
 # -----------------------------------------------------------------------------
 # Testing & Coverage
 # -----------------------------------------------------------------------------
-tests/
+# Keep tests/ and test_*.py for CI/CD
 .pytest_cache/
 .coverage
 .coverage.*
@@ -55,10 +55,7 @@ htmlcov/
 coverage.xml
 nosetests.xml
 
-# Test files
-test_*.py
-*_test.py
-check_*.py
+# Test outputs only (keep test source files!)
 test_output/
 
 # -----------------------------------------------------------------------------
