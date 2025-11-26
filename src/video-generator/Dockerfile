@@ -1,29 +1,31 @@
 # Use official Python runtime as base image
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
-# Set working directory
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PATH="/opt/venv/bin:${PATH}" \
+    PYTHONPATH="/app"
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && pip install -U pip uv
+
 WORKDIR /app
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+COPY pyproject.toml /app/pyproject.toml
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy pyproject.toml first for better caching
-COPY pyproject.toml .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -e .
+RUN uv sync --extra dev
 
 # Copy application code
 COPY *.py ./
 COPY *.json ./
+
+# Copy tests directory for testing
+COPY tests ./tests
 
 # Create output directory
 RUN mkdir -p /app/output

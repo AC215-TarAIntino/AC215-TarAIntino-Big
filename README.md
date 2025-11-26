@@ -60,8 +60,10 @@ AC215-TarAIntino-Big/
 │   │   │       ├── schemas.py      # Request/response schemas
 │   │   │       ├── state.py        # Session management
 │   │   │       └── utils.py        # Utility functions
+│   │   ├── tests/                  # Unit tests
 │   │   ├── secrets/                # GCS credentials
-│   │   ├── docker-compose.yml      # Local orchestration
+│   │   ├── Dockerfile              # Container definition
+│   │   ├── TEST_COVERAGE_SUMMARY.md # Test coverage report
 │   │   └── README.md               # Quiz service documentation
 │   ├── screenplay-writer/          # Movie concept generation
 │   │   ├── src/
@@ -73,7 +75,9 @@ AC215-TarAIntino-Big/
 │   │   │       └── schemas.py      # Request/response schemas
 │   │   ├── tests/                  # Unit tests
 │   │   ├── output/                 # Generated screenplays
+│   │   ├── Dockerfile              # Container definition
 │   │   ├── .env.example            # Environment template
+│   │   ├── TEST_COVERAGE_SUMMARY.md # Test coverage report
 │   │   └── README.md               # Screenplay service docs
 │   ├── scene-decomposer/           # Trailer breakdown service
 │   │   ├── src/
@@ -85,17 +89,22 @@ AC215-TarAIntino-Big/
 │   │   │       └── schemas.py      # Request/response schemas
 │   │   ├── tests/                  # Unit tests
 │   │   ├── outputs/                # Generated breakdowns
+│   │   ├── Dockerfile              # Container definition
 │   │   ├── .env.example            # Environment template
+│   │   ├── TEST_COVERAGE_SUMMARY.md # Test coverage report
 │   │   └── README.md               # Scene decomposer docs
 │   ├── video-generator/            # Video generation service
 │   │   ├── app.py                  # FastAPI application
 │   │   ├── generate.py             # Video generation logic
 │   │   ├── test.py                 # Test utilities
+│   │   ├── tests/                  # Unit tests
 │   │   ├── output/                 # Generated videos
 │   │   │   ├── refs/               # Character references
 │   │   │   └── scenes/             # Generated scenes
+│   │   ├── Dockerfile              # Container definition
 │   │   ├── secrets.json            # Gemini API credentials
-│   │   └── gcp-credentials.json    # GCS credentials
+│   │   ├── gcp-credentials.json    # GCS credentials
+│   │   └── TEST_COVERAGE_SUMMARY.md # Test coverage report
 │   └── frontend/                   # React frontend application
 │       ├── app/                    # Next.js app directory
 │       ├── components/             # React components
@@ -290,7 +299,25 @@ You will be able to see when the generation process is at in the terminal where 
 - Persistent storage for taste vectors
 - **Automatic initialization**: Database is automatically populated from GCS on first startup via the `chroma-init` service
 
-## Testing Pipeline Locally
-...
+## Testing Pipeline
+
+### Running Tests
+
+All services use Docker for consistent testing environments.
+
+First, ensure all services are running:
+```bash
+# CAREFUL: need to be in root folder here
+docker-compose up --build -d
+```
+
+Then run tests for each service:
+```bash
+# Run all tests with coverage
+docker-compose exec quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
+docker-compose exec screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
+docker-compose exec scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
+docker-compose exec video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
+```
 
 ## Happy Trailer Generating!
