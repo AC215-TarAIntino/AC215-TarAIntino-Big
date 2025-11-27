@@ -102,25 +102,25 @@ jobs:
 
       - name: Build and start Docker services
         run: |
-          docker compose up -d --build
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
           sleep 30
 
       - name: Check service health
         run: |
-          docker compose ps
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml ps
           echo "=== Service Logs ==="
-          docker compose logs
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs
 
       - name: Run all microservice tests
         run: |
           echo "=== Testing Quiz Service ==="
-          docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
           echo "=== Testing Screenplay Writer ==="
-          docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
           echo "=== Testing Scene Decomposer ==="
-          docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
           echo "=== Testing Video Generator ==="
-          docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T video-generator python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
@@ -133,7 +133,7 @@ jobs:
 
       - name: Tear down services
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
 
   # Detect which services changed (for future Docker builds)
   detect-changes:
