@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # OpenRouter Configuration
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_model: str = "google/gemini-2.0-flash-exp:free"
+    openrouter_model: str = "google/gemini-3-pro-preview"
 
     # Optional: Site URL and name for OpenRouter (helps with ranking)
     openrouter_site_url: str | None = None

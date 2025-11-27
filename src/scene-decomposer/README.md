@@ -9,8 +9,8 @@ The Scene Decomposer takes a full movie screenplay and breaks it down into 6-8 t
 ## Technology Stack
 
 - **Framework**: FastAPI (Python)
-- **LLM Provider**: OpenRouter (Claude 3.5 Sonnet)
-- **AI Model**: Anthropic Claude 3.5 Sonnet (for scene analysis)
+- **LLM Provider**: OpenRouter (Google Gemini 3 Pro)
+- **AI Model**: Google Gemini 3 Pro Preview (for scene analysis)
 - **Port**: 8001
 
 ## Project Structure
@@ -52,7 +52,7 @@ Screenplay JSON
 
 **Purpose**: Break down screenplay into trailer-ready scenes
 
-**Claude 3.5 Sonnet analyzes**:
+**Gemini 3 Pro analyzes**:
 - **Opening Hook**: Grab attention in first 3-5 seconds
 - **Character Introductions**: Show protagonists and relationships
 - **Rising Action**: Build tension and conflict
@@ -104,7 +104,7 @@ OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_API_KEY=sk-or-v1-...
 
 # Optional (defaults shown)
-OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
+OPENROUTER_MODEL=google/gemini-3-pro-preview
 TRAILER_DURATION=35
 NUM_SCENES=7
 INCLUDE_NARRATION=true
@@ -116,8 +116,8 @@ API_PORT=8001
 
 The service can be configured via environment variables in `.env`:
 
-- **`OPENROUTER_MODEL`**: LLM model to use (default: `anthropic/claude-3.5-sonnet`)
-  - Options: `anthropic/claude-3.5-sonnet`, `google/gemini-2.0-flash-exp:free`
+- **`OPENROUTER_MODEL`**: LLM model to use (default: `google/gemini-3-pro-preview`)
+  - Options: `google/gemini-3-pro-preview`, `anthropic/claude-3.5-sonnet`
 - **`TRAILER_DURATION`**: Total trailer length in seconds (default: 35)
 - **`NUM_SCENES`**: Number of scenes to generate (default: 7)
 - **`INCLUDE_NARRATION`**: Add voice-over narration (default: true)
@@ -135,7 +135,7 @@ scene_analyzer.py
     → Extract themes
     ↓
 scene_generator.py
-    → Call Claude 3.5 Sonnet via OpenRouter
+    → Call Gemini 3 Pro via OpenRouter
     → Generate 6-8 scenes
     → Optimize for video generation
     ↓
@@ -157,7 +157,7 @@ Video Generator Service
 
 - **Scene Count**: 6-8 scenes works best for 30-40 second trailers
 - **Processing Time**: ~5-15 seconds depending on screenplay length
-- **Cost**: ~$0.02-0.05 per trailer (Claude 3.5 Sonnet pricing)
+- **Cost**: ~$0.02-0.05 per trailer (Gemini 3 Pro pricing)
 - **Output Format**: JSON optimized for VEO 3.1 video generation
 - **Scene Duration**: Individual scenes range from 3-8 seconds
 
