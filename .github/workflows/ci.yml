@@ -89,6 +89,7 @@ jobs:
       - name: Create necessary directories
         run: |
           mkdir -p src/quiz-vector/secrets
+          mkdir -p src/quiz-vector/src/datapipeline/logs
           mkdir -p src/video-generator
 
       - name: Create mock credentials
@@ -97,13 +98,63 @@ jobs:
           echo "OPENROUTER_API_KEY=test_key" > src/screenplay-writer/.env
           echo "OMDB_API_KEY=test_key" >> src/screenplay-writer/.env
           echo "OPENROUTER_API_KEY=test_key" > src/scene-decomposer/.env
-          echo '{"project_api_key": "test_key"}' > src/video-generator/secret.json
+          echo '{"project_api_key": "test_key"}' > src/video-generator/secrets.json
           echo '{"type": "service_account"}' > src/video-generator/gcp-credentials.json
+
+      - name: Create mock data files for quiz-service
+        run: |
+          # Create mock numpy arrays for prior mean and covariance
+          python3 -c "import numpy as np; np.save('src/quiz-vector/src/datapipeline/logs/prior_mean.npy', np.zeros(100))"
+          python3 -c "import numpy as np; np.save('src/quiz-vector/src/datapipeline/logs/prior_cov.npy', np.eye(100))"
+          # Create mock tag index JSON
+          echo '{"tag_ids_sorted": [416, 284, 862, 1084, 496, 311, 347, 1023, 886, 267, 376, 18, 521, 229, 322, 688]}' > src/quiz-vector/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
 
       - name: Build and start Docker services
         run: |
+          export SKIP_CHROMA_INIT=true
           docker compose up -d --build
-          sleep 30
+        env:
+          SKIP_CHROMA_INIT: true
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to be healthy..."
+          timeout=300  # 5 minutes timeout
+          elapsed=0
+          interval=5
+
+          while [ $elapsed -lt $timeout ]; do
+            # Check if all required services are running (not restarting)
+            restarting=$(docker compose ps --format json | jq -r '.[] | select(.State == "restarting") | .Service' 2>/dev/null || echo "")
+
+            if [ -z "$restarting" ]; then
+              # Check health of services with healthchecks
+              all_healthy=true
+              for service in quiz-service screenplay-writer scene-decomposer video-generator; do
+                health=$(docker inspect --format='{{.State.Health.Status}}' $service 2>/dev/null || echo "none")
+                if [ "$health" != "healthy" ] && [ "$health" != "none" ]; then
+                  all_healthy=false
+                  echo "Service $service health: $health"
+                fi
+              done
+
+              if $all_healthy; then
+                echo "All services are healthy!"
+                exit 0
+              fi
+            else
+              echo "Services restarting: $restarting"
+            fi
+
+            sleep $interval
+            elapsed=$((elapsed + interval))
+            echo "Waited ${elapsed}s..."
+          done
+
+          echo "Timeout waiting for services to be healthy"
+          docker compose ps
+          docker compose logs
+          exit 1
 
       - name: Check service health
         run: |

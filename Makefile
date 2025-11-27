@@ -40,38 +40,38 @@ lint-fix: ## Lint and auto-fix issues with ruff
 test: ## Run all microservice tests
 	@echo "$(BLUE)Running all microservice tests...$(NC)"
 	@echo "\n=== Testing Quiz Service ==="
-	docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+	docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
 	@echo "\n=== Testing Screenplay Writer ==="
-	docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+	docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 	@echo "\n=== Testing Scene Decomposer ==="
-	docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+	docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 	@echo "\n=== Testing Video Generator ==="
-	docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+	docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
 	@echo "$(GREEN)All tests complete!$(NC)"
 
 test-cov: ## Run all tests with HTML coverage report
 	@echo "$(BLUE)Running tests with coverage...$(NC)"
-	docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v || true
-	docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v || true
-	docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v || true
-	docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v || true
+	docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v
+	docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v
+	docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v
+	docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v
 	@echo "$(GREEN)Coverage reports generated in htmlcov/$(NC)"
 
 test-quiz: ## Run quiz-vector tests only
 	@echo "$(BLUE)Testing Quiz Service...$(NC)"
-	docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
+	docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
 test-screenplay: ## Run screenplay-writer tests only
 	@echo "$(BLUE)Testing Screenplay Writer...$(NC)"
-	docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
+	docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
 test-scene: ## Run scene-decomposer tests only
 	@echo "$(BLUE)Testing Scene Decomposer...$(NC)"
-	docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
+	docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
 test-video: ## Run video-generator tests only
 	@echo "$(BLUE)Testing Video Generator...$(NC)"
-	docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
+	docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
 test-e2e: ## Run end-to-end integration tests
 	@echo "$(BLUE)Running end-to-end integration tests...$(NC)"
@@ -97,7 +97,7 @@ check: ## Run format + lint + test (comprehensive check before commits)
 
 up: ## Start all Docker services
 	@echo "$(BLUE)Starting all services...$(NC)"
-	docker-compose up -d
+	docker compose up -d
 	@echo "$(GREEN)Services started!$(NC)"
 	@echo "Quiz Service: http://localhost:8082"
 	@echo "Screenplay Writer: http://localhost:8080"
@@ -108,32 +108,32 @@ up: ## Start all Docker services
 
 down: ## Stop all Docker services
 	@echo "$(YELLOW)Stopping all services...$(NC)"
-	docker-compose down
+	docker compose down
 
 restart: ## Restart all Docker services
 	@echo "$(YELLOW)Restarting all services...$(NC)"
-	docker-compose restart
+	docker compose restart
 
 logs: ## Show logs from all services
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-quiz: ## Show quiz-service logs
-	docker-compose logs -f quiz-service
+	docker compose logs -f quiz-service
 
 logs-screenplay: ## Show screenplay-writer logs
-	docker-compose logs -f screenplay-writer
+	docker compose logs -f screenplay-writer
 
 logs-scene: ## Show scene-decomposer logs
-	docker-compose logs -f scene-decomposer
+	docker compose logs -f scene-decomposer
 
 logs-video: ## Show video-generator logs
-	docker-compose logs -f video-generator
+	docker compose logs -f video-generator
 
 logs-frontend: ## Show frontend logs
-	docker-compose logs -f frontend
+	docker compose logs -f frontend
 
 ps: ## Show running Docker containers
-	docker-compose ps
+	docker compose ps
 
 check-env: ## Check if required .env files exist
 	@echo "$(BLUE)Checking environment files...$(NC)"
@@ -176,7 +176,7 @@ clean: ## Clean Python cache files and build artifacts
 
 clean-volumes: ## Remove all Docker volumes (WARNING: deletes data!)
 	@echo "$(YELLOW)Removing Docker volumes...$(NC)"
-	docker-compose down -v
+	docker compose down -v
 	@echo "$(GREEN)Volumes removed!$(NC)"
 
 init: check-env install up ## Initialize project (check env, install deps, start services)

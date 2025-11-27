@@ -91,14 +91,17 @@ class TestLoadDefaultAPIKey:
 
     def test_load_invalid_json(self):
         """Test handling of invalid JSON in secrets file."""
-        import json
+        from fastapi import HTTPException
 
         with (
             patch("pathlib.Path.exists", return_value=True),
             patch("pathlib.Path.read_text", return_value="invalid json"),
-            pytest.raises(json.JSONDecodeError),
+            pytest.raises(HTTPException) as exc_info,
         ):
             _load_default_api_key("image_api_key")
+
+        assert exc_info.value.status_code == 500
+        assert "Invalid secret.json format" in exc_info.value.detail
 
 
 class TestResolveAPIKey:

@@ -91,9 +91,12 @@ jobs:
 
       - name: Build and start Docker services
         run: |
+          export SKIP_CHROMA_INIT=true
           docker compose up -d --build
           # Wait for services to be healthy
           sleep 30
+        env:
+          SKIP_CHROMA_INIT: true
 
       - name: Check service health
         run: |

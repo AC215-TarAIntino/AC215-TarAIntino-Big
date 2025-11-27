@@ -30,6 +30,10 @@ services:
     container_name: chroma-init
     command: >
       sh -c "
+        if [ \"$${SKIP_CHROMA_INIT:-false}\" = \"true\" ]; then
+          echo 'Skipping ChromaDB data ingestion (CI mode)';
+          exit 0;
+        fi;
         echo 'ChromaDB is ready, starting data ingestion...' &&
         python -m src.datapipeline.downloader --to_chroma --to_tagmeta &&
         echo 'ChromaDB initialization complete!'
@@ -46,6 +50,7 @@ services:
       TAGMETA_COLLECTION: tag_metadata
       LOG_DIR: /app/src/datapipeline/logs
       BATCH_SIZE: "2000"
+      SKIP_CHROMA_INIT: ${SKIP_CHROMA_INIT:-false}
     volumes:
       - ./src/quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
       - ./src/quiz-vector:/app
@@ -102,6 +107,12 @@ services:
       quiz-rag-app:
         condition: service_started
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - tarantino-network
 
