@@ -23,7 +23,7 @@ class TestSettings:
         test_settings = Settings()
 
         # OpenRouter defaults
-        assert test_settings.openrouter_model == "anthropic/claude-3.5-sonnet"
+        assert test_settings.openrouter_model == "google/gemini-3-pro-preview"
         assert test_settings.openrouter_base_url == "https://openrouter.ai/api/v1"
 
         # API defaults

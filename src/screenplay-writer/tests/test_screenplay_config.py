@@ -12,7 +12,7 @@ def test_settings_default_values():
     # Check default values
     assert settings.omdb_base_url == "http://www.omdbapi.com/"
     assert settings.openrouter_base_url == "https://openrouter.ai/api/v1"
-    assert settings.openrouter_model == "google/gemini-2.0-flash-exp:free"
+    assert settings.openrouter_model == "google/gemini-3-pro-preview"
     assert settings.api_host == "0.0.0.0"
     assert settings.api_port == 8000
     assert settings.openrouter_site_name == "Movie Pipeline"

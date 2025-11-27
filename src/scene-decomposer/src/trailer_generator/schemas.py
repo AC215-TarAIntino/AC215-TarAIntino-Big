@@ -58,7 +58,7 @@ class TrailerRequest(BaseModel):
     model: str | None = Field(
         None,
         description="OpenRouter model to use (overrides default)",
-        examples=["anthropic/claude-3.5-sonnet", "google/gemini-2.0-flash-exp:free"],
+        examples=["anthropic/claude-3.5-sonnet", "google/gemini-3-pro-preview"],
     )
 
 
