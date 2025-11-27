@@ -557,6 +557,7 @@ class TestTrailerGenerationEndpoint:
                 }
             ],
             "stitch_trailer": True,
+            "session_id": "test-session-id",
         }
 
         response = client.post("/generate/trailer", json=request_data)
@@ -597,6 +598,7 @@ class TestTrailerGenerationEndpoint:
                 }
             ],
             "stitch_trailer": False,
+            "session_id": "test-session-id",
         }
 
         response = client.post("/generate/trailer", json=request_data)
@@ -630,6 +632,7 @@ class TestTrailerGenerationEndpoint:
                     "reference_images": ["Char1"],
                 }
             ],
+            "session_id": "test-session-id",
         }
 
         response = client.post("/generate/trailer", json=request_data)
@@ -682,6 +685,7 @@ class TestMockTrailerEndpoint:
                     },
                 ],
                 "stitch_trailer": True,
+                "session_id": "test-session-id",
             }
 
             response = client.post("/generate/trailer/mock", json=request_data)
@@ -712,6 +716,7 @@ class TestMockTrailerEndpoint:
                     }
                 ],
                 "stitch_trailer": False,
+                "session_id": "test-session-id",
             }
 
             response = client.post("/generate/trailer/mock", json=request_data)
@@ -738,6 +743,7 @@ class TestMockTrailerEndpoint:
                     }
                 ],
                 "stitch_trailer": False,
+                "session_id": "test-session-id",
             }
 
             response = client.post("/generate/trailer/mock", json=request_data)

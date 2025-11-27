@@ -349,10 +349,10 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
 
                     # Fix missing commas after closing braces/brackets before quotes or braces
                     content = re.sub(r'}\s*"', '}, "', content)  # } " -> }, "
-                    content = re.sub(r'}\s*{', '}, {', content)  # } { -> }, {
+                    content = re.sub(r"}\s*{", "}, {", content)  # } { -> }, {
                     content = re.sub(r']\s*"', '], "', content)  # ] " -> ], "
-                    content = re.sub(r']\s*{', '], {', content)  # ] { -> ], {
-                    content = re.sub(r']\s*\[', '], [', content)  # ] [ -> ], [
+                    content = re.sub(r"]\s*{", "], {", content)  # ] { -> ], {
+                    content = re.sub(r"]\s*\[", "], [", content)  # ] [ -> ], [
 
                     # Fix 4: Fix common quote escaping issues
                     # Replace smart quotes with regular quotes
@@ -360,8 +360,8 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
                     content = content.replace(""", "'").replace(""", "'")
 
                     # Fix 5: Remove comments if any
-                    content = re.sub(r'//.*?\n', '', content)
-                    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+                    content = re.sub(r"//.*?\n", "", content)
+                    content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
 
                     # Fix 6: Fix apostrophes in strings that might break JSON
                     # Replace escaped apostrophes with regular ones

@@ -1,5 +1,5 @@
 import json
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 import numpy as np
 import pytest
@@ -25,7 +25,7 @@ class TestGetChromaClient:
 
         with patch("src.quiz_service.config.chromadb.HttpClient") as mock_http:
             get_chroma_client()
-            mock_http.assert_called_once_with(host="localhost", port=8000)
+            mock_http.assert_called_once_with(host="localhost", port=8000, settings=ANY)
 
     def test_persistent_client_when_no_host_port(self, monkeypatch):
         monkeypatch.delenv("CHROMA_SERVER_HOST", raising=False)
@@ -34,7 +34,7 @@ class TestGetChromaClient:
 
         with patch("src.quiz_service.config.chromadb.PersistentClient") as mock_persistent:
             get_chroma_client()
-            mock_persistent.assert_called_once_with(path="./test_chroma")
+            mock_persistent.assert_called_once_with(path="./test_chroma", settings=ANY)
 
     def test_persistent_client_default_path(self, monkeypatch):
         monkeypatch.delenv("CHROMA_SERVER_HOST", raising=False)
@@ -43,7 +43,7 @@ class TestGetChromaClient:
 
         with patch("src.quiz_service.config.chromadb.PersistentClient") as mock_persistent:
             get_chroma_client()
-            mock_persistent.assert_called_once_with(path="./chroma_db")
+            mock_persistent.assert_called_once_with(path="./chroma_db", settings=ANY)
 
 
 class TestGetCollection:

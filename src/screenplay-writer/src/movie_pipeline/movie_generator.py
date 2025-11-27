@@ -212,14 +212,14 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
 
                     # Fix missing commas after closing braces/brackets before quotes or braces
                     content = re.sub(r'}\s*"', '}, "', content)  # } " -> }, "
-                    content = re.sub(r'}\s*{', '}, {', content)  # } { -> }, {
+                    content = re.sub(r"}\s*{", "}, {", content)  # } { -> }, {
                     content = re.sub(r']\s*"', '], "', content)  # ] " -> ], "
-                    content = re.sub(r']\s*{', '], {', content)  # ] { -> ], {
-                    content = re.sub(r']\s*\[', '], [', content)  # ] [ -> ], [
+                    content = re.sub(r"]\s*{", "], {", content)  # ] { -> ], {
+                    content = re.sub(r"]\s*\[", "], [", content)  # ] [ -> ], [
 
                     # Fix 4: Remove comments if any
-                    content = re.sub(r'//.*?\n', '', content)
-                    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+                    content = re.sub(r"//.*?\n", "", content)
+                    content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
 
                     # Fix 5: Fix common quote escaping issues
                     content = content.replace('\\"', '"').replace("'", '"')

@@ -30,7 +30,7 @@ def upload_to_gcs(local_path: Path, dest_path: str) -> None:
         print(f"    ☁ Uploaded to gs://{GCS_BUCKET_NAME}/{blob.name} (public)")
     except Exception as e:
         print(f"    ☁ Uploaded to gs://{GCS_BUCKET_NAME}/{blob.name} (failed to make public: {e})")
-        print(f"    ⚠️  You may need to enable public access on the bucket or use signed URLs")
+        print("    ⚠️  You may need to enable public access on the bucket or use signed URLs")
 
 
 def generate_character_references(
@@ -95,7 +95,7 @@ def generate_scene_videos(
         # TESTING: Disable ALL frames for pure text-to-video mode
         start_img, start_mime = None, None
         end_img, end_mime = None, None
-        print(f"    Testing pure text-to-video mode (no frames, no references)")
+        print("    Testing pure text-to-video mode (no frames, no references)")
 
         # # NOTE: Veo 3.1 does not support combining frame interpolation with reference images
         # # We prioritize reference images for character consistency over frame control
@@ -125,7 +125,7 @@ def generate_scene_videos(
         #         scene_ref_images.append(ref_bytes)
         #         scene_ref_mimes.append(ref_mime)
         #         print(f"      ✓ {char_name}")
-        print(f"    Testing basic text-to-video mode (no reference images)")
+        print("    Testing basic text-to-video mode (no reference images)")
 
         # Call VEO 3.1
         print("    Generating video with VEO 3.1...")
@@ -213,15 +213,11 @@ def generate_video_veo(
     # CRITICAL: 8 seconds ONLY when using reference images
     valid_durations = [4, 6, 8]
     if duration not in valid_durations:
-        raise ValueError(
-            f"Duration must be 4, 6, or 8 seconds for Veo 3.1 (got {duration}s)"
-        )
+        raise ValueError(f"Duration must be 4, 6, or 8 seconds for Veo 3.1 (got {duration}s)")
 
     # Max 3 reference images
     if reference_images and len(reference_images) > 3:
-        raise ValueError(
-            f"Max 3 reference images allowed (got {len(reference_images)})"
-        )
+        raise ValueError(f"Max 3 reference images allowed (got {len(reference_images)})")
 
     # Reference images REQUIRE 8 seconds (disabled for testing)
     # if reference_images and duration != 8:
@@ -238,13 +234,10 @@ def generate_video_veo(
     # Add reference images for character consistency (max 3)
     if reference_images:
         ref_images = []
-        for img_bytes, mime_type in zip(reference_images, reference_mimes):
+        for img_bytes, mime_type in zip(reference_images, reference_mimes, strict=True):
             img = types.Image(image_bytes=img_bytes, mime_type=mime_type)
             # Use "asset" reference type (as shown in Veo 3.1 docs)
-            ref_img = types.VideoGenerationReferenceImage(
-                image=img,
-                reference_type="asset"
-            )
+            ref_img = types.VideoGenerationReferenceImage(image=img, reference_type="asset")
             ref_images.append(ref_img)
         config_params["reference_images"] = ref_images
         print(f"      [VEO 3.1] Using {len(ref_images)} character reference(s)")
@@ -254,7 +247,7 @@ def generate_video_veo(
     if end_frame and not reference_images:
         end_image = types.Image(image_bytes=end_frame, mime_type=end_mime)
         config_params["last_frame"] = end_image
-        print(f"      [VEO 3.1] Using start and end frame interpolation")
+        print("      [VEO 3.1] Using start and end frame interpolation")
 
     # Create config object
     config = types.GenerateVideosConfig(**config_params) if config_params else None
@@ -264,7 +257,7 @@ def generate_video_veo(
     start_image = None
     if start_frame and not reference_images:
         start_image = types.Image(image_bytes=start_frame, mime_type=start_mime)
-        print(f"      [VEO 3.1] Using start frame (image-to-video mode)")
+        print("      [VEO 3.1] Using start frame (image-to-video mode)")
 
     # Generate video using Veo 3.1 with full feature support
     print(f"      [VEO 3.1] Generating {duration}s video...")

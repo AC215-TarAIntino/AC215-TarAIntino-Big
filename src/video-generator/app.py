@@ -178,7 +178,10 @@ def healthcheck() -> dict[str, str]:
 
 
 class SignedUrlRequest(BaseModel):
-    gcs_path: str = Field(..., description="Path within the GCS bucket (e.g., video_generator_outputs/trailers/video.mp4)")
+    gcs_path: str = Field(
+        ...,
+        description="Path within the GCS bucket (e.g., video_generator_outputs/trailers/video.mp4)",
+    )
     expiration_minutes: int = Field(default=60, description="URL expiration time in minutes")
 
 
@@ -191,8 +194,9 @@ class SignedUrlResponse(BaseModel):
 def generate_signed_url(request: SignedUrlRequest) -> SignedUrlResponse:
     """Generate a signed URL for a GCS object"""
     try:
-        from google.cloud import storage
         from datetime import timedelta
+
+        from google.cloud import storage
 
         client = storage.Client()
         bucket = client.bucket("tarantaino-output")
@@ -200,17 +204,16 @@ def generate_signed_url(request: SignedUrlRequest) -> SignedUrlResponse:
 
         # Generate signed URL that expires in X minutes
         signed_url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(minutes=request.expiration_minutes),
-            method="GET"
+            version="v4", expiration=timedelta(minutes=request.expiration_minutes), method="GET"
         )
 
         return SignedUrlResponse(
-            signed_url=signed_url,
-            expires_in_minutes=request.expiration_minutes
+            signed_url=signed_url, expires_in_minutes=request.expiration_minutes
         )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to generate signed URL: {str(exc)}") from exc
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate signed URL: {str(exc)}"
+        ) from exc
 
 
 @app.post("/generate/character-references", response_model=CharacterReferenceResponse)
@@ -295,8 +298,9 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
     gcs_url = None
     public_url = None
     if trailer_path:
-        from google.cloud import storage
         from datetime import timedelta
+
+        from google.cloud import storage
 
         gcs_bucket_name = "tarantaino-output"
         gcs_prefix = "video_generator_outputs"
@@ -310,11 +314,9 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
             bucket = client.bucket(gcs_bucket_name)
             blob = bucket.blob(gcs_path)
             public_url = blob.generate_signed_url(
-                version="v4",
-                expiration=timedelta(minutes=120),
-                method="GET"
+                version="v4", expiration=timedelta(minutes=120), method="GET"
             )
-            print(f"  ✅ Generated signed URL (expires in 2 hours)")
+            print("  ✅ Generated signed URL (expires in 2 hours)")
         except Exception as e:
             print(f"  ⚠️  Failed to generate signed URL: {e}")
             # Fallback to unsigned URL (will fail if bucket is private)
@@ -367,8 +369,9 @@ def generate_trailer_mock(request: TrailerGenerationRequest) -> TrailerGeneratio
         gcs_url = None
         public_url = None
         if trailer_path:
-            from google.cloud import storage
             from datetime import timedelta
+
+            from google.cloud import storage
 
             gcs_bucket_name = "tarantaino-output"
             gcs_prefix = "video_generator_outputs"
@@ -382,11 +385,9 @@ def generate_trailer_mock(request: TrailerGenerationRequest) -> TrailerGeneratio
                 bucket = client.bucket(gcs_bucket_name)
                 blob = bucket.blob(gcs_path)
                 public_url = blob.generate_signed_url(
-                    version="v4",
-                    expiration=timedelta(minutes=120),
-                    method="GET"
+                    version="v4", expiration=timedelta(minutes=120), method="GET"
                 )
-                print(f"  ✅ Generated signed URL (expires in 2 hours)")
+                print("  ✅ Generated signed URL (expires in 2 hours)")
             except Exception as e:
                 print(f"  ⚠️  Failed to generate signed URL: {e}")
                 # Fallback to unsigned URL (will fail if bucket is private)
