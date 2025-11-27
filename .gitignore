@@ -271,4 +271,4 @@ __marimo__/
 !package.json
 !package-lock.json
 !tsconfig.json
-!frontend/lib/
+!src/frontend/lib/
