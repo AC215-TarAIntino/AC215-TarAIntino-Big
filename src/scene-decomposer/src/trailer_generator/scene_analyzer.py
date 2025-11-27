@@ -2,8 +2,7 @@
 Movie analyzer for extracting key information for trailer generation.
 """
 
-from typing import Dict, List
-from .schemas import GeneratedMovie, MovieAnalysis, CastMember, CharacterDesign
+from .schemas import GeneratedMovie, MovieAnalysis
 
 
 class MovieAnalyzer:
@@ -30,10 +29,10 @@ class MovieAnalyzer:
             key_themes=self._extract_key_themes(),
             visual_style_summary=self._summarize_visual_style(),
             tone=self._determine_tone(),
-            hook_elements=self._identify_hooks()
+            hook_elements=self._identify_hooks(),
         )
 
-    def _extract_main_characters(self) -> List[Dict[str, str]]:
+    def _extract_main_characters(self) -> list[dict[str, str]]:
         """
         Extract main characters with their key information.
 
@@ -45,17 +44,19 @@ class MovieAnalyzer:
 
         characters = []
         for member in main_cast:
-            characters.append({
-                "name": member.character_name,
-                "actor": member.actor_name,
-                "physical_description": member.physical_description,
-                "role": member.role_description,
-                "traits": ", ".join(member.personality_traits)
-            })
+            characters.append(
+                {
+                    "name": member.character_name,
+                    "actor": member.actor_name,
+                    "physical_description": member.physical_description,
+                    "role": member.role_description,
+                    "traits": ", ".join(member.personality_traits),
+                }
+            )
 
         return characters
 
-    def _extract_key_themes(self) -> List[str]:
+    def _extract_key_themes(self) -> list[str]:
         """
         Extract key themes from the movie.
 
@@ -114,7 +115,7 @@ class MovieAnalyzer:
         else:
             return f"{', '.join(tone_indicators[:-1])}, and {tone_indicators[-1]}"
 
-    def _identify_hooks(self) -> List[str]:
+    def _identify_hooks(self) -> list[str]:
         """
         Identify compelling hook elements for the trailer.
 
@@ -153,26 +154,30 @@ class MovieAnalyzer:
             f"CHARACTER CONSISTENCY GUIDE FOR '{self.movie.title}' TRAILER\n",
             "=" * 70,
             "\nIMPORTANT: To maintain character consistency across scenes, each character",
-            "should appear in ONE CONTINUOUS scene. Use the following descriptions:\n"
+            "should appear in ONE CONTINUOUS scene. Use the following descriptions:\n",
         ]
 
         for i, member in enumerate(self.movie.cast[:4], 1):
-            guide_parts.extend([
-                f"\n{i}. {member.character_name} (played by {member.actor_name})",
-                "-" * 60,
-                f"Physical: {member.physical_description}",
-                f"Role: {member.role_description}",
-                f"Traits: {', '.join(member.personality_traits)}\n"
-            ])
+            guide_parts.extend(
+                [
+                    f"\n{i}. {member.character_name} (played by {member.actor_name})",
+                    "-" * 60,
+                    f"Physical: {member.physical_description}",
+                    f"Role: {member.role_description}",
+                    f"Traits: {', '.join(member.personality_traits)}\n",
+                ]
+            )
 
-        guide_parts.extend([
-            "\nVISUAL STYLE:",
-            "-" * 60,
-            self.movie.visual_style,
-            "\n\nWhen a character appears multiple times, ensure they are in a SINGLE",
-            "CONTINUOUS scene that can be generated with VEO 3.1 as one video sequence.",
-            "The end frame of that scene becomes the start frame of the next scene."
-        ])
+        guide_parts.extend(
+            [
+                "\nVISUAL STYLE:",
+                "-" * 60,
+                self.movie.visual_style,
+                "\n\nWhen a character appears multiple times, ensure they are in a SINGLE",
+                "CONTINUOUS scene that can be generated with VEO 3.1 as one video sequence.",
+                "The end frame of that scene becomes the start frame of the next scene.",
+            ]
+        )
 
         return "\n".join(guide_parts)
 
@@ -193,27 +198,31 @@ class MovieAnalyzer:
             f"RUNTIME: {self.movie.runtime}",
             "\n--- PLOT SUMMARY ---",
             self.movie.plot_summary,
-            "\n--- MAIN CHARACTERS ---"
+            "\n--- MAIN CHARACTERS ---",
         ]
 
         for char in analysis.main_characters:
-            context_parts.extend([
-                f"\nCharacter: {char['name']}",
-                f"Physical: {char['physical_description']}",
-                f"Role: {char['role']}",
-                f"Traits: {char['traits']}"
-            ])
+            context_parts.extend(
+                [
+                    f"\nCharacter: {char['name']}",
+                    f"Physical: {char['physical_description']}",
+                    f"Role: {char['role']}",
+                    f"Traits: {char['traits']}",
+                ]
+            )
 
-        context_parts.extend([
-            "\n--- VISUAL STYLE ---",
-            self.movie.visual_style,
-            "\n--- THEMES ---",
-            ", ".join(self.movie.themes),
-            "\n--- TONE ---",
-            analysis.tone,
-            "\n--- DIRECTOR ---",
-            f"{self.movie.director_name}: {self.movie.director_background}"
-        ])
+        context_parts.extend(
+            [
+                "\n--- VISUAL STYLE ---",
+                self.movie.visual_style,
+                "\n--- THEMES ---",
+                ", ".join(self.movie.themes),
+                "\n--- TONE ---",
+                analysis.tone,
+                "\n--- DIRECTOR ---",
+                f"{self.movie.director_name}: {self.movie.director_background}",
+            ]
+        )
 
         return "\n".join(context_parts)
 
@@ -232,15 +241,17 @@ class MovieAnalyzer:
             "2. image_generation_prompt: 6-8 sentence COMPLETE prompt for generating reference image on WHITE BACKGROUND",
             "3. brief_identifier: 3-5 words for use in video prompts (e.g., 'slender woman, late 30s, dark hair')",
             "4. visual_style: Determine from movie - options: 'hyper-realistic', '3D animated', 'hand-drawn 2D animation', 'claymation', etc.",
-            "\nCharacters from movie:\n"
+            "\nCharacters from movie:\n",
         ]
 
         for i, member in enumerate(self.movie.cast[:4], 1):
-            context_parts.extend([
-                f"\n{i}. {member.character_name}",
-                f"   Physical: {member.physical_description}",
-                f"   Personality: {', '.join(member.personality_traits)}",
-                f"   Role: {member.role_description}"
-            ])
+            context_parts.extend(
+                [
+                    f"\n{i}. {member.character_name}",
+                    f"   Physical: {member.physical_description}",
+                    f"   Personality: {', '.join(member.personality_traits)}",
+                    f"   Role: {member.role_description}",
+                ]
+            )
 
         return "\n".join(context_parts)

@@ -12,14 +12,14 @@ The Screenplay Writer takes movie recommendations from the Quiz Service and gene
 - **Themes**: Core themes and visual style
 - **Genres**: Genre classifications
 
-The service combines **OMDb API** (for inspiration from existing movies) with **OpenRouter LLM** (Gemini 2.0 Flash) for creative screenplay generation.
+The service combines **OMDb API** (for inspiration from existing movies) with **OpenRouter LLM** (Gemini 3 Pro) for creative screenplay generation.
 
 ## Technology Stack
 
 - **Framework**: FastAPI (Python)
-- **LLM Provider**: OpenRouter (Google Gemini 2.0 Flash)
+- **LLM Provider**: OpenRouter (Google Gemini 3 Pro)
 - **Movie Data**: OMDb API (Open Movie Database)
-- **AI Model**: Google Gemini 2.0 Flash Experimental (free tier)
+- **AI Model**: Google Gemini 3 Pro Preview
 - **Port**: 8080
 
 ## Project Structure
@@ -68,7 +68,7 @@ Build creative prompt:
   - Similar successful movies
   - Unique storytelling elements
   ↓
-Call Gemini 2.0 Flash via OpenRouter
+Call Gemini 3 Pro via OpenRouter
   ↓
 Generate original screenplay with:
   - Title
@@ -117,7 +117,7 @@ OPENROUTER_API_KEY=sk-or-v1-...
 OMDB_API_KEY=...
 
 # Optional (defaults shown)
-OPENROUTER_MODEL=google/gemini-2.0-flash-exp:free
+OPENROUTER_MODEL=google/gemini-3-pro-preview
 API_HOST=0.0.0.0
 API_PORT=8000
 ```
@@ -125,7 +125,7 @@ API_PORT=8000
 ## Configuration Options
 
 - **`OPENROUTER_MODEL`**: LLM model for screenplay generation
-  - Default: `google/gemini-2.0-flash-exp:free` (free tier)
+  - Default: `google/gemini-3-pro-preview`
   - Options: Any OpenRouter-supported model
 
 - **OMDb API**: Free tier allows 1,000 requests/day
@@ -143,7 +143,7 @@ movie_fetcher.py
     ↓
 movie_generator.py
     → Build creative prompt
-    → Call Gemini 2.0 Flash via OpenRouter
+    → Call Gemini 3 Pro via OpenRouter
     → Generate original screenplay
     ↓
 Screenplay JSON
@@ -159,14 +159,14 @@ Scene Decomposer Service
 - **Character Depth**: Creates compelling, multi-dimensional characters
 - **Visual Style**: Includes cinematography and aesthetic guidance
 - **Fast Generation**: Typically 2-5 seconds per screenplay
-- **Cost Effective**: Uses free-tier models when possible
+- **Cost Effective**: Uses efficient Gemini 3 Pro model
 
 ## Notes
 
 - **Originality**: All screenplays are AI-generated and original
 - **Inspiration**: Recommended movies provide thematic inspiration only
 - **Processing Time**: ~2-5 seconds for full screenplay generation
-- **Cost**: Free with Gemini 2.0 Flash (OpenRouter free tier)
+- **Cost**: Low cost with Gemini 3 Pro via OpenRouter
 - **Output Length**: 500-1000 words typically
 - **OMDb Limits**: 1,000 requests/day on free tier
 

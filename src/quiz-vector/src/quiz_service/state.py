@@ -4,11 +4,13 @@ from dataclasses import dataclass
 
 DEFAULT_TTL_SEC = 60 * 30  # 30 minutes
 
+
 @dataclass
 class Session:
     model: object
     created_at: float
     ttl_sec: int
+
 
 class InMemoryStore:
     def __init__(self):
@@ -30,5 +32,6 @@ class InMemoryStore:
 
     def delete(self, sid: str):
         self._map.pop(sid, None)
+
 
 STORE = InMemoryStore()

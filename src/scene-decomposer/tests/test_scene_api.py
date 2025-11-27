@@ -3,26 +3,24 @@ Comprehensive tests for api.py - FastAPI endpoints.
 """
 
 import sys
-import json
 from pathlib import Path
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock
 from fastapi.testclient import TestClient
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from trailer_generator.api import app
+from trailer_generator.scene_generator import SceneGeneratorError
 from trailer_generator.schemas import (
-    GeneratedMovie,
-    CastMember,
+    CharacterDesign,
+    MovieAnalysis,
+    TechnicalSpecs,
     TrailerBreakdown,
     TrailerScene,
-    CharacterDesign,
-    TechnicalSpecs,
-    MovieAnalysis,
 )
-from trailer_generator.scene_generator import SceneGeneratorError
 
 
 @pytest.fixture
@@ -50,7 +48,7 @@ def sample_movie_data():
                 "physical_description": "Tall person with dark hair",
                 "personality_traits": ["brave", "smart"],
                 "acting_style": "intense",
-                "role_description": "Hero"
+                "role_description": "Hero",
             }
         ],
         "runtime": "120 minutes",
@@ -61,7 +59,7 @@ def sample_movie_data():
         "budget": "$100M",
         "themes": ["science", "survival"],
         "visual_style": "Dark and moody",
-        "target_audience": "Adults"
+        "target_audience": "Adults",
     }
 
 
@@ -76,7 +74,7 @@ def sample_trailer_breakdown():
                 character_name="Character_One",
                 image_generation_prompt="Test prompt",
                 brief_identifier="tall person",
-                visual_style="realistic"
+                visual_style="realistic",
             )
         ],
         scenes=[
@@ -88,16 +86,16 @@ def sample_trailer_breakdown():
                 end_frame_prompt="Test end",
                 video_prompt="Test video",
                 reference_images=["Character_One"],
-                characters_present=["Character One"]
+                characters_present=["Character One"],
             )
         ],
         technical_specs=TechnicalSpecs(
             color_grading="Dark",
             aspect_ratio="16:9",
             visual_style="Cinematic",
-            sound_design_notes="Suspenseful"
+            sound_design_notes="Suspenseful",
         ),
-        character_appearance_map={"Character One": [1]}
+        character_appearance_map={"Character One": [1]},
     )
 
 
@@ -125,7 +123,7 @@ class TestHealthCheckEndpoint:
 
     def test_health_check_with_api_key(self, client):
         """Test health check when API key is configured."""
-        with patch('trailer_generator.api.settings') as mock_settings:
+        with patch("trailer_generator.api.settings") as mock_settings:
             mock_settings.openrouter_api_key = "test-key"
             mock_settings.openrouter_model = "test-model"
             mock_settings.default_trailer_duration = 35
@@ -144,7 +142,7 @@ class TestHealthCheckEndpoint:
 
     def test_health_check_without_api_key(self, client):
         """Test health check when API key is not configured."""
-        with patch('trailer_generator.api.settings') as mock_settings:
+        with patch("trailer_generator.api.settings") as mock_settings:
             mock_settings.openrouter_api_key = ""
             mock_settings.openrouter_model = "test-model"
             mock_settings.default_trailer_duration = 35
@@ -164,7 +162,7 @@ class TestGenerateTrailerEndpoint:
 
     def test_generate_trailer_success(self, client, sample_movie_data, sample_trailer_breakdown):
         """Test successful trailer generation."""
-        with patch('trailer_generator.api.SceneGenerator') as mock_generator_class:
+        with patch("trailer_generator.api.SceneGenerator") as mock_generator_class:
             # Mock the generator
             mock_generator = Mock()
             mock_generator_class.return_value = mock_generator
@@ -174,7 +172,7 @@ class TestGenerateTrailerEndpoint:
             request_data = {
                 "movie": sample_movie_data,
                 "target_duration": 30,
-                "include_narration": True
+                "include_narration": True,
             }
 
             response = client.post("/generate-trailer", json=request_data)
@@ -190,9 +188,11 @@ class TestGenerateTrailerEndpoint:
             assert data["error"] is None
             assert "generation_time_seconds" in data
 
-    def test_generate_trailer_with_custom_model(self, client, sample_movie_data, sample_trailer_breakdown):
+    def test_generate_trailer_with_custom_model(
+        self, client, sample_movie_data, sample_trailer_breakdown
+    ):
         """Test trailer generation with custom model."""
-        with patch('trailer_generator.api.SceneGenerator') as mock_generator_class:
+        with patch("trailer_generator.api.SceneGenerator") as mock_generator_class:
             mock_generator = Mock()
             mock_generator_class.return_value = mock_generator
             mock_generator.generate_trailer.return_value = sample_trailer_breakdown
@@ -201,7 +201,7 @@ class TestGenerateTrailerEndpoint:
                 "movie": sample_movie_data,
                 "target_duration": 35,
                 "include_narration": False,
-                "model": "custom-model"
+                "model": "custom-model",
             }
 
             response = client.post("/generate-trailer", json=request_data)
@@ -221,15 +221,12 @@ class TestGenerateTrailerEndpoint:
 
     def test_generate_trailer_scene_generator_error(self, client, sample_movie_data):
         """Test handling of SceneGeneratorError."""
-        with patch('trailer_generator.api.SceneGenerator') as mock_generator_class:
+        with patch("trailer_generator.api.SceneGenerator") as mock_generator_class:
             mock_generator = Mock()
             mock_generator_class.return_value = mock_generator
             mock_generator.generate_trailer.side_effect = SceneGeneratorError("Test error")
 
-            request_data = {
-                "movie": sample_movie_data,
-                "target_duration": 30
-            }
+            request_data = {"movie": sample_movie_data, "target_duration": 30}
 
             response = client.post("/generate-trailer", json=request_data)
 
@@ -242,15 +239,12 @@ class TestGenerateTrailerEndpoint:
 
     def test_generate_trailer_unexpected_error(self, client, sample_movie_data):
         """Test handling of unexpected errors."""
-        with patch('trailer_generator.api.SceneGenerator') as mock_generator_class:
+        with patch("trailer_generator.api.SceneGenerator") as mock_generator_class:
             mock_generator = Mock()
             mock_generator_class.return_value = mock_generator
             mock_generator.generate_trailer.side_effect = RuntimeError("Unexpected error")
 
-            request_data = {
-                "movie": sample_movie_data,
-                "target_duration": 30
-            }
+            request_data = {"movie": sample_movie_data, "target_duration": 30}
 
             response = client.post("/generate-trailer", json=request_data)
 
@@ -259,10 +253,7 @@ class TestGenerateTrailerEndpoint:
 
     def test_generate_trailer_invalid_duration_too_short(self, client, sample_movie_data):
         """Test validation of duration that's too short."""
-        request_data = {
-            "movie": sample_movie_data,
-            "target_duration": 15  # Too short (min is 20)
-        }
+        request_data = {"movie": sample_movie_data, "target_duration": 15}  # Too short (min is 20)
 
         response = client.post("/generate-trailer", json=request_data)
 
@@ -271,10 +262,7 @@ class TestGenerateTrailerEndpoint:
 
     def test_generate_trailer_invalid_duration_too_long(self, client, sample_movie_data):
         """Test validation of duration that's too long."""
-        request_data = {
-            "movie": sample_movie_data,
-            "target_duration": 70  # Too long (max is 60)
-        }
+        request_data = {"movie": sample_movie_data, "target_duration": 70}  # Too long (max is 60)
 
         response = client.post("/generate-trailer", json=request_data)
 
@@ -299,24 +287,24 @@ class TestGenerateTrailerEndpoint:
                 "title": "Test Movie"
                 # Missing many required fields
             },
-            "target_duration": 30
+            "target_duration": 30,
         }
 
         response = client.post("/generate-trailer", json=request_data)
 
         assert response.status_code == 422
 
-    def test_generate_trailer_default_values(self, client, sample_movie_data, sample_trailer_breakdown):
+    def test_generate_trailer_default_values(
+        self, client, sample_movie_data, sample_trailer_breakdown
+    ):
         """Test that default values are applied correctly."""
-        with patch('trailer_generator.api.SceneGenerator') as mock_generator_class:
+        with patch("trailer_generator.api.SceneGenerator") as mock_generator_class:
             mock_generator = Mock()
             mock_generator_class.return_value = mock_generator
             mock_generator.generate_trailer.return_value = sample_trailer_breakdown
 
             # Request with only movie (no duration or narration)
-            request_data = {
-                "movie": sample_movie_data
-            }
+            request_data = {"movie": sample_movie_data}
 
             response = client.post("/generate-trailer", json=request_data)
 
@@ -327,10 +315,12 @@ class TestGenerateTrailerEndpoint:
             assert call_kwargs["target_duration"] == 35  # Default
             assert call_kwargs["include_narration"] is True  # Default
 
-    @patch('trailer_generator.api.Path')
-    def test_generate_trailer_saves_output(self, mock_path, client, sample_movie_data, sample_trailer_breakdown):
+    @patch("trailer_generator.api.Path")
+    def test_generate_trailer_saves_output(
+        self, mock_path, client, sample_movie_data, sample_trailer_breakdown
+    ):
         """Test that trailer output is saved to file."""
-        with patch('trailer_generator.api.SceneGenerator') as mock_generator_class:
+        with patch("trailer_generator.api.SceneGenerator") as mock_generator_class:
             mock_generator = Mock()
             mock_generator_class.return_value = mock_generator
             mock_generator.generate_trailer.return_value = sample_trailer_breakdown
@@ -339,12 +329,9 @@ class TestGenerateTrailerEndpoint:
             mock_file = Mock()
             mock_path.return_value.__truediv__.return_value = mock_file
 
-            request_data = {
-                "movie": sample_movie_data,
-                "target_duration": 30
-            }
+            request_data = {"movie": sample_movie_data, "target_duration": 30}
 
-            with patch('builtins.open', create=True) as mock_open:
+            with patch("builtins.open", create=True):
                 response = client.post("/generate-trailer", json=request_data)
 
                 assert response.status_code == 200
@@ -355,7 +342,7 @@ class TestAnalyzeMovieEndpoint:
 
     def test_analyze_movie_success(self, client, sample_movie_data):
         """Test successful movie analysis."""
-        with patch('trailer_generator.api.MovieAnalyzer') as mock_analyzer_class:
+        with patch("trailer_generator.api.MovieAnalyzer") as mock_analyzer_class:
             # Create mock analysis
             mock_analysis = MovieAnalysis(
                 main_characters=[
@@ -364,13 +351,13 @@ class TestAnalyzeMovieEndpoint:
                         "actor": "Actor One",
                         "physical_description": "Tall person",
                         "role": "Hero",
-                        "traits": "brave, smart"
+                        "traits": "brave, smart",
                     }
                 ],
                 key_themes=["science", "survival"],
                 visual_style_summary="Dark and moody",
                 tone="tense and suspenseful",
-                hook_elements=["Amazing discovery", "World at stake"]
+                hook_elements=["Amazing discovery", "World at stake"],
             )
 
             # Mock the analyzer
@@ -403,7 +390,7 @@ class TestAnalyzeMovieEndpoint:
 
     def test_analyze_movie_analysis_error(self, client, sample_movie_data):
         """Test handling of analysis errors."""
-        with patch('trailer_generator.api.MovieAnalyzer') as mock_analyzer_class:
+        with patch("trailer_generator.api.MovieAnalyzer") as mock_analyzer_class:
             mock_analyzer = Mock()
             mock_analyzer_class.return_value = mock_analyzer
             mock_analyzer.analyze.side_effect = Exception("Analysis failed")
@@ -418,13 +405,13 @@ class TestAnalyzeMovieEndpoint:
         movie_data = sample_movie_data.copy()
         movie_data["cast"] = []
 
-        with patch('trailer_generator.api.MovieAnalyzer') as mock_analyzer_class:
+        with patch("trailer_generator.api.MovieAnalyzer") as mock_analyzer_class:
             mock_analysis = MovieAnalysis(
                 main_characters=[],
                 key_themes=["science"],
                 visual_style_summary="Dark",
                 tone="suspenseful",
-                hook_elements=["Test hook"]
+                hook_elements=["Test hook"],
             )
 
             mock_analyzer = Mock()

@@ -3,10 +3,11 @@ Comprehensive tests for app.py FastAPI endpoints.
 Tests all API routes and helper functions with proper mocking.
 """
 
-import sys
 import json
+import sys
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch, mock_open
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -14,19 +15,13 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app import (
-    app,
+    Scene,
+    _build_character_ref_map,
+    _collect_referenced_characters,
     _load_default_api_key,
     _resolve_api_key,
-    _collect_referenced_characters,
-    _build_character_ref_map,
-    CharacterDesign,
-    Scene,
-    CharacterReferenceRequest,
-    SceneVideoRequest,
-    TrailerGenerationRequest,
-    OUTPUT_DIR,
+    app,
 )
-
 
 # Create test client
 client = TestClient(app)
@@ -49,8 +44,10 @@ class TestLoadDefaultAPIKey:
         """Test loading API key from secrets.json."""
         mock_data = {"image_api_key": "test_key_123"}
 
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.read_text", return_value=json.dumps(mock_data)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.read_text", return_value=json.dumps(mock_data)),
+        ):
             result = _load_default_api_key("image_api_key")
 
         assert result == "test_key_123"
@@ -65,8 +62,10 @@ class TestLoadDefaultAPIKey:
                 return False
             return True
 
-        with patch.object(Path, "exists", mock_exists), \
-             patch("pathlib.Path.read_text", return_value=json.dumps(mock_data)):
+        with (
+            patch.object(Path, "exists", mock_exists),
+            patch("pathlib.Path.read_text", return_value=json.dumps(mock_data)),
+        ):
             result = _load_default_api_key("image_api_key")
 
         assert result == "fallback_key"
@@ -75,8 +74,10 @@ class TestLoadDefaultAPIKey:
         """Test fallback to project_api_key if requested key not found."""
         mock_data = {"project_api_key": "project_key"}
 
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.read_text", return_value=json.dumps(mock_data)):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.read_text", return_value=json.dumps(mock_data)),
+        ):
             result = _load_default_api_key("image_api_key")
 
         assert result == "project_key"
@@ -90,10 +91,17 @@ class TestLoadDefaultAPIKey:
 
     def test_load_invalid_json(self):
         """Test handling of invalid JSON in secrets file."""
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.read_text", return_value="invalid json"), \
-             pytest.raises(Exception):
+        from fastapi import HTTPException
+
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.read_text", return_value="invalid json"),
+            pytest.raises(HTTPException) as exc_info,
+        ):
             _load_default_api_key("image_api_key")
+
+        assert exc_info.value.status_code == 500
+        assert "Invalid secret.json format" in exc_info.value.detail
 
 
 class TestResolveAPIKey:
@@ -120,6 +128,7 @@ class TestResolveAPIKey:
         mock_load.return_value = None
 
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             _resolve_api_key(None, "image_api_key")
 
@@ -257,6 +266,7 @@ class TestBuildCharacterRefMap:
         provided_refs = {"Char1": "/path/to/char1.png"}  # Missing Char2
 
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             _build_character_ref_map(scenes, provided_refs, True)
 
@@ -278,6 +288,7 @@ class TestBuildCharacterRefMap:
         ]
 
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             _build_character_ref_map(scenes, None, False)
 
@@ -339,8 +350,11 @@ class TestBuildCharacterRefMap:
         ]
 
         from fastapi import HTTPException
-        with patch("pathlib.Path.exists", return_value=False), \
-             pytest.raises(HTTPException) as exc_info:
+
+        with (
+            patch("pathlib.Path.exists", return_value=False),
+            pytest.raises(HTTPException) as exc_info,
+        ):
             _build_character_ref_map(scenes, None, True)
 
         assert exc_info.value.status_code == 400
@@ -396,6 +410,7 @@ class TestCharacterReferencesEndpoint:
     def test_create_character_references_no_api_key(self, mock_resolve_key):
         """Test error when API key is missing."""
         from fastapi import HTTPException
+
         mock_resolve_key.side_effect = HTTPException(status_code=400, detail="API key required")
 
         request_data = {
@@ -446,7 +461,9 @@ class TestSceneVideosEndpoint:
     @patch("app.generate_scene_videos")
     @patch("app._build_character_ref_map")
     @patch("app._resolve_api_key")
-    def test_create_scene_videos_with_refs(self, mock_resolve_key, mock_build_refs, mock_gen_videos):
+    def test_create_scene_videos_with_refs(
+        self, mock_resolve_key, mock_build_refs, mock_gen_videos
+    ):
         """Test scene video generation with character references."""
         mock_resolve_key.return_value = "fake_key"
         mock_build_refs.return_value = {"Char1": "/path/to/char1.png"}
@@ -474,7 +491,9 @@ class TestSceneVideosEndpoint:
     @patch("app.generate_scene_videos")
     @patch("app._build_character_ref_map")
     @patch("app._resolve_api_key")
-    def test_create_scene_videos_value_error(self, mock_resolve_key, mock_build_refs, mock_gen_videos):
+    def test_create_scene_videos_value_error(
+        self, mock_resolve_key, mock_build_refs, mock_gen_videos
+    ):
         """Test handling of ValueError in scene generation."""
         mock_resolve_key.return_value = "fake_key"
         mock_build_refs.return_value = {}

@@ -230,9 +230,10 @@ hand-ins/*.jpeg
 !README.md
 !**/README.md
 
-# Root-level shell scripts
+# Root-level shell scripts (keep essential scripts)
 /*.sh
 !monitor_pipeline.sh
+!setup-git-hooks.sh
 
 # -----------------------------------------------------------------------------
 # Type Checkers & Linters

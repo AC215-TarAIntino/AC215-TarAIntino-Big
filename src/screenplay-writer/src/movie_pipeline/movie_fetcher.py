@@ -2,25 +2,29 @@
 Movie data fetcher using OMDb API.
 """
 
+from typing import Any
+
 import requests
-from typing import Optional, Dict, Any, List
+
 from .config import settings
 
 
 class MovieFetcherError(Exception):
     """Base exception for movie fetcher errors."""
+
     pass
 
 
 class MovieNotFoundError(MovieFetcherError):
     """Raised when a movie is not found in the OMDb database."""
+
     pass
 
 
 class MovieFetcher:
     """Fetches movie information from OMDb API."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """
         Initialize the MovieFetcher.
 
@@ -30,7 +34,7 @@ class MovieFetcher:
         self.api_key = api_key or settings.omdb_api_key
         self.base_url = settings.omdb_base_url
 
-    def fetch_movie_by_title(self, title: str, year: Optional[str] = None) -> Dict[str, Any]:
+    def fetch_movie_by_title(self, title: str, year: str | None = None) -> dict[str, Any]:
         """
         Fetch movie details by title.
 
@@ -49,7 +53,7 @@ class MovieFetcher:
             "apikey": self.api_key,
             "t": title,
             "plot": "full",  # Get full plot instead of short
-            "type": "movie"
+            "type": "movie",
         }
 
         if year:
@@ -67,9 +71,9 @@ class MovieFetcher:
             return data
 
         except requests.RequestException as e:
-            raise MovieFetcherError(f"Failed to fetch movie '{title}': {str(e)}")
+            raise MovieFetcherError(f"Failed to fetch movie '{title}': {str(e)}") from e
 
-    def fetch_multiple_movies(self, titles: List[str]) -> List[Dict[str, Any]]:
+    def fetch_multiple_movies(self, titles: list[str]) -> list[dict[str, Any]]:
         """
         Fetch details for multiple movies.
 
@@ -96,7 +100,7 @@ class MovieFetcher:
 
         return movies
 
-    def format_movie_for_context(self, movie_data: Dict[str, Any]) -> str:
+    def format_movie_for_context(self, movie_data: dict[str, Any]) -> str:
         """
         Format movie data into a structured text for LLM context.
 
@@ -126,7 +130,7 @@ Language: {movie_data.get('Language', 'N/A')}
 
         return formatted
 
-    def format_movies_for_context(self, movies: List[Dict[str, Any]]) -> str:
+    def format_movies_for_context(self, movies: list[dict[str, Any]]) -> str:
         """
         Format multiple movies into a single context string for the LLM.
 

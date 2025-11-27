@@ -1,18 +1,15 @@
-import base64
-from pathlib import Path
 import time
-from typing import Dict, List
+from pathlib import Path
 
-import requests
-OUTPUT_DIR = Path('./output')
 from google import genai
-from google.genai import types
 from google.cloud import storage
+from google.genai import types
 
 OUTPUT_DIR = Path("./output")
 
 GCS_BUCKET_NAME = "tarantaino-output"
 GCS_PREFIX = "video_generator_outputs"
+
 
 def upload_to_gcs(local_path: Path, dest_path: str) -> None:
     """
@@ -35,9 +32,10 @@ def upload_to_gcs(local_path: Path, dest_path: str) -> None:
         print(f"    ☁ Uploaded to gs://{GCS_BUCKET_NAME}/{blob.name} (failed to make public: {e})")
         print(f"    ⚠️  You may need to enable public access on the bucket or use signed URLs")
 
+
 def generate_character_references(
-    image_api_key, character_designs: List[dict], session_id: str
-) -> Dict[str, str]:
+    image_api_key, character_designs: list[dict], session_id: str
+) -> dict[str, str]:
     """
     Generate character reference images from designs.
 
@@ -73,9 +71,10 @@ def generate_character_references(
 
     return character_refs
 
+
 def generate_scene_videos(
-    image_api_key, veo_api_key, scenes: List[dict], character_refs: Dict[str, str], session_id: str
-) -> List[Path]:
+    image_api_key, veo_api_key, scenes: list[dict], character_refs: dict[str, str], session_id: str
+) -> list[Path]:
     """
     Generate videos for all scenes.
 
@@ -91,9 +90,7 @@ def generate_scene_videos(
 
     for scene in scenes:
         scene_num = scene["scene_number"]
-        print(
-            f"\n  Scene {scene_num}: {scene['scene_type']} ({scene['duration_seconds']}s)"
-        )
+        print(f"\n  Scene {scene_num}: {scene['scene_type']} ({scene['duration_seconds']}s)")
 
         # TESTING: Disable ALL frames for pure text-to-video mode
         start_img, start_mime = None, None
@@ -131,7 +128,7 @@ def generate_scene_videos(
         print(f"    Testing basic text-to-video mode (no reference images)")
 
         # Call VEO 3.1
-        print(f"    Generating video with VEO 3.1...")
+        print("    Generating video with VEO 3.1...")
         video_data = generate_video_veo(
             veo_api_key,
             prompt=scene["video_prompt"],
@@ -169,21 +166,20 @@ def generate_image(image_api_key, prompt: str) -> tuple[bytes, str]:
         Tuple of (image_bytes, mime_type)
     """
 
-    client = genai.Client(api_key = image_api_key)
-    response = client.models.generate_content(
-        model="gemini-2.5-flash-image", contents=[prompt]
-    )
+    client = genai.Client(api_key=image_api_key)
+    response = client.models.generate_content(model="gemini-2.5-flash-image", contents=[prompt])
 
     # Access parts through the candidates
-    if hasattr(response, 'candidates') and response.candidates:
+    if hasattr(response, "candidates") and response.candidates:
         for part in response.candidates[0].content.parts:
             if part.text is not None:
                 print(part.text)
-            elif hasattr(part, 'inline_data') and part.inline_data is not None:
+            elif hasattr(part, "inline_data") and part.inline_data is not None:
                 # Access the raw bytes and mime type from inline_data
                 return part.inline_data.data, part.inline_data.mime_type
 
     raise ValueError("No image data found in response")
+
 
 def generate_video_veo(
     veo_api_key,
@@ -193,8 +189,8 @@ def generate_video_veo(
     end_frame: bytes,
     end_mime: str,
     duration: int,
-    reference_images: List[bytes],
-    reference_mimes: List[str],
+    reference_images: list[bytes],
+    reference_mimes: list[str],
 ) -> bytes:
     """
     Generate video using VEO 3.1.
@@ -286,13 +282,13 @@ def generate_video_veo(
     operation = client.models.generate_videos(**kwargs)
 
     # Poll the operation status until the video is ready
-    print(f"      [VEO] Video generation started, polling for completion...")
+    print("      [VEO] Video generation started, polling for completion...")
     while not operation.done:
-        print(f"      [VEO] Waiting for video generation to complete...")
+        print("      [VEO] Waiting for video generation to complete...")
         time.sleep(10)
         operation = client.operations.get(operation)
 
-    print(f"      [VEO] Video generation complete!")
+    print("      [VEO] Video generation complete!")
 
     # Download the generated video
     generated_video = operation.response.generated_videos[0]
@@ -300,38 +296,47 @@ def generate_video_veo(
 
     # Return video bytes from the video object
     return generated_video.video.video_bytes
-    
-def stitch_videos(video_paths: List[Path], session_id: str) -> Path:
-        """
-        Stitch scene videos together.
 
-        Args:
-            video_paths: List of scene video paths
-            session_id: Unique session ID for GCS organization
 
-        Returns:
-            Path to stitched video
-        """
-        import subprocess
+def stitch_videos(video_paths: list[Path], session_id: str) -> Path:
+    """
+    Stitch scene videos together.
 
-        # Create concat file for ffmpeg
-        concat_file = OUTPUT_DIR / "concat.txt"
-        with open(concat_file, 'w') as f:
-            for video_path in video_paths:
-                f.write(f"file '{video_path.absolute()}'\n")
+    Args:
+        video_paths: List of scene video paths
+        session_id: Unique session ID for GCS organization
 
-        # Stitch with ffmpeg
-        output_path = OUTPUT_DIR / "trailer_no_audio.mp4"
-        subprocess.run([
-            'ffmpeg', '-y',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', str(concat_file),
-            '-c', 'copy',
-            str(output_path)
-        ], check=True)
+    Returns:
+        Path to stitched video
+    """
+    import subprocess
 
-        # Upload with session ID in path for uniqueness
-        upload_to_gcs(output_path, f"trailers/{session_id}/{output_path.name}")
+    # Create concat file for ffmpeg
+    concat_file = OUTPUT_DIR / "concat.txt"
+    with open(concat_file, "w") as f:
+        for video_path in video_paths:
+            f.write(f"file '{video_path.absolute()}'\n")
 
-        return output_path
+    # Stitch with ffmpeg
+    output_path = OUTPUT_DIR / "trailer_no_audio.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_file),
+            "-c",
+            "copy",
+            str(output_path),
+        ],
+        check=True,
+    )
+
+    # Upload with session ID in path for uniqueness
+    upload_to_gcs(output_path, f"trailers/{session_id}/{output_path.name}")
+
+    return output_path

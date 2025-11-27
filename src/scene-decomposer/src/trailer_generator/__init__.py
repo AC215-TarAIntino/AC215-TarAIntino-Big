@@ -5,11 +5,11 @@ Trailer Generator - Microservice for generating movie trailer scene breakdowns.
 __version__ = "0.1.0"
 
 from .schemas import (
-    TrailerRequest,
-    TrailerScene,
+    CharacterDesign,
     TrailerBreakdown,
     TrailerGenerationResponse,
-    CharacterDesign,
+    TrailerRequest,
+    TrailerScene,
 )
 
 __all__ = [

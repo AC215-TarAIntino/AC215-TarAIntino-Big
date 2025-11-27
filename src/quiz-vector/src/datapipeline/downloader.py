@@ -1,10 +1,14 @@
+import argparse
+import json
+import os
+import re
+import time
+from collections import defaultdict
 from pathlib import Path
+
+import chromadb
 from google.cloud import storage
 from tqdm import tqdm
-import argparse, os, time, json, re
-import chromadb
-from collections import defaultdict
-from typing import Optional
 
 
 def get_chroma_client():
@@ -16,8 +20,10 @@ def get_chroma_client():
     path = os.getenv("CHROMA_PATH", "./chroma_db")
     return chromadb.PersistentClient(path=path)
 
+
 def log(msg: str):
     print(f"[LOAD  {time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+
 
 def download_prefix(bucket_name: str, prefix: str, out_dir: str):
     out = Path(out_dir).resolve()
@@ -30,11 +36,12 @@ def download_prefix(bucket_name: str, prefix: str, out_dir: str):
         return
     log(f"Downloading {len(blobs)} objects → {out}")
     for b in tqdm(blobs, desc="Downloading"):
-        rel = b.name[len(prefix):].lstrip("/") if b.name.startswith(prefix) else b.name
+        rel = b.name[len(prefix) :].lstrip("/") if b.name.startswith(prefix) else b.name
         dest = out / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         b.download_to_filename(str(dest))
         log(f"DOWNLOADED gs://{bucket_name}/{b.name} → {dest}")
+
 
 def stream_object(bucket_name: str, object_name: str) -> bytes:
     client = storage.Client()
@@ -43,7 +50,9 @@ def stream_object(bucket_name: str, object_name: str) -> bytes:
     log(f"STREAMED {len(data)} bytes from gs://{bucket_name}/{object_name}")
     return data  # caller can parse CSV/JSON etc.
 
+
 _SPLIT_RE = re.compile(r"\s*\|\|\s*|\t|,|\s+")
+
 
 def parse_lines(raw: bytes):
     """
@@ -70,6 +79,7 @@ def parse_lines(raw: bytes):
             continue
         yield movie_id, tag_id, rel
 
+
 def parse_movies(raw_bytes: bytes):
     """
     Parse movies.dat style lines:
@@ -92,6 +102,7 @@ def parse_movies(raw_bytes: bytes):
         title = parts[1].strip()
         out[mid] = title
     return out
+
 
 def parse_tags(raw_bytes: bytes):
     """
@@ -121,11 +132,11 @@ def parse_tags(raw_bytes: bytes):
 
 def ingest_tag_relevance_to_chroma(
     bucket: str,
-    object_name: str,                # tag_relevance.dat
+    object_name: str,  # tag_relevance.dat
     chroma_path: str = "./chroma_db",
     collection_name: str = "movie_tag_relevance_cos",
     batch_size: int = 2000,
-    movies_object_name: Optional[str] = None,  # NEW
+    movies_object_name: str | None = None,  # NEW
 ):
     """
     Ingests tag_relevance.dat from GCS directly into Chroma.
@@ -148,7 +159,9 @@ def ingest_tag_relevance_to_chroma(
         movie_to_sparse[movie_id][tag_id] = rel
         tag_ids.add(tag_id)
         n_lines += 1
-    log(f"Parsed {n_lines:,} triples across {len(movie_to_sparse):,} movies and {len(tag_ids):,} unique tags.")
+    log(
+        f"Parsed {n_lines:,} triples across {len(movie_to_sparse):,} movies and {len(tag_ids):,} unique tags."
+    )
 
     # Create stable tag index (sorted by tag_id)
     tag_ids_sorted = sorted(tag_ids)
@@ -163,15 +176,14 @@ def ingest_tag_relevance_to_chroma(
     with tag_index_path.open("w", encoding="utf-8") as f:
         json.dump({"tag_ids_sorted": tag_ids_sorted}, f)
     log(f"Saved tag index mapping → {tag_index_path}")
-    
+
     client = get_chroma_client()
     try:
         collection = client.get_collection(collection_name)
         log(f"Using existing Chroma collection: {collection_name}")
     except Exception:
         collection = client.create_collection(
-        name=collection_name,
-        metadata={"hnsw:space": "cosine"} 
+            name=collection_name, metadata={"hnsw:space": "cosine"}
         )
         log(f"Created Chroma collection (cosine): {collection_name}")
 
@@ -187,9 +199,8 @@ def ingest_tag_relevance_to_chroma(
             if j is not None:
                 vec[j] = float(val)
         return vec
-    
 
-    # Get titles if provided    
+    # Get titles if provided
     movie_titles = {}
     if movies_object_name is not None:
         log(f"Fetching {movies_object_name} from GCS for titles…")
@@ -221,10 +232,11 @@ def ingest_tag_relevance_to_chroma(
     log(f"Inserted {total:,} movie vectors into Chroma collection '{collection_name}'.")
     log("DONE")
 
+
 def ingest_tags_metadata_to_chroma(
     bucket: str,
-    tags_object_name: str,                 # e.g. "datasets/tag_genome/tags.dat"
-    collection_name: str = "tag_metadata"
+    tags_object_name: str,  # e.g. "datasets/tag_genome/tags.dat"
+    collection_name: str = "tag_metadata",
 ):
     """
     Create/update a Chroma collection mapping tag IDs -> human-readable tag names.
@@ -250,8 +262,7 @@ def ingest_tags_metadata_to_chroma(
         log(f"Using existing Chroma collection: {collection_name}")
     except Exception:
         col = client.create_collection(
-            name=collection_name,
-            metadata={"hnsw:space": "cosine"}  # doesn't really matter here
+            name=collection_name, metadata={"hnsw:space": "cosine"}  # doesn't really matter here
         )
         log(f"Created Chroma collection: {collection_name}")
 
@@ -263,27 +274,16 @@ def ingest_tags_metadata_to_chroma(
         batch_ids.append(str(tid))
         # dummy 1-dim embedding so Chroma is happy
         batch_embeds.append([0.0])
-        batch_metas.append({
-            "tagId": tid,
-            "name": name
-        })
+        batch_metas.append({"tagId": tid, "name": name})
 
         if len(batch_ids) >= 500:
-            col.add(
-                ids=batch_ids,
-                embeddings=batch_embeds,
-                metadatas=batch_metas
-            )
+            col.add(ids=batch_ids, embeddings=batch_embeds, metadatas=batch_metas)
             total += len(batch_ids)
             batch_ids, batch_embeds, batch_metas = [], [], []
 
     # flush tail
     if batch_ids:
-        col.add(
-            ids=batch_ids,
-            embeddings=batch_embeds,
-            metadatas=batch_metas
-        )
+        col.add(ids=batch_ids, embeddings=batch_embeds, metadatas=batch_metas)
         total += len(batch_ids)
 
     log(f"Inserted {total} tag metadata rows into Chroma collection '{collection_name}'.")
@@ -291,24 +291,45 @@ def ingest_tags_metadata_to_chroma(
 
 
 def cli():
-    ap = argparse.ArgumentParser(description="Load from GCS or ingest tag_relevance.dat into Chroma")
+    ap = argparse.ArgumentParser(
+        description="Load from GCS or ingest tag_relevance.dat into Chroma"
+    )
     ap.add_argument("--bucket", default=os.getenv("GCS_BUCKET"))
     ap.add_argument("--prefix", default=os.getenv("GCS_PREFIX", "datasets/tag_genome"))
     ap.add_argument("--out_dir", default="data")
     ap.add_argument("--stream_object", default=None, help="gs object name to stream")
-    ap.add_argument("--to_chroma", action="store_true", help="If set, ingest tag_relevance.dat into Chroma")
-    ap.add_argument("--object_name", default=os.getenv("TAG_REL_OBJECT", "datasets/tag_genome/tag_relevance.dat"),
-                    help="GCS object name for tag_relevance.dat")
+    ap.add_argument(
+        "--to_chroma", action="store_true", help="If set, ingest tag_relevance.dat into Chroma"
+    )
+    ap.add_argument(
+        "--object_name",
+        default=os.getenv("TAG_REL_OBJECT", "datasets/tag_genome/tag_relevance.dat"),
+        help="GCS object name for tag_relevance.dat",
+    )
     ap.add_argument("--chroma_path", default=os.getenv("CHROMA_PATH", "./chroma_db"))
-    ap.add_argument("--movies_object_name", default=os.getenv("MOVIES_OBJECT", "datasets/tag_genome/movies.dat"),
-                    help="GCS object name for movies.dat (to pull titles)")
-    ap.add_argument("--to_tagmeta", action="store_true",
-        help="If set, ingest tags.dat into a tag_metadata collection")
-    ap.add_argument("--tags_object_name", default=os.getenv("TAGS_OBJECT", "datasets/tag_genome/tags.dat"),
-        help="GCS object name for tags.dat")
-    ap.add_argument("--tagmeta_collection", default=os.getenv("TAGMETA_COLLECTION", "tag_metadata"),
-        help="Chroma collection name for tag metadata")
-    ap.add_argument("--collection", default=os.getenv("CHROMA_COLLECTION", "movie_tag_relevance_cos"))
+    ap.add_argument(
+        "--movies_object_name",
+        default=os.getenv("MOVIES_OBJECT", "datasets/tag_genome/movies.dat"),
+        help="GCS object name for movies.dat (to pull titles)",
+    )
+    ap.add_argument(
+        "--to_tagmeta",
+        action="store_true",
+        help="If set, ingest tags.dat into a tag_metadata collection",
+    )
+    ap.add_argument(
+        "--tags_object_name",
+        default=os.getenv("TAGS_OBJECT", "datasets/tag_genome/tags.dat"),
+        help="GCS object name for tags.dat",
+    )
+    ap.add_argument(
+        "--tagmeta_collection",
+        default=os.getenv("TAGMETA_COLLECTION", "tag_metadata"),
+        help="Chroma collection name for tag metadata",
+    )
+    ap.add_argument(
+        "--collection", default=os.getenv("CHROMA_COLLECTION", "movie_tag_relevance_cos")
+    )
     ap.add_argument("--batch_size", type=int, default=int(os.getenv("BATCH_SIZE", "2000")))
     args = ap.parse_args()
 
@@ -322,7 +343,7 @@ def cli():
             chroma_path=args.chroma_path,
             collection_name=args.collection,
             batch_size=args.batch_size,
-            movies_object_name=args.movies_object_name
+            movies_object_name=args.movies_object_name,
         )
 
     elif args.to_tagmeta:
@@ -330,7 +351,7 @@ def cli():
         ingest_tags_metadata_to_chroma(
             bucket=args.bucket,
             tags_object_name=args.tags_object_name,
-            collection_name=args.tagmeta_collection
+            collection_name=args.tagmeta_collection,
         )
 
     elif args.stream_object:
@@ -340,6 +361,7 @@ def cli():
     else:
         download_prefix(args.bucket, args.prefix, args.out_dir)
         log("DONE")
+
 
 if __name__ == "__main__":
     cli()

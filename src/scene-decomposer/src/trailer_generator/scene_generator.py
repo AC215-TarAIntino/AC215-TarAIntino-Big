@@ -4,24 +4,23 @@ Scene generator using OpenRouter LLM for trailer breakdown.
 
 import json
 import logging
-import time
-from typing import Optional, Dict, List
+
 from openai import OpenAI
 
-logger = logging.getLogger(__name__)
-
 from .config import settings
+from .scene_analyzer import MovieAnalyzer
 from .schemas import (
     GeneratedMovie,
     TrailerBreakdown,
     TrailerScene,
-    TechnicalSpecs,
 )
-from .scene_analyzer import MovieAnalyzer
+
+logger = logging.getLogger(__name__)
 
 
 class SceneGeneratorError(Exception):
     """Base exception for scene generator errors."""
+
     pass
 
 
@@ -30,9 +29,9 @@ class SceneGenerator:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
-        base_url: Optional[str] = None
+        api_key: str | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
     ):
         """
         Initialize the scene generator.
@@ -47,16 +46,10 @@ class SceneGenerator:
         self.base_url = base_url or settings.openrouter_base_url
 
         # Initialize OpenAI client with OpenRouter
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
     def _create_generation_prompt(
-        self,
-        movie: GeneratedMovie,
-        target_duration: int,
-        include_narration: bool
+        self, movie: GeneratedMovie, target_duration: int, include_narration: bool
     ) -> str:
         """
         Create the detailed prompt for trailer scene generation.
@@ -287,7 +280,7 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
         movie: GeneratedMovie,
         target_duration: int = 35,
         include_narration: bool = True,
-        model_override: Optional[str] = None
+        model_override: str | None = None,
     ) -> TrailerBreakdown:
         """
         Generate a trailer scene breakdown.
@@ -309,25 +302,18 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
 
         try:
             # Create chat completion
-            start_time = time.time()
-
             response = self.client.chat.completions.create(
                 model=model_to_use,
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert movie trailer editor and creative director. You generate detailed, structured trailer breakdowns in JSON format. You always follow instructions precisely and create highly detailed prompts for AI video generation."
+                        "content": "You are an expert movie trailer editor and creative director. You generate detailed, structured trailer breakdowns in JSON format. You always follow instructions precisely and create highly detailed prompts for AI video generation.",
                     },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=settings.llm_temperature,
                 max_tokens=settings.llm_max_tokens,
             )
-
-            generation_time = time.time() - start_time
 
             # Extract the generated content
             content = response.choices[0].message.content
@@ -338,8 +324,8 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
             # Parse JSON response with aggressive cleanup
             try:
                 # Try to extract JSON if there's extra text
-                json_start = content.find('{')
-                json_end = content.rfind('}') + 1
+                json_start = content.find("{")
+                json_end = content.rfind("}") + 1
                 if json_start != -1 and json_end > json_start:
                     content = content[json_start:json_end]
 
@@ -350,14 +336,11 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
                     # If strict parsing fails, apply aggressive fixes for Claude/Llama output
                     import re
 
-                    # Save original for debugging
-                    original_content = content
-
                     # Fix 1: Replace all newlines with spaces (more aggressive)
-                    content = re.sub(r'\s+', ' ', content)
+                    content = re.sub(r"\s+", " ", content)
 
                     # Fix 2: Remove trailing commas before closing brackets/braces
-                    content = re.sub(r',(\s*[}\]])', r'\1', content)
+                    content = re.sub(r",(\s*[}\]])", r"\1", content)
 
                     # Fix 3: Fix missing commas between fields (common Claude/Llama issue)
                     content = re.sub(r'"\s+"', '", "', content)
@@ -374,7 +357,7 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
                     # Fix 4: Fix common quote escaping issues
                     # Replace smart quotes with regular quotes
                     content = content.replace('"', '"').replace('"', '"')
-                    content = content.replace(''', "'").replace(''', "'")
+                    content = content.replace(""", "'").replace(""", "'")
 
                     # Fix 5: Remove comments if any
                     content = re.sub(r'//.*?\n', '', content)
@@ -389,7 +372,7 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
                         trailer_data = json.loads(content)
                     except json.JSONDecodeError as e:
                         # Last resort: try to find and log the specific error location
-                        error_pos = getattr(e, 'pos', None)
+                        error_pos = getattr(e, "pos", None)
                         if error_pos:
                             context_start = max(0, error_pos - 100)
                             context_end = min(len(content), error_pos + 100)
@@ -399,7 +382,7 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
             except json.JSONDecodeError as e:
                 raise SceneGeneratorError(
                     f"Failed to parse LLM response as JSON: {e}\nResponse: {content[:500]}..."
-                )
+                ) from e
 
             # Validate and create TrailerBreakdown object
             try:
@@ -412,17 +395,14 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
             except Exception as e:
                 raise SceneGeneratorError(
                     f"Failed to validate trailer breakdown data: {e}\nData keys: {trailer_data.keys()}"
-                )
+                ) from e
 
         except Exception as e:
             if isinstance(e, SceneGeneratorError):
                 raise
-            raise SceneGeneratorError(f"Failed to generate trailer: {str(e)}")
+            raise SceneGeneratorError(f"Failed to generate trailer: {str(e)}") from e
 
-    def _build_character_appearance_map(
-        self,
-        scenes: List[TrailerScene]
-    ) -> Dict[str, List[int]]:
+    def _build_character_appearance_map(self, scenes: list[TrailerScene]) -> dict[str, list[int]]:
         """
         Build a map of character names to scene numbers.
 
@@ -432,7 +412,7 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
         Returns:
             Dictionary mapping character names to scene numbers
         """
-        character_map: Dict[str, List[int]] = {}
+        character_map: dict[str, list[int]] = {}
 
         for scene in scenes:
             for character in scene.characters_present:
