@@ -48,7 +48,7 @@ class TestUploadToGCS:
         # Verify
         mock_client.bucket.assert_called_once_with(GCS_BUCKET_NAME)
         mock_bucket.blob.assert_called_once_with(f"{GCS_PREFIX}/{dest_path}")
-        mock_blob.upload_from_filename.assert_called_once_with(str(local_path))
+        mock_blob.upload_from_filename.assert_called_once_with(str(local_path), timeout=300)
 
     @patch("generate.storage.Client")
     def test_upload_to_gcs_without_prefix(self, mock_storage_client):

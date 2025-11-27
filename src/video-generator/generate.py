@@ -22,7 +22,8 @@ def upload_to_gcs(local_path: Path, dest_path: str) -> None:
     client = storage.Client()  # uses GOOGLE_APPLICATION_CREDENTIALS
     bucket = client.bucket(GCS_BUCKET_NAME)
     blob = bucket.blob(f"{GCS_PREFIX}/{dest_path}" if GCS_PREFIX else dest_path)
-    blob.upload_from_filename(str(local_path))
+    # Increase timeout for large video files (default is 60s, set to 5 minutes)
+    blob.upload_from_filename(str(local_path), timeout=300)
 
     # Make the blob publicly accessible so the frontend can display it
     try:
