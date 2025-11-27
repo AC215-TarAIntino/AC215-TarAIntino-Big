@@ -51,3 +51,16 @@ ignore = ["E501", "B008"]
 testpaths = ["tests"]
 python_files = "test_*.py"
 addopts = ["--verbose", "--cov=.", "--cov-report=term-missing"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+fail_under = 50.0

@@ -104,19 +104,19 @@ jobs:
 
       - name: Run quiz-vector tests
         run: |
-          docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+          docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
       - name: Run screenplay-writer tests
         run: |
-          docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+          docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
       - name: Run scene-decomposer tests
         run: |
-          docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+          docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
       - name: Run video-generator tests
         run: |
-          docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+          docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
       - name: Tear down Docker services
         if: always()

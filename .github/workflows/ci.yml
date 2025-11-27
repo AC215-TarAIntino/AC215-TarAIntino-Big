@@ -114,20 +114,20 @@ jobs:
       - name: Run all microservice tests
         run: |
           echo "=== Testing Quiz Service ==="
-          docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v || true
+          docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
           echo "=== Testing Screenplay Writer ==="
-          docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v || true
+          docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
           echo "=== Testing Scene Decomposer ==="
-          docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v || true
+          docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
           echo "=== Testing Video Generator ==="
-          docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v || true
+          docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
         with:
           files: ./coverage.xml
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
       - name: Tear down services
         if: always()
