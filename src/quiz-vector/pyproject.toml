@@ -26,3 +26,16 @@ dev = [
   "pytest-cov>=4.0.0",
 ]
 
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+fail_under = 50.0
+
