@@ -66,60 +66,98 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Create necessary secrets directories
+      - name: Install numpy for mock data generation
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy
+
+      - name: Create necessary directories
         run: |
           mkdir -p src/quiz-vector/secrets
+          mkdir -p src/quiz-vector/src/datapipeline/logs
           mkdir -p src/video-generator
 
-      - name: Create mock credentials for quiz-vector
+      - name: Create mock credentials
         run: |
           echo '{"type": "service_account"}' > src/quiz-vector/secrets/llm-service-account.json
-
-      - name: Create mock .env for screenplay-writer
-        run: |
           echo "OPENROUTER_API_KEY=test_key" > src/screenplay-writer/.env
           echo "OMDB_API_KEY=test_key" >> src/screenplay-writer/.env
-
-      - name: Create mock .env for scene-decomposer
-        run: |
           echo "OPENROUTER_API_KEY=test_key" > src/scene-decomposer/.env
-
-      - name: Create mock secrets for video-generator
-        run: |
-          echo '{"project_api_key": "test_key"}' > src/video-generator/secret.json
+          echo '{"project_api_key": "test_key"}' > src/video-generator/secrets.json
           echo '{"type": "service_account"}' > src/video-generator/gcp-credentials.json
+
+      - name: Create mock data files for quiz-service
+        run: |
+          # Create mock numpy arrays for prior mean and covariance
+          python3 -c "import numpy as np; np.save('src/quiz-vector/src/datapipeline/logs/prior_mean.npy', np.zeros(100))"
+          python3 -c "import numpy as np; np.save('src/quiz-vector/src/datapipeline/logs/prior_cov.npy', np.eye(100))"
+          # Create mock tag index JSON
+          echo '{"tag_ids_sorted": [416, 284, 862, 1084, 496, 311, 347, 1023, 886, 267, 376, 18, 521, 229, 322, 688]}' > src/quiz-vector/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
 
       - name: Build and start Docker services
         run: |
           export SKIP_CHROMA_INIT=true
           docker compose up -d --build
-          # Wait for services to be healthy
-          sleep 30
         env:
           SKIP_CHROMA_INIT: true
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to be healthy..."
+          timeout=300  # 5 minutes timeout
+          elapsed=0
+          interval=5
+
+          while [ $elapsed -lt $timeout ]; do
+            # Check if all required services are running (not restarting)
+            restarting=$(docker compose ps --format json | jq -r '.[] | select(.State == "restarting") | .Service' 2>/dev/null || echo "")
+
+            if [ -z "$restarting" ]; then
+              # Check health of services with healthchecks
+              all_healthy=true
+              for service in quiz-service screenplay-writer scene-decomposer video-generator; do
+                health=$(docker inspect --format='{{.State.Health.Status}}' $service 2>/dev/null || echo "none")
+                if [ "$health" != "healthy" ] && [ "$health" != "none" ]; then
+                  all_healthy=false
+                  echo "Service $service health: $health"
+                fi
+              done
+
+              if $all_healthy; then
+                echo "All services are healthy!"
+                exit 0
+              fi
+            else
+              echo "Services restarting: $restarting"
+            fi
+
+            sleep $interval
+            elapsed=$((elapsed + interval))
+            echo "Waited ${elapsed}s..."
+          done
+
+          echo "Timeout waiting for services to be healthy"
+          docker compose ps
+          docker compose logs
+          exit 1
 
       - name: Check service health
         run: |
           docker compose ps
+          echo "=== Service Logs ==="
           docker compose logs
 
-      - name: Run quiz-vector tests
+      - name: Run all microservice tests
         run: |
+          echo "=== Testing Quiz Service ==="
           docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
-
-      - name: Run screenplay-writer tests
-        run: |
+          echo "=== Testing Screenplay Writer ==="
           docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
-
-      - name: Run scene-decomposer tests
-        run: |
+          echo "=== Testing Scene Decomposer ==="
           docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
-
-      - name: Run video-generator tests
-        run: |
+          echo "=== Testing Video Generator ==="
           docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
-      - name: Tear down Docker services
+      - name: Tear down services
         if: always()
-        run: |
-          docker compose down -v
+        run: docker compose down -v
