@@ -69,8 +69,6 @@ jobs:
       - name: Create necessary secrets directories
         run: |
           mkdir -p src/quiz-vector/secrets
-          mkdir -p src/screenplay-writer/.env
-          mkdir -p src/scene-decomposer/.env
           mkdir -p src/video-generator
 
       - name: Create mock credentials for quiz-vector
@@ -93,32 +91,32 @@ jobs:
 
       - name: Build and start Docker services
         run: |
-          docker-compose up -d --build
+          docker compose up -d --build
           # Wait for services to be healthy
           sleep 30
 
       - name: Check service health
         run: |
-          docker-compose ps
-          docker-compose logs
+          docker compose ps
+          docker compose logs
 
       - name: Run quiz-vector tests
         run: |
-          docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
+          docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
       - name: Run screenplay-writer tests
         run: |
-          docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
+          docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
       - name: Run scene-decomposer tests
         run: |
-          docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
+          docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
       - name: Run video-generator tests
         run: |
-          docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
+          docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
 
       - name: Tear down Docker services
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
