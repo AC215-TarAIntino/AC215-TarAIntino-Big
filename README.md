@@ -167,6 +167,7 @@ AC215-TarAIntino-Big/
 ```bash
 git clone <your-repo-url>
 cd AC215-TarAIntino-Big
+./setup-git-hooks.sh  # Install pre-commit hooks (format + lint + test)
 ```
 
 #### 2. Configure API Keys & Service Credentials

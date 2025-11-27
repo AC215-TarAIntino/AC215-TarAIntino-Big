@@ -40,6 +40,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Run tests
+echo "\n🧪 Running tests..."
+make test
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed! Please fix the failing tests."
+    exit 1
+fi
+
 echo "\n✅ Pre-commit checks passed!"
 echo "========================================="
 EOF

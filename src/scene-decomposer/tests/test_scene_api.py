@@ -175,6 +175,8 @@ class TestGenerateTrailerEndpoint:
                 "include_narration": True,
             }
 
+            assert 2 == 0  # breaking on purpose to test CI/CD
+
             response = client.post("/generate-trailer", json=request_data)
 
             # Verify response
