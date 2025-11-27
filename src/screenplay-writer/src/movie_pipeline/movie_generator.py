@@ -3,14 +3,17 @@ Movie generator using OpenRouter LLM API.
 """
 
 import json
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from openai import OpenAI
+
 from .config import settings
 from .schemas import GeneratedMovie
 
 
 class MovieGeneratorError(Exception):
     """Base exception for movie generator errors."""
+
     pass
 
 
@@ -19,9 +22,9 @@ class MovieGenerator:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
-        base_url: Optional[str] = None
+        api_key: str | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
     ):
         """
         Initialize the MovieGenerator.
@@ -36,10 +39,7 @@ class MovieGenerator:
         self.base_url = base_url or settings.openrouter_base_url
 
         # Initialize OpenAI client with OpenRouter
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
     def _create_generation_prompt(self, movies_context: str) -> str:
         """
@@ -145,9 +145,7 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
         return prompt
 
     def generate_movie(
-        self,
-        movies_context: str,
-        model_override: Optional[str] = None
+        self, movies_context: str, model_override: str | None = None
     ) -> GeneratedMovie:
         """
         Generate a new movie concept based on provided movies context.
@@ -172,12 +170,9 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a creative film producer and screenwriter who generates detailed, original movie concepts. Always respond with valid JSON only."
+                        "content": "You are a creative film producer and screenwriter who generates detailed, original movie concepts. Always respond with valid JSON only.",
                     },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.8,  # Higher temperature for more creativity
                 max_tokens=8000,  # Increased for detailed actor/director descriptions
@@ -192,8 +187,8 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
             # Parse JSON response
             try:
                 # Try to extract JSON if there's extra text
-                json_start = content.find('{')
-                json_end = content.rfind('}') + 1
+                json_start = content.find("{")
+                json_end = content.rfind("}") + 1
                 if json_start != -1 and json_end > json_start:
                     content = content[json_start:json_end]
 
@@ -204,35 +199,37 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
                     # If strict parsing fails, try to fix common JSON issues
                     import re
 
-                    #Fix 1: Replace newlines within strings with spaces
+                    # Fix 1: Replace newlines within strings with spaces
                     # This regex finds newlines that are inside quoted strings
-                    content = content.replace('\n\n', ' ')  # Double newlines first
-                    content = content.replace('\n', ' ')  # Then single newlines
+                    content = content.replace("\n\n", " ")  # Double newlines first
+                    content = content.replace("\n", " ")  # Then single newlines
 
                     # Fix 2: Remove trailing commas before closing brackets/braces
-                    content = re.sub(r',(\s*[}\]])', r'\1', content)
+                    content = re.sub(r",(\s*[}\]])", r"\1", content)
 
                     # Try parsing again
                     movie_data = json.loads(content)
             except json.JSONDecodeError as e:
-                raise MovieGeneratorError(f"Failed to parse LLM response as JSON: {e}\nResponse: {content}")
+                raise MovieGeneratorError(
+                    f"Failed to parse LLM response as JSON: {e}\nResponse: {content}"
+                ) from e
 
             # Validate and create GeneratedMovie object
             try:
                 generated_movie = GeneratedMovie(**movie_data)
                 return generated_movie
             except Exception as e:
-                raise MovieGeneratorError(f"Failed to validate generated movie data: {e}\nData: {movie_data}")
+                raise MovieGeneratorError(
+                    f"Failed to validate generated movie data: {e}\nData: {movie_data}"
+                ) from e
 
         except Exception as e:
             if isinstance(e, MovieGeneratorError):
                 raise
-            raise MovieGeneratorError(f"Failed to generate movie: {str(e)}")
+            raise MovieGeneratorError(f"Failed to generate movie: {str(e)}") from e
 
     def generate_from_movies(
-        self,
-        movies: List[Dict[str, Any]],
-        model_override: Optional[str] = None
+        self, movies: list[dict[str, Any]], model_override: str | None = None
     ) -> GeneratedMovie:
         """
         Generate a movie from a list of movie data dictionaries.

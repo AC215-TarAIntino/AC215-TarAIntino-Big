@@ -1,10 +1,13 @@
-import numpy as np
 from pathlib import Path
-from .config import get_collection, PRIOR_MEAN_PATH, PRIOR_COV_PATH
+
+import numpy as np
+
+from .config import PRIOR_COV_PATH, PRIOR_MEAN_PATH, get_collection
+
 
 def _compute_and_save_prior_if_needed():
     mean_p = Path(PRIOR_MEAN_PATH)
-    cov_p  = Path(PRIOR_COV_PATH)
+    cov_p = Path(PRIOR_COV_PATH)
     if mean_p.exists() and cov_p.exists():
         return
 
@@ -20,12 +23,13 @@ def _compute_and_save_prior_if_needed():
     if X.ndim != 2:
         raise RuntimeError(f"Expected 2D embeddings, got shape {X.shape}")
 
-    mu  = X.mean(axis=0)
+    mu = X.mean(axis=0)
     Cov = np.cov(X, rowvar=False)
     Cov = Cov + 1e-3 * np.eye(Cov.shape[0], dtype=np.float64)
 
     np.save(mean_p, mu)
     np.save(cov_p, Cov)
+
 
 def topN_from_matrix(theta_hat: np.ndarray, X: np.ndarray, ids, metas, N=10):
     t = theta_hat / (np.linalg.norm(theta_hat) + 1e-12)

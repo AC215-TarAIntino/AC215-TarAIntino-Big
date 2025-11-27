@@ -3,45 +3,48 @@ Tests for the movie generator module.
 """
 
 import json
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from movie_pipeline.movie_generator import (
-    MovieGenerator,
-    MovieGeneratorError
-)
+
+from movie_pipeline.movie_generator import MovieGenerator, MovieGeneratorError
 from movie_pipeline.schemas import GeneratedMovie
 
 
 @pytest.fixture
 def valid_llm_response():
     """Fixture providing a valid LLM JSON response."""
-    return json.dumps({
-        "title": "Quantum Echoes",
-        "tagline": "Time is the ultimate prison",
-        "genres": ["Sci-Fi", "Thriller", "Drama"],
-        "plot_summary": "A physicist discovers a way to send messages to the past.",
-        "director_name": "Elena Visionmaker",
-        "director_background": "Independent filmmaker known for cerebral sci-fi.",
-        "writers": ["Marcus Wordsmith", "Sara Storyteller"],
-        "writer_backgrounds": "Acclaimed duo specializing in hard science fiction.",
-        "cast": [{
-            "actor_name": "Jordan Performer",
-            "character_name": "Dr. Alex Quantum",
-            "physical_description": "Tall individual in their 40s with intense eyes.",
-            "personality_traits": ["brilliant", "obsessive", "isolated"],
-            "acting_style": "Method actor with technical precision",
-            "role_description": "Lead physicist who makes the breakthrough discovery"
-        }],
-        "runtime": "135 min",
-        "rating": "PG-13",
-        "release_year": 2026,
-        "production_company": "Stellar Pictures",
-        "production_company_background": "Indie studio focused on intelligent genre films.",
-        "budget": "$60M",
-        "themes": ["time", "consequence", "isolation"],
-        "visual_style": "Cold, clinical aesthetic with bursts of color.",
-        "target_audience": "Adults 25-50 interested in thought-provoking sci-fi"
-    })
+    return json.dumps(
+        {
+            "title": "Quantum Echoes",
+            "tagline": "Time is the ultimate prison",
+            "genres": ["Sci-Fi", "Thriller", "Drama"],
+            "plot_summary": "A physicist discovers a way to send messages to the past.",
+            "director_name": "Elena Visionmaker",
+            "director_background": "Independent filmmaker known for cerebral sci-fi.",
+            "writers": ["Marcus Wordsmith", "Sara Storyteller"],
+            "writer_backgrounds": "Acclaimed duo specializing in hard science fiction.",
+            "cast": [
+                {
+                    "actor_name": "Jordan Performer",
+                    "character_name": "Dr. Alex Quantum",
+                    "physical_description": "Tall individual in their 40s with intense eyes.",
+                    "personality_traits": ["brilliant", "obsessive", "isolated"],
+                    "acting_style": "Method actor with technical precision",
+                    "role_description": "Lead physicist who makes the breakthrough discovery",
+                }
+            ],
+            "runtime": "135 min",
+            "rating": "PG-13",
+            "release_year": 2026,
+            "production_company": "Stellar Pictures",
+            "production_company_background": "Indie studio focused on intelligent genre films.",
+            "budget": "$60M",
+            "themes": ["time", "consequence", "isolation"],
+            "visual_style": "Cold, clinical aesthetic with bursts of color.",
+            "target_audience": "Adults 25-50 interested in thought-provoking sci-fi",
+        }
+    )
 
 
 @pytest.fixture
@@ -67,9 +70,7 @@ class TestMovieGenerator:
     def test_init_with_custom_parameters(self):
         """Test MovieGenerator initialization with custom parameters."""
         generator = MovieGenerator(
-            api_key="custom_key",
-            model="custom/model",
-            base_url="https://custom.url"
+            api_key="custom_key", model="custom/model", base_url="https://custom.url"
         )
 
         assert generator.api_key == "custom_key"
@@ -106,15 +107,24 @@ class TestMovieGenerator:
 
         # Check that all required fields are mentioned in prompt
         required_fields = [
-            "title", "tagline", "genres", "plot_summary",
-            "director_name", "writers", "cast", "runtime",
-            "rating", "release_year", "budget", "themes"
+            "title",
+            "tagline",
+            "genres",
+            "plot_summary",
+            "director_name",
+            "writers",
+            "cast",
+            "runtime",
+            "rating",
+            "release_year",
+            "budget",
+            "themes",
         ]
 
         for field in required_fields:
             assert field in prompt
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
+    @patch("movie_pipeline.movie_generator.OpenAI")
     def test_generate_movie_success(self, mock_openai_class, valid_llm_response):
         """Test successfully generating a movie."""
         # Setup mock
@@ -139,7 +149,7 @@ class TestMovieGenerator:
         assert len(result.genres) == 3
         assert result.release_year == 2026
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
+    @patch("movie_pipeline.movie_generator.OpenAI")
     def test_generate_movie_with_model_override(self, mock_openai_class, valid_llm_response):
         """Test generating a movie with model override."""
         mock_client = MagicMock()
@@ -156,13 +166,13 @@ class TestMovieGenerator:
         generator = MovieGenerator(api_key="test_key", model="default/model")
         context = "Test context"
 
-        result = generator.generate_movie(context, model_override="override/model")
+        generator.generate_movie(context, model_override="override/model")
 
         # Check that the override model was used
         call_args = mock_client.chat.completions.create.call_args
         assert call_args.kwargs["model"] == "override/model"
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
+    @patch("movie_pipeline.movie_generator.OpenAI")
     def test_generate_movie_empty_response(self, mock_openai_class):
         """Test handling of empty LLM response."""
         mock_client = MagicMock()
@@ -183,7 +193,7 @@ class TestMovieGenerator:
 
         assert "Empty response" in str(exc_info.value)
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
+    @patch("movie_pipeline.movie_generator.OpenAI")
     def test_generate_movie_invalid_json(self, mock_openai_class):
         """Test handling of invalid JSON response."""
         mock_client = MagicMock()
@@ -204,7 +214,7 @@ class TestMovieGenerator:
 
         assert "Failed to parse" in str(exc_info.value)
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
+    @patch("movie_pipeline.movie_generator.OpenAI")
     def test_generate_movie_json_with_extra_text(self, mock_openai_class, valid_llm_response):
         """Test handling JSON response with extra text around it."""
         mock_client = MagicMock()
@@ -226,7 +236,7 @@ class TestMovieGenerator:
         assert isinstance(result, GeneratedMovie)
         assert result.title == "Quantum Echoes"
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
+    @patch("movie_pipeline.movie_generator.OpenAI")
     def test_generate_movie_api_error(self, mock_openai_class):
         """Test handling of OpenAI API errors."""
         mock_client = MagicMock()
@@ -240,9 +250,11 @@ class TestMovieGenerator:
 
         assert "Failed to generate movie" in str(exc_info.value)
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
-    @patch('movie_pipeline.movie_fetcher.MovieFetcher')
-    def test_generate_from_movies_success(self, mock_fetcher_class, mock_openai_class, valid_llm_response):
+    @patch("movie_pipeline.movie_generator.OpenAI")
+    @patch("movie_pipeline.movie_fetcher.MovieFetcher")
+    def test_generate_from_movies_success(
+        self, mock_fetcher_class, mock_openai_class, valid_llm_response
+    ):
         """Test generating from movie data dictionaries."""
         # Setup OpenAI mock
         mock_client = MagicMock()
@@ -270,7 +282,7 @@ class TestMovieGenerator:
         assert result.title == "Quantum Echoes"
         assert result.inspiration_source == ["Inception", "The Matrix"]
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
+    @patch("movie_pipeline.movie_generator.OpenAI")
     def test_generate_from_movies_empty_list(self, mock_openai_class):
         """Test generating from empty movie list raises error."""
         mock_openai_class.return_value = MagicMock()
@@ -282,8 +294,8 @@ class TestMovieGenerator:
 
         assert "No movies provided" in str(exc_info.value)
 
-    @patch('movie_pipeline.movie_generator.OpenAI')
-    @patch('movie_pipeline.movie_fetcher.MovieFetcher')
+    @patch("movie_pipeline.movie_generator.OpenAI")
+    @patch("movie_pipeline.movie_fetcher.MovieFetcher")
     def test_generate_from_movies_with_inspiration_in_response(
         self, mock_fetcher_class, mock_openai_class, valid_llm_response
     ):

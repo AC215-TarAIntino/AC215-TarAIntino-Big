@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -15,7 +14,6 @@ from generate import (
     generate_scene_videos,
     stitch_videos,
 )
-
 
 app = FastAPI(
     title="Video Generator API",
@@ -30,8 +28,8 @@ app = FastAPI(
 class CharacterDesign(BaseModel):
     character_name: str = Field(..., description="Used as the filename under output/refs")
     image_generation_prompt: str
-    brief_identifier: Optional[str] = Field(None, description="Brief identifier for the character")
-    visual_style: Optional[str] = Field(None, description="Visual style description")
+    brief_identifier: str | None = Field(None, description="Brief identifier for the character")
+    visual_style: str | None = Field(None, description="Visual style description")
 
 
 class Scene(BaseModel):
@@ -41,28 +39,30 @@ class Scene(BaseModel):
     start_frame_prompt: str
     end_frame_prompt: str
     video_prompt: str
-    reference_images: List[str] = Field(default_factory=list)
-    characters_present: Optional[List[str]] = Field(None, description="List of characters in this scene")
-    continuity_note: Optional[str] = Field(None, description="Continuity notes for this scene")
+    reference_images: list[str] = Field(default_factory=list)
+    characters_present: list[str] | None = Field(
+        None, description="List of characters in this scene"
+    )
+    continuity_note: str | None = Field(None, description="Continuity notes for this scene")
 
 
 class CharacterReferenceRequest(BaseModel):
-    character_designs: List[CharacterDesign]
-    image_api_key: Optional[str] = Field(
+    character_designs: list[CharacterDesign]
+    image_api_key: str | None = Field(
         default=None,
         description="Override for the Gemini image API key. Falls back to secret.json if omitted.",
     )
 
 
 class CharacterReferenceResponse(BaseModel):
-    character_refs: Dict[str, str]
+    character_refs: dict[str, str]
 
 
 class SceneVideoRequest(BaseModel):
-    scenes: List[Scene]
-    image_api_key: Optional[str] = None
-    veo_api_key: Optional[str] = None
-    character_refs: Optional[Dict[str, str]] = Field(
+    scenes: list[Scene]
+    image_api_key: str | None = None
+    veo_api_key: str | None = None
+    character_refs: dict[str, str] | None = Field(
         default=None,
         description="Mapping of character name to path for reference images. If omitted, the API"
         " will attempt to load refs from output/refs/ automatically.",
@@ -74,14 +74,14 @@ class SceneVideoRequest(BaseModel):
 
 
 class SceneVideoResponse(BaseModel):
-    video_paths: List[str]
+    video_paths: list[str]
 
 
 class TrailerGenerationRequest(BaseModel):
-    character_designs: List[CharacterDesign]
-    scenes: List[Scene]
-    image_api_key: Optional[str] = None
-    veo_api_key: Optional[str] = None
+    character_designs: list[CharacterDesign]
+    scenes: list[Scene]
+    image_api_key: str | None = None
+    veo_api_key: str | None = None
     stitch_trailer: bool = Field(
         default=True,
         description="If true, stitch scene videos into output/trailer_no_audio.mp4",
@@ -89,12 +89,12 @@ class TrailerGenerationRequest(BaseModel):
 
 
 class TrailerGenerationResponse(BaseModel):
-    character_refs: Dict[str, str]
-    scene_videos: List[str]
-    trailer_path: Optional[str]
+    character_refs: dict[str, str]
+    scene_videos: list[str]
+    trailer_path: str | None
 
 
-def _load_default_api_key(key_name: str = "image_api_key") -> Optional[str]:
+def _load_default_api_key(key_name: str = "image_api_key") -> str | None:
     """Load API key from secrets.json file"""
     secret_path = Path("secrets.json")  # Changed from secret.json to secrets.json
     if not secret_path.exists():
@@ -111,7 +111,7 @@ def _load_default_api_key(key_name: str = "image_api_key") -> Optional[str]:
     return payload.get(key_name) or payload.get("project_api_key")
 
 
-def _resolve_api_key(provided: Optional[str], key_name: str) -> str:
+def _resolve_api_key(provided: str | None, key_name: str) -> str:
     api_key = provided or _load_default_api_key(key_name)
     if not api_key:
         raise HTTPException(
@@ -121,7 +121,7 @@ def _resolve_api_key(provided: Optional[str], key_name: str) -> str:
     return api_key
 
 
-def _collect_referenced_characters(scenes: List[Scene]) -> List[str]:
+def _collect_referenced_characters(scenes: list[Scene]) -> list[str]:
     referenced = []
     seen = set()
     for scene in scenes:
@@ -133,15 +133,13 @@ def _collect_referenced_characters(scenes: List[Scene]) -> List[str]:
 
 
 def _build_character_ref_map(
-    scenes: List[Scene],
-    provided_refs: Optional[Dict[str, str]],
+    scenes: list[Scene],
+    provided_refs: dict[str, str] | None,
     autoload_refs: bool,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     if provided_refs:
         provided_missing = [
-            char
-            for char in _collect_referenced_characters(scenes)
-            if char not in provided_refs
+            char for char in _collect_referenced_characters(scenes) if char not in provided_refs
         ]
         if provided_missing:
             raise HTTPException(
@@ -159,7 +157,7 @@ def _build_character_ref_map(
             )
         return {}
 
-    refs: Dict[str, str] = {}
+    refs: dict[str, str] = {}
     for character in _collect_referenced_characters(scenes):
         ref_path = OUTPUT_DIR / "refs" / f"{character}.png"
         if not ref_path.exists():
@@ -172,7 +170,7 @@ def _build_character_ref_map(
 
 
 @app.get("/health")
-def healthcheck() -> Dict[str, str]:
+def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
 
 
@@ -235,18 +233,20 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
             character_refs=character_refs,
         )
 
-        trailer_path: Optional[Path] = None
+        trailer_path: Path | None = None
         if request.stitch_trailer:
             trailer_path = stitch_videos(scene_paths)
 
     except ValueError as exc:
         print(f"❌ ValueError in trailer generation: {exc}")
         import traceback
+
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         print(f"❌ Exception in trailer generation: {exc}")
         import traceback
+
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -285,7 +285,7 @@ def generate_trailer_mock(request: TrailerGenerationRequest) -> TrailerGeneratio
         print(f"  Using {len(scene_paths)} existing scene videos: {[p.name for p in scene_paths]}")
 
         # Stitch videos together (this is real, not mocked)
-        trailer_path: Optional[Path] = None
+        trailer_path: Path | None = None
         if request.stitch_trailer and scene_paths:
             print(f"  Stitching {len(scene_paths)} videos together...")
             trailer_path = stitch_videos(scene_paths)
@@ -300,6 +300,7 @@ def generate_trailer_mock(request: TrailerGenerationRequest) -> TrailerGeneratio
     except Exception as exc:
         print(f"❌ Exception in mock trailer generation: {exc}")
         import traceback
+
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

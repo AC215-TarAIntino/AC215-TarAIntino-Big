@@ -1,19 +1,20 @@
-import pytest
-from unittest.mock import Mock, patch, mock_open
-import numpy as np
 import json
+from unittest.mock import Mock, patch
+
+import numpy as np
+import pytest
 from src.quiz_service.config import (
+    CHROMA_COLLECTION,
+    PRIOR_COV_PATH,
+    PRIOR_MEAN_PATH,
+    QUIZ_TAGS,
+    TAG_INDEX_JSON,
     get_chroma_client,
     get_collection,
-    load_tagid2col,
-    get_tagid2col,
-    get_prior_mean,
     get_prior_cov,
-    QUIZ_TAGS,
-    PRIOR_MEAN_PATH,
-    PRIOR_COV_PATH,
-    CHROMA_COLLECTION,
-    TAG_INDEX_JSON
+    get_prior_mean,
+    get_tagid2col,
+    load_tagid2col,
 )
 
 
@@ -23,7 +24,7 @@ class TestGetChromaClient:
         monkeypatch.setenv("CHROMA_SERVER_PORT", "8000")
 
         with patch("src.quiz_service.config.chromadb.HttpClient") as mock_http:
-            client = get_chroma_client()
+            get_chroma_client()
             mock_http.assert_called_once_with(host="localhost", port=8000)
 
     def test_persistent_client_when_no_host_port(self, monkeypatch):
@@ -32,7 +33,7 @@ class TestGetChromaClient:
         monkeypatch.setenv("CHROMA_PATH", "./test_chroma")
 
         with patch("src.quiz_service.config.chromadb.PersistentClient") as mock_persistent:
-            client = get_chroma_client()
+            get_chroma_client()
             mock_persistent.assert_called_once_with(path="./test_chroma")
 
     def test_persistent_client_default_path(self, monkeypatch):
@@ -41,7 +42,7 @@ class TestGetChromaClient:
         monkeypatch.delenv("CHROMA_PATH", raising=False)
 
         with patch("src.quiz_service.config.chromadb.PersistentClient") as mock_persistent:
-            client = get_chroma_client()
+            get_chroma_client()
             mock_persistent.assert_called_once_with(path="./chroma_db")
 
 
@@ -194,20 +195,26 @@ class TestConstants:
     def test_prior_mean_path_default(self, monkeypatch):
         monkeypatch.delenv("PRIOR_MEAN_PATH", raising=False)
         from importlib import reload
+
         import src.quiz_service.config as config_module
+
         reload(config_module)
         assert config_module.PRIOR_MEAN_PATH == "/app/prior_mean.npy"
 
     def test_prior_cov_path_default(self, monkeypatch):
         monkeypatch.delenv("PRIOR_COV_PATH", raising=False)
         from importlib import reload
+
         import src.quiz_service.config as config_module
+
         reload(config_module)
         assert config_module.PRIOR_COV_PATH == "/app/prior_cov.npy"
 
     def test_chroma_collection_default(self, monkeypatch):
         monkeypatch.delenv("CHROMA_COLLECTION", raising=False)
         from importlib import reload
+
         import src.quiz_service.config as config_module
+
         reload(config_module)
         assert config_module.CHROMA_COLLECTION == "movie_tag_relevance_cos"

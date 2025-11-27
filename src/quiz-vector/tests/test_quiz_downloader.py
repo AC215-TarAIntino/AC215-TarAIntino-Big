@@ -1,19 +1,17 @@
-import pytest
-from unittest.mock import Mock, patch, MagicMock, call
-import json
 import os
-from pathlib import Path
+from unittest.mock import Mock, patch
+
 from src.datapipeline.downloader import (
-    get_chroma_client,
-    log,
+    cli,
     download_prefix,
-    stream_object,
+    get_chroma_client,
+    ingest_tag_relevance_to_chroma,
+    ingest_tags_metadata_to_chroma,
+    log,
     parse_lines,
     parse_movies,
     parse_tags,
-    ingest_tag_relevance_to_chroma,
-    ingest_tags_metadata_to_chroma,
-    cli
+    stream_object,
 )
 
 
@@ -23,7 +21,7 @@ class TestGetChromaClient:
         monkeypatch.setenv("CHROMA_SERVER_PORT", "8000")
 
         with patch("src.datapipeline.downloader.chromadb.HttpClient") as mock_http:
-            client = get_chroma_client()
+            get_chroma_client()
             mock_http.assert_called_once_with(host="localhost", port=8000)
 
     def test_persistent_client_when_no_host_port(self, monkeypatch):
@@ -32,7 +30,7 @@ class TestGetChromaClient:
         monkeypatch.setenv("CHROMA_PATH", "./test_chroma")
 
         with patch("src.datapipeline.downloader.chromadb.PersistentClient") as mock_persistent:
-            client = get_chroma_client()
+            get_chroma_client()
             mock_persistent.assert_called_once_with(path="./test_chroma")
 
     def test_persistent_client_default_path(self, monkeypatch):
@@ -41,7 +39,7 @@ class TestGetChromaClient:
         monkeypatch.delenv("CHROMA_PATH", raising=False)
 
         with patch("src.datapipeline.downloader.chromadb.PersistentClient") as mock_persistent:
-            client = get_chroma_client()
+            get_chroma_client()
             mock_persistent.assert_called_once_with(path="./chroma_db")
 
 
@@ -202,9 +200,7 @@ class TestIngestTagRelevanceToChroma:
 
         with patch.dict(os.environ, {"LOG_DIR": str(log_dir)}):
             ingest_tag_relevance_to_chroma(
-                bucket="test-bucket",
-                object_name="test.dat",
-                batch_size=1000
+                bucket="test-bucket", object_name="test.dat", batch_size=1000
             )
 
         mock_client.create_collection.assert_called_once()
@@ -223,10 +219,7 @@ class TestIngestTagsMetadataToChroma:
         mock_client.create_collection.return_value = mock_collection
         mock_chroma_client.return_value = mock_client
 
-        ingest_tags_metadata_to_chroma(
-            bucket="test-bucket",
-            tags_object_name="tags.dat"
-        )
+        ingest_tags_metadata_to_chroma(bucket="test-bucket", tags_object_name="tags.dat")
 
         mock_client.create_collection.assert_called_once()
         assert mock_collection.add.called

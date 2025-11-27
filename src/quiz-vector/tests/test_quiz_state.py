@@ -1,6 +1,6 @@
-import pytest
 import time
-from quiz_service.state import InMemoryStore, Session, DEFAULT_TTL_SEC
+
+from quiz_service.state import DEFAULT_TTL_SEC, InMemoryStore, Session
 
 
 class TestSession:

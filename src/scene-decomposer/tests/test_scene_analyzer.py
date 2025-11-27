@@ -4,13 +4,14 @@ Comprehensive tests for scene_analyzer.py - MovieAnalyzer class.
 
 import sys
 from pathlib import Path
+
 import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from trailer_generator.scene_analyzer import MovieAnalyzer
-from trailer_generator.schemas import GeneratedMovie, CastMember, MovieAnalysis
+from trailer_generator.schemas import CastMember, GeneratedMovie, MovieAnalysis
 
 
 @pytest.fixture
@@ -23,7 +24,7 @@ def sample_cast():
             physical_description="A woman in her early 30s with short auburn hair and green eyes, athletic build",
             personality_traits=["intelligent", "determined", "cautious"],
             acting_style="naturalistic",
-            role_description="Brilliant scientist who discovers an anomaly"
+            role_description="Brilliant scientist who discovers an anomaly",
         ),
         CastMember(
             actor_name="Oscar Isaac",
@@ -31,7 +32,7 @@ def sample_cast():
             physical_description="A man in his 40s with dark hair and brown eyes, rugged appearance",
             personality_traits=["brave", "impulsive", "loyal"],
             acting_style="intense",
-            role_description="Former military officer turned security consultant"
+            role_description="Former military officer turned security consultant",
         ),
         CastMember(
             actor_name="Tilda Swinton",
@@ -39,7 +40,7 @@ def sample_cast():
             physical_description="A woman in her 50s with silver hair and piercing blue eyes",
             personality_traits=["mysterious", "calculating", "wise"],
             acting_style="ethereal",
-            role_description="Senior researcher with hidden agenda"
+            role_description="Senior researcher with hidden agenda",
         ),
         CastMember(
             actor_name="John Boyega",
@@ -47,7 +48,7 @@ def sample_cast():
             physical_description="A man in his late 20s with short black hair",
             personality_traits=["optimistic", "tech-savvy", "energetic"],
             acting_style="dynamic",
-            role_description="Young programmer caught in the conspiracy"
+            role_description="Young programmer caught in the conspiracy",
         ),
     ]
 
@@ -76,7 +77,7 @@ def sample_movie(sample_cast):
         target_audience="Adults 25-45 who enjoy intellectual sci-fi",
         unique_selling_point="A mind-bending exploration of quantum mechanics meets personal identity crisis",
         inspiration_source=["Primer", "Arrival", "Coherence"],
-        similar_movies=["Interstellar", "Inception", "Annihilation"]
+        similar_movies=["Interstellar", "Inception", "Annihilation"],
     )
 
 
@@ -122,7 +123,7 @@ class TestMovieAnalyzer:
                 physical_description="Description one",
                 personality_traits=["trait1"],
                 acting_style="style1",
-                role_description="role1"
+                role_description="role1",
             ),
             CastMember(
                 actor_name="Actor Two",
@@ -130,8 +131,8 @@ class TestMovieAnalyzer:
                 physical_description="Description two",
                 personality_traits=["trait2"],
                 acting_style="style2",
-                role_description="role2"
-            )
+                role_description="role2",
+            ),
         ]
 
         movie = GeneratedMovie(
@@ -152,7 +153,7 @@ class TestMovieAnalyzer:
             budget="$1M",
             themes=["test"],
             visual_style="test style",
-            target_audience="test"
+            target_audience="test",
         )
 
         analyzer = MovieAnalyzer(movie)
@@ -222,7 +223,7 @@ class TestMovieAnalyzer:
             "budget": "$1M",
             "themes": ["test"],
             "visual_style": "test",
-            "target_audience": "test"
+            "target_audience": "test",
         }
         movie = GeneratedMovie(**movie_data)
         analyzer = MovieAnalyzer(movie)
@@ -250,7 +251,7 @@ class TestMovieAnalyzer:
             "budget": "$1M",
             "themes": ["test"],
             "visual_style": "test",
-            "target_audience": "test"
+            "target_audience": "test",
         }
         movie = GeneratedMovie(**movie_data)
         analyzer = MovieAnalyzer(movie)
@@ -286,7 +287,7 @@ class TestMovieAnalyzer:
             "budget": "$1M",
             "themes": ["test"],
             "visual_style": "test",
-            "target_audience": "test"
+            "target_audience": "test",
         }
         movie = GeneratedMovie(**movie_data)
         analyzer = MovieAnalyzer(movie)
@@ -314,7 +315,7 @@ class TestMovieAnalyzer:
             "budget": "$1M",
             "themes": ["test"],
             "visual_style": "test",
-            "target_audience": "test"
+            "target_audience": "test",
         }
         movie = GeneratedMovie(**movie_data)
         analyzer = MovieAnalyzer(movie)
@@ -342,7 +343,7 @@ class TestMovieAnalyzer:
             "budget": "$1M",
             "themes": ["test"],
             "visual_style": "test",
-            "target_audience": "test"
+            "target_audience": "test",
         }
         movie = GeneratedMovie(**movie_data)
         analyzer = MovieAnalyzer(movie)
@@ -370,7 +371,7 @@ class TestMovieAnalyzer:
             "budget": "$1M",
             "themes": ["test"],
             "visual_style": "test",
-            "target_audience": "test"
+            "target_audience": "test",
         }
         movie = GeneratedMovie(**movie_data)
         analyzer = MovieAnalyzer(movie)
@@ -398,7 +399,7 @@ class TestMovieAnalyzer:
             "budget": "$1M",
             "themes": ["test"],
             "visual_style": "test",
-            "target_audience": "test"
+            "target_audience": "test",
         }
         movie = GeneratedMovie(**movie_data)
         analyzer = MovieAnalyzer(movie)

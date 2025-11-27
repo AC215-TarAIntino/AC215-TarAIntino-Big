@@ -1,8 +1,9 @@
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
+
 import numpy as np
+import pytest
 from fastapi.testclient import TestClient
-from src.quiz_service.api import app, _new_session_model
+from src.quiz_service.api import _new_session_model, app
 
 
 @pytest.fixture
@@ -12,11 +13,13 @@ def client():
 
 @pytest.fixture
 def mock_dependencies():
-    with patch("src.quiz_service.api.get_prior_mean") as mock_mean, \
-         patch("src.quiz_service.api.get_prior_cov") as mock_cov, \
-         patch("src.quiz_service.api.get_tagid2col") as mock_tagid2col, \
-         patch("src.quiz_service.api.STORE") as mock_store, \
-         patch("src.quiz_service.api.get_collection") as mock_collection:
+    with (
+        patch("src.quiz_service.api.get_prior_mean") as mock_mean,
+        patch("src.quiz_service.api.get_prior_cov") as mock_cov,
+        patch("src.quiz_service.api.get_tagid2col") as mock_tagid2col,
+        patch("src.quiz_service.api.STORE") as mock_store,
+        patch("src.quiz_service.api.get_collection") as mock_collection,
+    ):
 
         mock_mean.return_value = np.zeros(100)
         mock_cov.return_value = np.eye(100)
@@ -27,7 +30,7 @@ def mock_dependencies():
             "cov": mock_cov,
             "tagid2col": mock_tagid2col,
             "store": mock_store,
-            "collection": mock_collection
+            "collection": mock_collection,
         }
 
 
@@ -77,7 +80,7 @@ class TestQuizStart:
             "question_id": 0,
             "tag_id": 416,
             "tag_label": "funny",
-            "scale": {"min": 1, "max": 10}
+            "scale": {"min": 1, "max": 10},
         }
         mock_new_model.return_value = mock_model
         mock_store.create.return_value = "session-123"
@@ -99,7 +102,7 @@ class TestQuizStart:
             "question_id": 0,
             "tag_id": 416,
             "tag_label": "funny",
-            "scale": {"min": 1, "max": 10}
+            "scale": {"min": 1, "max": 10},
         }
         mock_new_model.return_value = mock_model
         mock_store.create.return_value = "session-123"
@@ -121,18 +124,16 @@ class TestQuizAnswer:
             "question_id": 1,
             "tag_id": 284,
             "tag_label": "dark",
-            "scale": {"min": 1, "max": 10}
+            "scale": {"min": 1, "max": 10},
         }
 
         mock_session = Mock()
         mock_session.model = mock_model
         mock_store.get.return_value = mock_session
 
-        response = client.post("/quiz/answer", json={
-            "session_id": "session-123",
-            "question_id": "0",
-            "answer": 5
-        })
+        response = client.post(
+            "/quiz/answer", json={"session_id": "session-123", "question_id": "0", "answer": 5}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -144,11 +145,9 @@ class TestQuizAnswer:
     def test_quiz_answer_session_not_found(self, mock_store, client):
         mock_store.get.return_value = None
 
-        response = client.post("/quiz/answer", json={
-            "session_id": "invalid-session",
-            "question_id": "0",
-            "answer": 5
-        })
+        response = client.post(
+            "/quiz/answer", json={"session_id": "invalid-session", "question_id": "0", "answer": 5}
+        )
 
         assert response.status_code == 404
 
@@ -160,11 +159,9 @@ class TestQuizAnswer:
         mock_session.model = mock_model
         mock_store.get.return_value = mock_session
 
-        response = client.post("/quiz/answer", json={
-            "session_id": "session-123",
-            "question_id": "100",
-            "answer": 5
-        })
+        response = client.post(
+            "/quiz/answer", json={"session_id": "session-123", "question_id": "100", "answer": 5}
+        )
 
         assert response.status_code == 400
 
@@ -179,11 +176,9 @@ class TestQuizAnswer:
         mock_session.model = mock_model
         mock_store.get.return_value = mock_session
 
-        response = client.post("/quiz/answer", json={
-            "session_id": "session-123",
-            "question_id": "4",
-            "answer": 5
-        })
+        response = client.post(
+            "/quiz/answer", json={"session_id": "session-123", "question_id": "4", "answer": 5}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -237,21 +232,20 @@ class TestRecommend:
         mock_col.get.return_value = {
             "ids": ["1", "2", "3"],
             "embeddings": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
-            "metadatas": [{"movieId": 1, "title": "Movie 1"},
-                         {"movieId": 2, "title": "Movie 2"},
-                         {"movieId": 3, "title": "Movie 3"}]
+            "metadatas": [
+                {"movieId": 1, "title": "Movie 1"},
+                {"movieId": 2, "title": "Movie 2"},
+                {"movieId": 3, "title": "Movie 3"},
+            ],
         }
         mock_collection.return_value = mock_col
 
         mock_topn.return_value = [
             {"movie_id": "1", "title": "Movie 1", "score": 0.9},
-            {"movie_id": "2", "title": "Movie 2", "score": 0.8}
+            {"movie_id": "2", "title": "Movie 2", "score": 0.8},
         ]
 
-        response = client.post("/recommend", json={
-            "session_id": "session-123",
-            "top_n": 2
-        })
+        response = client.post("/recommend", json={"session_id": "session-123", "top_n": 2})
 
         assert response.status_code == 200
         data = response.json()
@@ -262,10 +256,7 @@ class TestRecommend:
     def test_recommend_session_not_found(self, mock_store, client):
         mock_store.get.return_value = None
 
-        response = client.post("/recommend", json={
-            "session_id": "invalid-session",
-            "top_n": 10
-        })
+        response = client.post("/recommend", json={"session_id": "invalid-session", "top_n": 10})
 
         assert response.status_code == 404
 
@@ -280,17 +271,10 @@ class TestRecommend:
         mock_store.get.return_value = mock_session
 
         mock_col = Mock()
-        mock_col.get.return_value = {
-            "ids": [],
-            "embeddings": [],
-            "metadatas": []
-        }
+        mock_col.get.return_value = {"ids": [], "embeddings": [], "metadatas": []}
         mock_collection.return_value = mock_col
 
-        response = client.post("/recommend", json={
-            "session_id": "session-123",
-            "top_n": 10
-        })
+        response = client.post("/recommend", json={"session_id": "session-123", "top_n": 10})
 
         assert response.status_code == 503
 
@@ -300,7 +284,9 @@ class TestStartupEvent:
     @patch("src.quiz_service.api.get_tagid2col")
     @patch("src.quiz_service.api.get_prior_mean")
     @patch("src.quiz_service.api.get_prior_cov")
-    def test_startup_calls_required_functions(self, mock_cov, mock_mean, mock_tagid2col, mock_compute):
+    def test_startup_calls_required_functions(
+        self, mock_cov, mock_mean, mock_tagid2col, mock_compute
+    ):
         from src.quiz_service.api import _startup
 
         _startup()

@@ -1,21 +1,28 @@
-from fastapi import FastAPI, HTTPException
 import numpy as np
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from .config import (
-    get_collection, get_prior_mean, get_prior_cov,
-    get_tagid2col, QUIZ_TAGS, PRIOR_MEAN_PATH, PRIOR_COV_PATH
+    QUIZ_TAGS,
+    get_collection,
+    get_prior_cov,
+    get_prior_mean,
+    get_tagid2col,
 )
 from .model import FullCovarianceTasteModel
-from .state import STORE
 from .schemas import (
-    StartRequest, StartResponse,
-    AnswerRequest, AnswerResponse,
-    CompleteRequest, CompleteResponse,
-    RecommendRequest, RecommendResponse,
-    Question
+    AnswerRequest,
+    AnswerResponse,
+    CompleteRequest,
+    CompleteResponse,
+    Question,
+    RecommendRequest,
+    RecommendResponse,
+    StartRequest,
+    StartResponse,
 )
-from .utils import topN_from_matrix, _compute_and_save_prior_if_needed
-from fastapi.middleware.cors import CORSMiddleware
+from .state import STORE
+from .utils import _compute_and_save_prior_if_needed, topN_from_matrix
 
 app = FastAPI(title="Quiz-Vector Service", version="0.1.0")
 
@@ -26,10 +33,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 def _new_session_model(target_questions: int):
     prior_mean = get_prior_mean().copy()
-    prior_cov  = get_prior_cov().copy()
-    tagid2col  = get_tagid2col()
+    prior_cov = get_prior_cov().copy()
+    tagid2col = get_tagid2col()
     # clamp target to the number of quiz tags
     target = max(1, min(target_questions, len(QUIZ_TAGS)))
     return FullCovarianceTasteModel(
@@ -41,9 +49,11 @@ def _new_session_model(target_questions: int):
         target_questions=target,
     )
 
+
 @app.get("/health")
 def health():
     return {"ok": True}
+
 
 @app.post("/quiz/start", response_model=StartResponse)
 def quiz_start(req: StartRequest):
@@ -52,6 +62,7 @@ def quiz_start(req: StartRequest):
     k = model.pick_next_quiz_tag()
     q = Question(**model.current_question_payload(k))
     return StartResponse(session_id=sid, question=q)
+
 
 @app.post("/quiz/answer", response_model=AnswerResponse)
 def quiz_answer(req: AnswerRequest):
@@ -75,6 +86,7 @@ def quiz_answer(req: AnswerRequest):
     q = Question(**m.current_question_payload(k_next))
     return AnswerResponse(status="ok", next_question=q, progress=progress)
 
+
 @app.post("/quiz/complete", response_model=CompleteResponse)
 def quiz_complete(req: CompleteRequest):
     s = STORE.get(req.session_id)
@@ -84,10 +96,14 @@ def quiz_complete(req: CompleteRequest):
     tv = m.export_taste_vector().tolist()
     return CompleteResponse(taste_vector=tv, dims=len(tv), progress=m.quiz_status())
 
+
 @app.on_event("startup")
 def _startup():
     _compute_and_save_prior_if_needed()
-    _ = get_tagid2col(); _ = get_prior_mean(); _ = get_prior_cov()
+    _ = get_tagid2col()
+    _ = get_prior_mean()
+    _ = get_prior_cov()
+
 
 @app.post("/recommend", response_model=RecommendResponse)
 def recommend(req: RecommendRequest):
@@ -99,7 +115,7 @@ def recommend(req: RecommendRequest):
 
     sample = col.get(
         limit=max(1, min(500, req.top_n * 50)),
-        include=["embeddings", "metadatas"],   # keep ids out of include
+        include=["embeddings", "metadatas"],  # keep ids out of include
     )
 
     ids = sample.get("ids")
@@ -131,7 +147,7 @@ def recommend(req: RecommendRequest):
         X = np.vstack([np.asarray(e, dtype=np.float64) for e in embs])
 
     m = min(len(ids), X.shape[0])
-    ids, metas, X = ids[:m], (metas or [{}]*m)[:m], X[:m, :]
+    ids, metas, X = ids[:m], (metas or [{}] * m)[:m], X[:m, :]
 
     theta = s.model.export_taste_vector()
     results = topN_from_matrix(theta, X, ids, metas, N=req.top_n)

@@ -1,33 +1,29 @@
 import pytest
 from pydantic import ValidationError
+
 from quiz_service.schemas import (
-    StartRequest, StartResponse, Question,
-    AnswerRequest, AnswerResponse,
-    CompleteRequest, CompleteResponse,
-    RecommendRequest, RecommendResponse
+    AnswerRequest,
+    AnswerResponse,
+    CompleteRequest,
+    CompleteResponse,
+    Question,
+    RecommendRequest,
+    RecommendResponse,
+    StartRequest,
+    StartResponse,
 )
 
 
 class TestQuestion:
     def test_question_creation(self):
-        q = Question(
-            question_id=0,
-            tag_id=416,
-            tag_label="funny",
-            scale={"min": 1, "max": 10}
-        )
+        q = Question(question_id=0, tag_id=416, tag_label="funny", scale={"min": 1, "max": 10})
         assert q.question_id == 0
         assert q.tag_id == 416
         assert q.tag_label == "funny"
         assert q.scale == {"min": 1, "max": 10}
 
     def test_question_dict(self):
-        q = Question(
-            question_id=1,
-            tag_id=284,
-            tag_label="dark",
-            scale={"min": 1, "max": 10}
-        )
+        q = Question(question_id=1, tag_id=284, tag_label="dark", scale={"min": 1, "max": 10})
         d = q.model_dump()
         assert d["question_id"] == 1
         assert d["tag_id"] == 284
@@ -61,12 +57,7 @@ class TestStartRequest:
 
 class TestStartResponse:
     def test_start_response_creation(self):
-        q = Question(
-            question_id=0,
-            tag_id=416,
-            tag_label="funny",
-            scale={"min": 1, "max": 10}
-        )
+        q = Question(question_id=0, tag_id=416, tag_label="funny", scale={"min": 1, "max": 10})
         resp = StartResponse(session_id="test-session-123", question=q)
         assert resp.session_id == "test-session-123"
         assert resp.question.question_id == 0
@@ -75,11 +66,7 @@ class TestStartResponse:
 
 class TestAnswerRequest:
     def test_answer_request_creation(self):
-        req = AnswerRequest(
-            session_id="test-session",
-            question_id=0,
-            answer=7.5
-        )
+        req = AnswerRequest(session_id="test-session", question_id=0, answer=7.5)
         assert req.session_id == "test-session"
         assert req.question_id == 0
         assert req.answer == 7.5
@@ -94,17 +81,8 @@ class TestAnswerRequest:
 
 class TestAnswerResponse:
     def test_answer_response_ok_status(self):
-        q = Question(
-            question_id=1,
-            tag_id=284,
-            tag_label="dark",
-            scale={"min": 1, "max": 10}
-        )
-        resp = AnswerResponse(
-            status="ok",
-            next_question=q,
-            progress={"asked": 1, "total": 5}
-        )
+        q = Question(question_id=1, tag_id=284, tag_label="dark", scale={"min": 1, "max": 10})
+        resp = AnswerResponse(status="ok", next_question=q, progress={"asked": 1, "total": 5})
         assert resp.status == "ok"
         assert resp.next_question is not None
         assert resp.next_question.question_id == 1
@@ -113,9 +91,7 @@ class TestAnswerResponse:
 
     def test_answer_response_complete_status(self):
         resp = AnswerResponse(
-            status="complete",
-            next_question=None,
-            progress={"asked": 5, "total": 5}
+            status="complete", next_question=None, progress={"asked": 5, "total": 5}
         )
         assert resp.status == "complete"
         assert resp.next_question is None
@@ -131,21 +107,13 @@ class TestCompleteRequest:
 class TestCompleteResponse:
     def test_complete_response_creation(self):
         taste_vec = [0.1, 0.2, 0.3, 0.4, 0.5]
-        resp = CompleteResponse(
-            taste_vector=taste_vec,
-            dims=5,
-            progress={"asked": 5, "total": 5}
-        )
+        resp = CompleteResponse(taste_vector=taste_vec, dims=5, progress={"asked": 5, "total": 5})
         assert resp.taste_vector == taste_vec
         assert resp.dims == 5
         assert resp.progress["asked"] == 5
 
     def test_complete_response_empty_vector(self):
-        resp = CompleteResponse(
-            taste_vector=[],
-            dims=0,
-            progress={"asked": 0, "total": 0}
-        )
+        resp = CompleteResponse(taste_vector=[], dims=0, progress={"asked": 0, "total": 0})
         assert len(resp.taste_vector) == 0
         assert resp.dims == 0
 
@@ -165,7 +133,7 @@ class TestRecommendResponse:
     def test_recommend_response_creation(self):
         results = [
             {"movie_id": "1", "title": "Movie 1", "score": 0.95},
-            {"movie_id": "2", "title": "Movie 2", "score": 0.89}
+            {"movie_id": "2", "title": "Movie 2", "score": 0.89},
         ]
         resp = RecommendResponse(results=results)
         assert len(resp.results) == 2

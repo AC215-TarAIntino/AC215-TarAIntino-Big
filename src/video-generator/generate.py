@@ -1,18 +1,15 @@
-import base64
-from pathlib import Path
 import time
-from typing import Dict, List
+from pathlib import Path
 
-import requests
-OUTPUT_DIR = Path('./output')
 from google import genai
-from google.genai import types
 from google.cloud import storage
+from google.genai import types
 
 OUTPUT_DIR = Path("./output")
 
 GCS_BUCKET_NAME = "tarantaino-output"
 GCS_PREFIX = "video_generator_outputs"
+
 
 def upload_to_gcs(local_path: Path, dest_path: str) -> None:
     """
@@ -28,9 +25,8 @@ def upload_to_gcs(local_path: Path, dest_path: str) -> None:
     blob.upload_from_filename(str(local_path))
     print(f"    ☁ Uploaded to gs://{GCS_BUCKET_NAME}/{blob.name}")
 
-def generate_character_references(
-    image_api_key, character_designs: List[dict]
-) -> Dict[str, str]:
+
+def generate_character_references(image_api_key, character_designs: list[dict]) -> dict[str, str]:
     """
     Generate character reference images from designs.
 
@@ -63,9 +59,10 @@ def generate_character_references(
 
     return character_refs
 
+
 def generate_scene_videos(
-    image_api_key, veo_api_key, scenes: List[dict], character_refs: Dict[str, str]
-) -> List[Path]:
+    image_api_key, veo_api_key, scenes: list[dict], character_refs: dict[str, str]
+) -> list[Path]:
     """
     Generate videos for all scenes.
 
@@ -80,30 +77,26 @@ def generate_scene_videos(
 
     for scene in scenes:
         scene_num = scene["scene_number"]
-        print(
-            f"\n  Scene {scene_num}: {scene['scene_type']} ({scene['duration_seconds']}s)"
-        )
+        print(f"\n  Scene {scene_num}: {scene['scene_type']} ({scene['duration_seconds']}s)")
 
         # Generate start and end frames
-        print(f"    Generating start frame...")
+        print("    Generating start frame...")
         start_img = generate_image(image_api_key, scene["start_frame_prompt"])
 
-        print(f"    Generating end frame...")
+        print("    Generating end frame...")
         end_img = generate_image(image_api_key, scene["end_frame_prompt"])
 
         # Prepare reference images for this scene
         scene_ref_images = []
         if scene["reference_images"]:
-            print(
-                f"    Loading {len(scene['reference_images'])} character reference(s)..."
-            )
+            print(f"    Loading {len(scene['reference_images'])} character reference(s)...")
             for char_name in scene["reference_images"]:
                 ref_path = character_refs[char_name]
                 scene_ref_images.append(Path(ref_path).read_bytes())
                 print(f"      ✓ {char_name}")
 
         # Call VEO 3.1
-        print(f"    Generating video with VEO 3.1...")
+        print("    Generating video with VEO 3.1...")
         video_data = generate_video_veo(
             veo_api_key,
             prompt=scene["video_prompt"],
@@ -137,21 +130,20 @@ def generate_image(image_api_key, prompt: str) -> bytes:
         Image data as bytes
     """
 
-    client = genai.Client(api_key = image_api_key)
-    response = client.models.generate_content(
-        model="gemini-2.5-flash-image", contents=[prompt]
-    )
+    client = genai.Client(api_key=image_api_key)
+    response = client.models.generate_content(model="gemini-2.5-flash-image", contents=[prompt])
 
     # Access parts through the candidates
-    if hasattr(response, 'candidates') and response.candidates:
+    if hasattr(response, "candidates") and response.candidates:
         for part in response.candidates[0].content.parts:
             if part.text is not None:
                 print(part.text)
-            elif hasattr(part, 'inline_data') and part.inline_data is not None:
+            elif hasattr(part, "inline_data") and part.inline_data is not None:
                 # Access the raw bytes from inline_data
                 return part.inline_data.data
 
     raise ValueError("No image data found in response")
+
 
 def generate_video_veo(
     veo_api_key,
@@ -159,7 +151,7 @@ def generate_video_veo(
     start_frame: bytes,
     end_frame: bytes,
     duration: int,
-    reference_images: List[bytes],
+    reference_images: list[bytes],
 ) -> bytes:
     """
     Generate video using VEO 3.1.
@@ -178,15 +170,11 @@ def generate_video_veo(
     if reference_images:
         # CRITICAL: Must be exactly 8 seconds with references
         if duration != 8:
-            raise ValueError(
-                f"Duration must be 8s when using reference images (got {duration}s)"
-            )
+            raise ValueError(f"Duration must be 8s when using reference images (got {duration}s)")
 
         # Max 3 reference images
         if len(reference_images) > 3:
-            raise ValueError(
-                f"Max 3 reference images allowed (got {len(reference_images)})"
-            )
+            raise ValueError(f"Max 3 reference images allowed (got {len(reference_images)})")
 
     # Initialize client
     client = genai.Client(api_key=veo_api_key)
@@ -215,13 +203,13 @@ def generate_video_veo(
     )
 
     # Poll the operation status until the video is ready
-    print(f"      [VEO] Video generation started, polling for completion...")
+    print("      [VEO] Video generation started, polling for completion...")
     while not operation.done:
-        print(f"      [VEO] Waiting for video generation to complete...")
+        print("      [VEO] Waiting for video generation to complete...")
         time.sleep(10)
         operation = client.operations.get(operation)
 
-    print(f"      [VEO] Video generation complete!")
+    print("      [VEO] Video generation complete!")
 
     # Download the generated video
     generated_video = operation.response.generated_videos[0]
@@ -229,36 +217,45 @@ def generate_video_veo(
 
     # Return video bytes
     return generated_video.video.read()
-    
-def stitch_videos(video_paths: List[Path]) -> Path:
-        """
-        Stitch scene videos together.
 
-        Args:
-            video_paths: List of scene video paths
 
-        Returns:
-            Path to stitched video
-        """
-        import subprocess
+def stitch_videos(video_paths: list[Path]) -> Path:
+    """
+    Stitch scene videos together.
 
-        # Create concat file for ffmpeg
-        concat_file = OUTPUT_DIR / "concat.txt"
-        with open(concat_file, 'w') as f:
-            for video_path in video_paths:
-                f.write(f"file '{video_path.absolute()}'\n")
+    Args:
+        video_paths: List of scene video paths
 
-        # Stitch with ffmpeg
-        output_path = OUTPUT_DIR / "trailer_no_audio.mp4"
-        subprocess.run([
-            'ffmpeg', '-y',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', str(concat_file),
-            '-c', 'copy',
-            str(output_path)
-        ], check=True)
+    Returns:
+        Path to stitched video
+    """
+    import subprocess
 
-        upload_to_gcs(output_path, f"trailers/{output_path.name}")
+    # Create concat file for ffmpeg
+    concat_file = OUTPUT_DIR / "concat.txt"
+    with open(concat_file, "w") as f:
+        for video_path in video_paths:
+            f.write(f"file '{video_path.absolute()}'\n")
 
-        return output_path
+    # Stitch with ffmpeg
+    output_path = OUTPUT_DIR / "trailer_no_audio.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_file),
+            "-c",
+            "copy",
+            str(output_path),
+        ],
+        check=True,
+    )
+
+    upload_to_gcs(output_path, f"trailers/{output_path.name}")
+
+    return output_path

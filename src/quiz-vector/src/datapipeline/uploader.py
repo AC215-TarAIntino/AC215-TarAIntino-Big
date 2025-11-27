@@ -1,11 +1,15 @@
-import os, argparse
+import argparse
+import os
+import time
 from pathlib import Path
+
 from google.cloud import storage
 from tqdm import tqdm
-import time
+
 
 def log(msg: str):
     print(f"[STORE {time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+
 
 def upload_dir(local_dir: str, bucket_name: str, prefix: str = ""):
     local = Path(local_dir).expanduser().resolve()
@@ -24,6 +28,7 @@ def upload_dir(local_dir: str, bucket_name: str, prefix: str = ""):
         blob.upload_from_filename(str(p))
         log(f"UPLOADED {p} → gs://{bucket_name}/{blob_name}")
 
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--local_dir", required=True)
@@ -32,6 +37,7 @@ def main():
     args = ap.parse_args()
     assert args.bucket, "Set --bucket or GCS_BUCKET"
     upload_dir(args.local_dir, args.bucket, args.prefix)
+
 
 if __name__ == "__main__":
     main()

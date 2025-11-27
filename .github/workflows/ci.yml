@@ -1,0 +1,185 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+  # Linting and Code Quality
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black ruff
+
+      - name: Run ruff linter
+        run: |
+          ruff check src/ tests/
+
+      - name: Check code formatting with black
+        run: |
+          black --check src/ tests/ --exclude '/(\.git|\.venv|build|dist|node_modules)/'
+
+  # Frontend Tests
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    needs: lint
+
+    defaults:
+      run:
+        working-directory: src/frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript type-check
+        run: npm run type-check
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
+
+  # Backend Tests
+  test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Create necessary directories
+        run: |
+          mkdir -p src/quiz-vector/secrets
+          mkdir -p src/video-generator
+
+      - name: Create mock credentials
+        run: |
+          echo '{"type": "service_account"}' > src/quiz-vector/secrets/llm-service-account.json
+          echo "OPENROUTER_API_KEY=test_key" > src/screenplay-writer/.env
+          echo "OMDB_API_KEY=test_key" >> src/screenplay-writer/.env
+          echo "OPENROUTER_API_KEY=test_key" > src/scene-decomposer/.env
+          echo '{"project_api_key": "test_key"}' > src/video-generator/secret.json
+          echo '{"type": "service_account"}' > src/video-generator/gcp-credentials.json
+
+      - name: Build and start Docker services
+        run: |
+          docker-compose up -d --build
+          sleep 30
+
+      - name: Check service health
+        run: |
+          docker-compose ps
+          echo "=== Service Logs ==="
+          docker-compose logs
+
+      - name: Run all microservice tests
+        run: |
+          echo "=== Testing Quiz Service ==="
+          docker-compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v || true
+          echo "=== Testing Screenplay Writer ==="
+          docker-compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v || true
+          echo "=== Testing Scene Decomposer ==="
+          docker-compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v || true
+          echo "=== Testing Video Generator ==="
+          docker-compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing -v || true
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+      - name: Tear down services
+        if: always()
+        run: docker-compose down -v
+
+  # Detect which services changed (for future Docker builds)
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    needs: [test, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      quiz-vector: ${{ steps.filter.outputs.quiz-vector }}
+      screenplay-writer: ${{ steps.filter.outputs.screenplay-writer }}
+      scene-decomposer: ${{ steps.filter.outputs.scene-decomposer }}
+      video-generator: ${{ steps.filter.outputs.video-generator }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            quiz-vector:
+              - 'src/quiz-vector/**'
+            screenplay-writer:
+              - 'src/screenplay-writer/**'
+            scene-decomposer:
+              - 'src/scene-decomposer/**'
+            video-generator:
+              - 'src/video-generator/**'
+            frontend:
+              - 'src/frontend/**'
+
+  # Status Check (all jobs must pass)
+  status-check:
+    name: CI Status Check
+    runs-on: ubuntu-latest
+    needs: [lint, frontend, test]
+    if: always()
+
+    steps:
+      - name: Check all jobs
+        run: |
+          if [[ "${{ needs.lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend.result }}" == "failure" ]] || \
+             [[ "${{ needs.test.result }}" == "failure" ]]; then
+            echo "❌ One or more CI jobs failed"
+            exit 1
+          fi
+          echo "✅ All CI jobs passed!"

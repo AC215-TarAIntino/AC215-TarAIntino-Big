@@ -1,9 +1,8 @@
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
+
 import numpy as np
-from pathlib import Path
+import pytest
 from src.quiz_service.utils import _compute_and_save_prior_if_needed, topN_from_matrix
-from src.quiz_service.config import PRIOR_MEAN_PATH, PRIOR_COV_PATH
 
 
 class TestComputeAndSavePriorIfNeeded:
@@ -24,7 +23,9 @@ class TestComputeAndSavePriorIfNeeded:
     @patch("src.quiz_service.utils.get_collection")
     @patch("src.quiz_service.utils.np.save")
     @patch("src.quiz_service.utils.Path")
-    def test_compute_and_save_when_files_missing(self, mock_path_cls, mock_np_save, mock_get_collection):
+    def test_compute_and_save_when_files_missing(
+        self, mock_path_cls, mock_np_save, mock_get_collection
+    ):
         mock_mean_path = Mock()
         mock_mean_path.exists.return_value = False
         mock_cov_path = Mock()
@@ -79,7 +80,9 @@ class TestComputeAndSavePriorIfNeeded:
     @patch("src.quiz_service.utils.get_collection")
     @patch("src.quiz_service.utils.np.save")
     @patch("src.quiz_service.utils.Path")
-    def test_adds_regularization_to_covariance(self, mock_path_cls, mock_np_save, mock_get_collection):
+    def test_adds_regularization_to_covariance(
+        self, mock_path_cls, mock_np_save, mock_get_collection
+    ):
         mock_mean_path = Mock()
         mock_mean_path.exists.return_value = False
         mock_cov_path = Mock()
@@ -102,18 +105,13 @@ class TestComputeAndSavePriorIfNeeded:
 class TestTopNFromMatrix:
     def test_topn_basic(self):
         theta_hat = np.array([1.0, 0.0, 0.0])
-        X = np.array([
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [0.9, 0.1, 0.0]
-        ])
+        X = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.9, 0.1, 0.0]])
         ids = ["1", "2", "3", "4"]
         metas = [
             {"movieId": 1, "title": "Movie 1"},
             {"movieId": 2, "title": "Movie 2"},
             {"movieId": 3, "title": "Movie 3"},
-            {"movieId": 4, "title": "Movie 4"}
+            {"movieId": 4, "title": "Movie 4"},
         ]
 
         result = topN_from_matrix(theta_hat, X, ids, metas, N=2)
@@ -125,11 +123,7 @@ class TestTopNFromMatrix:
 
     def test_topn_returns_correct_count(self):
         theta_hat = np.array([1.0, 1.0])
-        X = np.array([
-            [1.0, 0.0],
-            [0.0, 1.0],
-            [1.0, 1.0]
-        ])
+        X = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
         ids = ["1", "2", "3"]
         metas = [{"title": "Movie 1"}, {"title": "Movie 2"}, {"title": "Movie 3"}]
 
@@ -204,11 +198,7 @@ class TestTopNFromMatrix:
 
     def test_topn_returns_scores_in_descending_order(self):
         theta_hat = np.array([1.0, 0.0, 0.0])
-        X = np.array([
-            [0.5, 0.5, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0]
-        ])
+        X = np.array([[0.5, 0.5, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
         ids = ["1", "2", "3"]
         metas = [{"title": f"Movie {i}"} for i in range(1, 4)]
 

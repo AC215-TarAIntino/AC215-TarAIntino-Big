@@ -1,7 +1,7 @@
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
-from src.datapipeline.uploader import log, upload_dir, main
+from src.datapipeline.uploader import log, main, upload_dir
 
 
 class TestLog:

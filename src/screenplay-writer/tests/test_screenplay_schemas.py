@@ -4,12 +4,8 @@ Tests for Pydantic schemas.
 
 import pytest
 from pydantic import ValidationError
-from movie_pipeline.schemas import (
-    MovieRequest,
-    CastMember,
-    GeneratedMovie,
-    MovieGenerationResponse
-)
+
+from movie_pipeline.schemas import CastMember, GeneratedMovie, MovieGenerationResponse, MovieRequest
 
 
 class TestMovieRequest:
@@ -23,10 +19,7 @@ class TestMovieRequest:
 
     def test_movie_request_with_model(self):
         """Test MovieRequest with optional model parameter."""
-        request = MovieRequest(
-            movie_names=["Inception"],
-            model="anthropic/claude-3.5-sonnet"
-        )
+        request = MovieRequest(movie_names=["Inception"], model="anthropic/claude-3.5-sonnet")
         assert request.movie_names == ["Inception"]
         assert request.model == "anthropic/claude-3.5-sonnet"
 
@@ -66,7 +59,7 @@ class TestCastMember:
             physical_description="A tall man in his 40s with sharp features",
             personality_traits=["brave", "intelligent", "determined"],
             acting_style="Method actor with intense presence",
-            role_description="Lead investigator solving a complex case"
+            role_description="Lead investigator solving a complex case",
         )
         assert cast.actor_name == "John Fictional"
         assert cast.character_name == "Detective Smith"
@@ -77,7 +70,7 @@ class TestCastMember:
         with pytest.raises(ValidationError):
             CastMember(
                 actor_name="John Fictional",
-                character_name="Detective Smith"
+                character_name="Detective Smith",
                 # Missing other required fields
             )
 
@@ -89,7 +82,7 @@ class TestCastMember:
             physical_description="A woman in her 30s",
             personality_traits=[],
             acting_style="Versatile character actor",
-            role_description="Supporting role as medical examiner"
+            role_description="Supporting role as medical examiner",
         )
         assert cast.personality_traits == []
 
@@ -115,7 +108,7 @@ class TestGeneratedMovie:
                     "physical_description": "Tall Asian man in his 40s with graying hair",
                     "personality_traits": ["brilliant", "obsessive"],
                     "acting_style": "Intense method acting",
-                    "role_description": "Lead physicist discovering time travel"
+                    "role_description": "Lead physicist discovering time travel",
                 }
             ],
             "runtime": "142 min",
@@ -126,7 +119,7 @@ class TestGeneratedMovie:
             "budget": "$80M",
             "themes": ["time", "identity", "consequences"],
             "visual_style": "Dark, moody cinematography with neon accents",
-            "target_audience": "Adults 25-45 who enjoy thoughtful sci-fi"
+            "target_audience": "Adults 25-45 who enjoy thoughtful sci-fi",
         }
 
     def test_valid_generated_movie(self):
@@ -167,13 +160,15 @@ class TestGeneratedMovie:
             movie_data["release_year"] = year
             with pytest.raises(ValidationError) as exc_info:
                 GeneratedMovie(**movie_data)
-            assert "greater_than_equal" in str(exc_info.value) or "less_than_equal" in str(exc_info.value)
+            assert "greater_than_equal" in str(exc_info.value) or "less_than_equal" in str(
+                exc_info.value
+            )
 
     def test_generated_movie_missing_required_fields(self):
         """Test that missing required fields raise validation error."""
         incomplete_data = {
             "title": "Test Movie",
-            "tagline": "A test"
+            "tagline": "A test",
             # Missing many required fields
         }
 
@@ -183,14 +178,16 @@ class TestGeneratedMovie:
     def test_generated_movie_multiple_cast_members(self):
         """Test GeneratedMovie with multiple cast members."""
         movie_data = self.get_valid_movie_data()
-        movie_data["cast"].append({
-            "actor_name": "Sarah Star",
-            "character_name": "Agent Murphy",
-            "physical_description": "Athletic woman in her 30s",
-            "personality_traits": ["determined", "tactical"],
-            "acting_style": "Physical performance specialist",
-            "role_description": "Government agent tracking the physicist"
-        })
+        movie_data["cast"].append(
+            {
+                "actor_name": "Sarah Star",
+                "character_name": "Agent Murphy",
+                "physical_description": "Athletic woman in her 30s",
+                "personality_traits": ["determined", "tactical"],
+                "acting_style": "Physical performance specialist",
+                "role_description": "Government agent tracking the physicist",
+            }
+        )
 
         movie = GeneratedMovie(**movie_data)
         assert len(movie.cast) == 2
@@ -210,14 +207,16 @@ class TestMovieGenerationResponse:
             "director_background": "Test background",
             "writers": ["Writer 1"],
             "writer_backgrounds": "Test",
-            "cast": [{
-                "actor_name": "Actor 1",
-                "character_name": "Character 1",
-                "physical_description": "Description",
-                "personality_traits": ["trait"],
-                "acting_style": "Style",
-                "role_description": "Role"
-            }],
+            "cast": [
+                {
+                    "actor_name": "Actor 1",
+                    "character_name": "Character 1",
+                    "physical_description": "Description",
+                    "personality_traits": ["trait"],
+                    "acting_style": "Style",
+                    "role_description": "Role",
+                }
+            ],
             "runtime": "120 min",
             "rating": "PG-13",
             "release_year": 2026,
@@ -226,7 +225,7 @@ class TestMovieGenerationResponse:
             "budget": "$100M",
             "themes": ["theme1"],
             "visual_style": "Style",
-            "target_audience": "Everyone"
+            "target_audience": "Everyone",
         }
 
         response = MovieGenerationResponse(
@@ -234,7 +233,7 @@ class TestMovieGenerationResponse:
             movie=GeneratedMovie(**movie_data),
             input_movies_found=2,
             input_movies_data=[{"Title": "Movie1"}, {"Title": "Movie2"}],
-            model_used="test-model"
+            model_used="test-model",
         )
 
         assert response.success is True
@@ -250,7 +249,7 @@ class TestMovieGenerationResponse:
             movie=None,
             input_movies_found=0,
             error="API key not configured",
-            model_used="test-model"
+            model_used="test-model",
         )
 
         assert response.success is False
@@ -260,10 +259,7 @@ class TestMovieGenerationResponse:
     def test_response_without_input_data(self):
         """Test response without input movie data."""
         response = MovieGenerationResponse(
-            success=True,
-            movie=None,
-            input_movies_found=2,
-            model_used="test-model"
+            success=True, movie=None, input_movies_found=2, model_used="test-model"
         )
 
         assert response.input_movies_data is None

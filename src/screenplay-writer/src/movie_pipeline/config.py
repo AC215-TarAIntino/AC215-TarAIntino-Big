@@ -2,8 +2,6 @@
 Configuration management for the movie pipeline.
 """
 
-import os
-from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,10 +9,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
     # OMDb API Configuration
@@ -27,8 +22,8 @@ class Settings(BaseSettings):
     openrouter_model: str = "google/gemini-2.0-flash-exp:free"
 
     # Optional: Site URL and name for OpenRouter (helps with ranking)
-    openrouter_site_url: Optional[str] = None
-    openrouter_site_name: Optional[str] = "Movie Pipeline"
+    openrouter_site_url: str | None = None
+    openrouter_site_name: str | None = "Movie Pipeline"
 
     # API Configuration
     api_host: str = "0.0.0.0"

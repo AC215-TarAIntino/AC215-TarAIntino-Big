@@ -47,6 +47,17 @@ The system works as follows:
 AC215-TarAIntino-Big/
 ├── .github/
 │   └── workflows/                  # CI/CD pipelines
+│       ├── ci.yml                  # Main CI pipeline (all checks)
+│       ├── backend-ci.yml          # Backend-specific CI
+│       └── frontend-ci.yml         # Frontend-specific CI
+├── .husky/
+│   └── pre-commit                  # Git pre-commit hooks
+├── hand-ins/                       # Project documentation & reports
+│   ├── diagrams/                   # Architecture diagrams
+│   └── previous reports/           # Historical documentation
+├── tests/                          # Root-level integration tests
+│   ├── test_end_to_end_trailer_generation.py
+│   └── TEST_COVERAGE_SUMMARY.md
 ├── src/                            # All microservices
 │   ├── quiz-vector/                # Quiz service and RAG system
 │   │   ├── src/
@@ -63,6 +74,7 @@ AC215-TarAIntino-Big/
 │   │   ├── tests/                  # Unit tests
 │   │   ├── secrets/                # GCS credentials
 │   │   ├── Dockerfile              # Container definition
+│   │   ├── pyproject.toml          # Service dependencies
 │   │   ├── TEST_COVERAGE_SUMMARY.md # Test coverage report
 │   │   └── README.md               # Quiz service documentation
 │   ├── screenplay-writer/          # Movie concept generation
@@ -76,6 +88,7 @@ AC215-TarAIntino-Big/
 │   │   ├── tests/                  # Unit tests
 │   │   ├── output/                 # Generated screenplays
 │   │   ├── Dockerfile              # Container definition
+│   │   ├── pyproject.toml          # Service dependencies
 │   │   ├── .env.example            # Environment template
 │   │   ├── TEST_COVERAGE_SUMMARY.md # Test coverage report
 │   │   └── README.md               # Screenplay service docs
@@ -90,40 +103,56 @@ AC215-TarAIntino-Big/
 │   │   ├── tests/                  # Unit tests
 │   │   ├── outputs/                # Generated breakdowns
 │   │   ├── Dockerfile              # Container definition
+│   │   ├── pyproject.toml          # Service dependencies
 │   │   ├── .env.example            # Environment template
 │   │   ├── TEST_COVERAGE_SUMMARY.md # Test coverage report
 │   │   └── README.md               # Scene decomposer docs
 │   ├── video-generator/            # Video generation service
 │   │   ├── app.py                  # FastAPI application
 │   │   ├── generate.py             # Video generation logic
-│   │   ├── test.py                 # Test utilities
 │   │   ├── tests/                  # Unit tests
 │   │   ├── output/                 # Generated videos
 │   │   │   ├── refs/               # Character references
 │   │   │   └── scenes/             # Generated scenes
 │   │   ├── Dockerfile              # Container definition
-│   │   ├── secrets.json            # Gemini API credentials
-│   │   ├── gcp-credentials.json    # GCS credentials
+│   │   ├── pyproject.toml          # Service dependencies
 │   │   └── TEST_COVERAGE_SUMMARY.md # Test coverage report
 │   └── frontend/                   # React frontend application
 │       ├── app/                    # Next.js app directory
+│       │   ├── api/                # API routes
+│       │   ├── generating/         # Generation status page
+│       │   └── result/             # Results page
 │       ├── components/             # React components
+│       │   ├── quiz/               # Quiz UI components
+│       │   ├── result/             # Result display components
+│       │   └── effects/            # Visual effects
+│       ├── lib/                    # Utilities and services
+│       │   ├── api/                # API clients
+│       │   ├── data/               # Static data
+│       │   └── utils/              # Helper functions
 │       ├── public/                 # Static assets
+│       ├── Dockerfile              # Container definition
+│       ├── package.json            # Node dependencies
 │       └── README.md               # Frontend documentation
+├── Makefile                        # Development automation
 ├── docker-compose.yml              # Service orchestration
 ├── pyproject.toml                  # Python dependencies and config
+├── watch.py                        # File watcher for auto-testing
+├── setup-git-hooks.sh              # Git hooks installation script
+├── monitor_pipeline.sh             # Pipeline monitoring utility
 ├── .env.example                    # Environment template
+├── .dockerignore                   # Docker ignore rules
 ├── .gitignore                      # Git ignore rules
 └── README.md                       # This file
 ```
 
-## Running the Project Locally
+## Quick Start
 
 ### Prerequisites
 
 - **Docker & Docker Compose** - For containerization
-- **Python 3.11+** - For running pipelines
-- **Node.js 20+** - For React frontend (optional)
+- **Python 3.11+** - For running pipelines and development tools
+- **Node.js 20+** - For React frontend
 - **Google Cloud SDK** - For GCS deployment
 - **API Keys:**
   - OpenRouter API key (for LLM services)
@@ -235,12 +264,6 @@ You will be able to see when the generation process is at in the terminal where 
 - Vector database integration with ChromaDB
 - More detailed information in `src/quiz-vector/README.md`
 
-**Endpoints:**
-- `POST /quiz/start` - Start new quiz session
-- `POST /quiz/answer` - Submit answer
-- `POST /recommend` - Get recommendations from taste vector
-- `GET /health` - Health check
-
 ### Screenplay Writer (:8080)
 **Movie concept generation service**
 
@@ -248,11 +271,6 @@ You will be able to see when the generation process is at in the terminal where 
 - Fetch movie metadata from OMDb API
 - Create detailed storylines and character descriptions
 - More detailed information in `src/screenplay-writer/README.md`
-
-**Endpoints:**
-- `POST /generate-movie` - Generate movie concept
-- `POST /fetch-movie-data` - Fetch movie data from OMDb
-- `GET /health` - Health check
 
 ### Scene Decomposer (:8001)
 **Trailer scene breakdown service**
@@ -262,11 +280,6 @@ You will be able to see when the generation process is at in the terminal where 
 - Optimize for visual storytelling
 - More detailed information in `src/scene-decomposer/README.md`
 
-**Endpoints:**
-- `POST /generate-trailer` - Generate trailer breakdown
-- `POST /analyze-movie` - Analyze movie structure
-- `GET /health` - Health check
-
 ### Video Generator (:8003)
 **AI-powered video generation**
 
@@ -275,12 +288,6 @@ You will be able to see when the generation process is at in the terminal where 
 - Stitch scenes into complete trailers
 - Upload results to Google Cloud Storage
 - More detailed information in `src/video-generator/README.md`
-
-**Endpoints:**
-- `POST /generate/character-references` - Generate character images
-- `POST /generate/scene-videos` - Generate scene videos
-- `POST /generate/trailer` - Full trailer generation
-- `GET /health` - Health check
 
 ### Frontend (:3000)
 **React-based user interface**
@@ -327,6 +334,140 @@ Comprehensive end-to-end tests covering the entire pipeline:
 ```bash
 docker-compose up -d
 docker run --rm --network host -v $(pwd)/tests:/tests taraintino-base:latest sh -c "pip install -q requests && python -m pytest /tests/test_end_to_end_trailer_generation.py -v"
+```
+
+## CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     GitHub Push/PR                          │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       ci.yml (Main)                         │
+│                    Runs on all changes                      │
+└─────────────────────────────────────────────────────────────┘
+        │                                           │
+        ▼                                           ▼
+┌──────────────────────┐              ┌──────────────────────┐
+│   Frontend Checks    │              │   Backend Checks     │
+├──────────────────────┤              ├──────────────────────┤
+│ • TypeScript Check   │              │ • Black Format       │
+│ • ESLint             │              │ • Ruff Lint          │
+│ • Build              │              │ • Pytest (Docker)    │
+└──────────────────────┘              └──────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│              Specialized Workflows (Optimized)              │
+├─────────────────────────────────────────────────────────────┤
+│  frontend-ci.yml          │       backend-ci.yml            │
+│  (frontend changes only)  │       (Python changes only)     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Workflows
+
+- **`ci.yml`** - Main CI pipeline that runs on all pushes and PRs
+  - Runs frontend checks (TypeScript, ESLint, build)
+  - Runs backend checks (black, ruff, pytest)
+  - Comprehensive status check
+
+- **`frontend-ci.yml`** - Specialized frontend pipeline
+  - Triggers only on frontend file changes
+  - TypeScript type-checking
+  - ESLint linting
+  - Build verification
+
+- **`backend-ci.yml`** - Specialized backend pipeline
+  - Triggers only on Python file changes
+  - Black formatting check
+  - Ruff linting
+  - Docker-based pytest for all microservices
+
+### CI Status
+
+All pull requests must pass CI checks before merging. The CI pipeline automatically:
+1. Formats code with black (check only)
+2. Lints code with ruff
+3. Runs all microservice tests in Docker containers
+4. Verifies frontend build and type-safety
+
+## Development Tools
+
+The project uses a comprehensive Makefile for development tasks. Run `make` or `make help` to see all available commands.
+
+### Quick Commands
+
+| Command | Description |
+|---------|-------------|
+| `make init` | Initialize project (check env, install deps, start services) |
+| `make check` | Run format + lint + test (comprehensive check before commits) |
+| `make up` | Start all Docker services |
+| `make down` | Stop all Docker services |
+| `make test` | Run all microservice tests |
+| `make help` | Show all available commands |
+
+### Code Quality
+
+| Command | Description |
+|---------|-------------|
+| `make format` | Format code with black |
+| `make format-check` | Check formatting without changes |
+| `make lint` | Lint code with ruff (check only) |
+| `make lint-fix` | Lint and auto-fix issues |
+
+### Testing
+
+| Command | Description |
+|---------|-------------|
+| `make test` | Run all microservice tests |
+| `make test-cov` | Run tests with HTML coverage report |
+| `make test-quiz` | Test quiz-vector only |
+| `make test-screenplay` | Test screenplay-writer only |
+| `make test-scene` | Test scene-decomposer only |
+| `make test-video` | Test video-generator only |
+| `make test-e2e` | End-to-end integration tests |
+
+### Docker Management
+
+| Command | Description |
+|---------|-------------|
+| `make up` | Start all services |
+| `make down` | Stop all services |
+| `make restart` | Restart all services |
+| `make ps` | Show running containers |
+| `make logs` | Show logs from all services |
+| `make logs-quiz` | Show quiz-service logs |
+| `make clean-volumes` | Remove Docker volumes (deletes data!) |
+
+### Automated Checks on File Changes
+
+**Git Pre-Commit Hook (for teams)**
+
+Automatically run checks before every commit to ensure code is always formatted and linted:
+
+```bash
+./setup-git-hooks.sh
+```
+
+### Development Workflow
+
+```bash
+# 1. Start development
+make up                    # Start services
+make watch                 # Auto-run checks on file changes
+
+# 2. Make changes, tests run automatically
+
+# 3. Before committing
+make check                 # Ensure everything passes
+
+# 4. Commit (pre-commit hook runs if installed)
+git add .
+git commit -m "Your message"
 ```
 
 ## Happy Trailer Generating!

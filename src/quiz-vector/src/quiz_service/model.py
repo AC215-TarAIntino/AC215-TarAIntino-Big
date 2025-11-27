@@ -1,25 +1,26 @@
 # quiz_service/model.py
 
+
 import numpy as np
-from typing import List, Tuple, Dict
+
 
 class FullCovarianceTasteModel:
     def __init__(
         self,
         prior_mean: np.ndarray,
         prior_cov: np.ndarray,
-        tagid2col: Dict[int, int],
-        quiz_tags: List[Tuple[int, str]],
+        tagid2col: dict[int, int],
+        quiz_tags: list[tuple[int, str]],
         sigma2: float = 0.05,
         target_questions: int | None = None,
     ):
         self.D = prior_mean.shape[0]
         self.theta_hat = prior_mean.astype(np.float64).copy()
-        self.Sigma     = prior_cov.astype(np.float64).copy()
-        self.sigma2    = float(sigma2)
+        self.Sigma = prior_cov.astype(np.float64).copy()
+        self.sigma2 = float(sigma2)
 
         quiz_cols, quiz_texts, quiz_ids = [], [], []
-        for (tid, txt) in quiz_tags:
+        for tid, txt in quiz_tags:
             if tid in tagid2col:
                 quiz_cols.append(tagid2col[tid])
                 quiz_texts.append(txt)
@@ -28,10 +29,10 @@ class FullCovarianceTasteModel:
         if not quiz_cols:
             raise ValueError("No quiz tags mapped into embedding space.")
 
-        self.quiz_cols  = np.array(quiz_cols, dtype=int)
+        self.quiz_cols = np.array(quiz_cols, dtype=int)
         self.quiz_texts = list(quiz_texts)
-        self.quiz_ids   = list(quiz_ids)
-        self.K          = len(self.quiz_cols)
+        self.quiz_ids = list(quiz_ids)
+        self.K = len(self.quiz_cols)
         self.asked_mask = np.zeros(self.K, dtype=bool)
         self.target = int(target_questions) if target_questions is not None else self.K
 
@@ -60,8 +61,8 @@ class FullCovarianceTasteModel:
         y = max(0.0, min(1.0, float(answer_1to10) / 10.0))
 
         theta_j = self.theta_hat[j]
-        v_jj    = self.Sigma[j, j]
-        denom   = v_jj + self.sigma2
+        v_jj = self.Sigma[j, j]
+        denom = v_jj + self.sigma2
 
         k_vec = self.Sigma[:, j] / denom
         self.theta_hat = self.theta_hat + k_vec * (y - theta_j)
@@ -78,5 +79,3 @@ class FullCovarianceTasteModel:
 
     def is_complete(self) -> bool:
         return int(self.asked_mask.sum()) >= int(self.target)
-
-    

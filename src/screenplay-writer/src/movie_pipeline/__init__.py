@@ -9,6 +9,6 @@ __version__ = "0.1.0"
 
 from .movie_fetcher import MovieFetcher
 from .movie_generator import MovieGenerator
-from .schemas import MovieRequest, GeneratedMovie
+from .schemas import GeneratedMovie, MovieRequest
 
 __all__ = ["MovieFetcher", "MovieGenerator", "MovieRequest", "GeneratedMovie"]

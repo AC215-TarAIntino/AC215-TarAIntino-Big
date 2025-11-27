@@ -10,9 +10,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from trailer_generator.schemas import (
     CharacterDesign,
-    TrailerScene,
-    TrailerBreakdown,
     TechnicalSpecs,
+    TrailerBreakdown,
+    TrailerScene,
 )
 
 
@@ -22,7 +22,7 @@ def test_character_design():
         character_name="Dr_Sarah_Chen",
         image_generation_prompt="A woman in her early 30s with short auburn hair and green eyes, standing on a pure white background. Athletic build, wearing casual tech company attire. Hyper-realistic style. Neutral pose facing camera.",
         brief_identifier="woman, 30s, auburn hair",
-        visual_style="hyper-realistic"
+        visual_style="hyper-realistic",
     )
 
     assert design.character_name == "Dr_Sarah_Chen"
@@ -40,13 +40,13 @@ def test_trailer_scene_with_references():
         end_frame_prompt="Close-up of Dr. Chen's face as realization dawns...",
         video_prompt="The camera dollies forward toward Dr. Chen (woman, 30s, auburn hair) as she discovers the anomaly...",
         reference_images=["Dr_Sarah_Chen"],
-        characters_present=["Sarah Chen"]
+        characters_present=["Sarah Chen"],
     )
 
     assert scene.duration_seconds == 8
     assert len(scene.reference_images) == 1
     assert scene.reference_images[0] == "Dr_Sarah_Chen"
-    assert not hasattr(scene, 'uses_previous_end_frame')  # Old field removed
+    assert not hasattr(scene, "uses_previous_end_frame")  # Old field removed
     print("✅ TrailerScene with reference_images works")
 
 
@@ -60,7 +60,7 @@ def test_trailer_scene_without_references():
         end_frame_prompt="The camera has descended to street level...",
         video_prompt="Sweeping crane shot from high altitude down to street level...",
         reference_images=[],
-        characters_present=[]
+        characters_present=[],
     )
 
     assert scene.duration_seconds == 6
@@ -78,7 +78,7 @@ def test_trailer_breakdown():
                 character_name="Dr_Sarah_Chen",
                 image_generation_prompt="A woman in her early 30s with short auburn hair, standing on a pure white background...",
                 brief_identifier="woman, 30s, auburn hair",
-                visual_style="hyper-realistic"
+                visual_style="hyper-realistic",
             )
         ],
         scenes=[
@@ -90,7 +90,7 @@ def test_trailer_breakdown():
                 end_frame_prompt="Test end frame...",
                 video_prompt="Test video prompt...",
                 reference_images=["Dr_Sarah_Chen"],
-                characters_present=["Sarah Chen"]
+                characters_present=["Sarah Chen"],
             ),
             TrailerScene(
                 scene_number=2,
@@ -100,16 +100,16 @@ def test_trailer_breakdown():
                 end_frame_prompt="Test end frame...",
                 video_prompt="Test video prompt...",
                 reference_images=[],
-                characters_present=[]
-            )
+                characters_present=[],
+            ),
         ],
         technical_specs=TechnicalSpecs(
             color_grading="Test grading",
             aspect_ratio="16:9",
             visual_style="Test style",
-            sound_design_notes="Test sound"
+            sound_design_notes="Test sound",
         ),
-        character_appearance_map={"Sarah Chen": [1]}
+        character_appearance_map={"Sarah Chen": [1]},
     )
 
     assert len(breakdown.character_designs) == 1
@@ -124,7 +124,7 @@ def test_validation_constraints():
     """Test that validation would catch errors."""
     # Test max 3 references
     try:
-        scene = TrailerScene(
+        TrailerScene(
             scene_number=1,
             duration_seconds=8,
             scene_type="test",
@@ -132,7 +132,7 @@ def test_validation_constraints():
             end_frame_prompt="test",
             video_prompt="test",
             reference_images=["char1", "char2", "char3", "char4"],  # Too many!
-            characters_present=[]
+            characters_present=[],
         )
         # Schema allows this, validation catches it later
         print("⚠️  Schema allows 4+ references (validation catches this)")
@@ -165,5 +165,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ TEST FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

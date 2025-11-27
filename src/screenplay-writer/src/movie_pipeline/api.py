@@ -2,15 +2,16 @@
 FastAPI application for the movie pipeline.
 """
 
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import logging
 
 from .config import settings
-from .schemas import MovieRequest, MovieGenerationResponse, GeneratedMovie
 from .movie_fetcher import MovieFetcher, MovieFetcherError
 from .movie_generator import MovieGenerator, MovieGeneratorError
+from .schemas import MovieGenerationResponse, MovieRequest
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +32,7 @@ app = FastAPI(
     title="Movie Pipeline API",
     description="Generate movie concepts inspired by existing movies using OMDb and OpenRouter",
     version="0.1.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -47,11 +48,7 @@ app.add_middleware(
 @app.get("/")
 async def root():
     """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "service": "Movie Pipeline API",
-        "version": "0.1.0"
-    }
+    return {"status": "healthy", "service": "Movie Pipeline API", "version": "0.1.0"}
 
 
 @app.get("/health")
@@ -61,7 +58,7 @@ async def health_check():
         "status": "healthy",
         "omdb_configured": bool(settings.omdb_api_key),
         "openrouter_configured": bool(settings.openrouter_api_key),
-        "model": settings.openrouter_model
+        "model": settings.openrouter_model,
     }
 
 
@@ -89,8 +86,7 @@ async def generate_movie(request: MovieRequest):
 
         if not movies:
             raise HTTPException(
-                status_code=404,
-                detail=f"Movies not found in OMDb: {request.movie_names}"
+                status_code=404, detail=f"Movies not found in OMDb: {request.movie_names}"
             )
 
         logger.info(f"Found {len(movies)} movies out of {len(request.movie_names)} requested")
@@ -98,8 +94,7 @@ async def generate_movie(request: MovieRequest):
         # Generate new movie concept
         logger.info("Generating movie concept with LLM...")
         generated_movie = generator.generate_from_movies(
-            movies=movies,
-            model_override=request.model
+            movies=movies, model_override=request.model
         )
 
         logger.info(f"Successfully generated movie: {generated_movie.title}")
@@ -110,7 +105,7 @@ async def generate_movie(request: MovieRequest):
             movie=generated_movie,
             input_movies_found=len(movies),
             input_movies_data=movies,
-            model_used=request.model or settings.openrouter_model
+            model_used=request.model or settings.openrouter_model,
         )
 
     except HTTPException:
@@ -119,21 +114,21 @@ async def generate_movie(request: MovieRequest):
 
     except MovieFetcherError as e:
         logger.error(f"Movie fetcher error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch movie data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch movie data: {str(e)}") from e
 
     except MovieGeneratorError as e:
         logger.error(f"Movie generator error: {e}")
         return MovieGenerationResponse(
             success=False,
             movie=None,
-            input_movies_found=len(movies) if 'movies' in locals() else 0,
+            input_movies_found=len(movies) if "movies" in locals() else 0,
             error=str(e),
-            model_used=request.model or settings.openrouter_model
+            model_used=request.model or settings.openrouter_model,
         )
 
     except Exception as e:
         logger.error(f"Unexpected error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}") from e
 
 
 @app.post("/fetch-movie-data")
@@ -155,23 +150,16 @@ async def fetch_movie_data(movie_names: list[str]):
         fetcher = MovieFetcher()
         movies = fetcher.fetch_multiple_movies(movie_names)
 
-        return {
-            "success": True,
-            "movies_found": len(movies),
-            "movies": movies
-        }
+        return {"success": True, "movies_found": len(movies), "movies": movies}
 
     except Exception as e:
         logger.error(f"Error fetching movies: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "movie_pipeline.api:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=True
+        "movie_pipeline.api:app", host=settings.api_host, port=settings.api_port, reload=True
     )

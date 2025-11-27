@@ -2,8 +2,6 @@
 Tests for the configuration module.
 """
 
-import os
-import pytest
 from movie_pipeline.config import Settings
 
 
@@ -68,8 +66,6 @@ def test_settings_case_insensitive(monkeypatch):
 
 def test_settings_immutable():
     """Test that settings uses the correct Pydantic config."""
-    settings = Settings()
-
     # Should have the model_config attribute
-    assert hasattr(Settings, 'model_config')
-    assert 'env_file' in Settings.model_config
+    assert hasattr(Settings, "model_config")
+    assert "env_file" in Settings.model_config

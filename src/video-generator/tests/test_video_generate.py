@@ -5,22 +5,22 @@ Tests all video generation functions with proper mocking.
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch, mock_open, call
+from unittest.mock import MagicMock, mock_open, patch
+
 import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from generate import (
-    upload_to_gcs,
-    generate_character_references,
-    generate_scene_videos,
-    generate_image,
-    generate_video_veo,
-    stitch_videos,
-    OUTPUT_DIR,
     GCS_BUCKET_NAME,
     GCS_PREFIX,
+    generate_character_references,
+    generate_image,
+    generate_scene_videos,
+    generate_video_veo,
+    stitch_videos,
+    upload_to_gcs,
 )
 
 
@@ -103,8 +103,7 @@ class TestGenerateImage:
         assert result == b"fake_image_data"
         mock_genai_client.assert_called_once_with(api_key="fake_api_key")
         mock_client.models.generate_content.assert_called_once_with(
-            model="gemini-2.5-flash-image",
-            contents=["test prompt"]
+            model="gemini-2.5-flash-image", contents=["test prompt"]
         )
 
     @patch("generate.genai.Client")
@@ -287,8 +286,7 @@ class TestGenerateCharacterReferences:
         ]
 
         # Mock Path operations
-        with patch("generate.Path.mkdir"), \
-             patch("generate.Path.write_bytes") as mock_write:
+        with patch("generate.Path.mkdir"), patch("generate.Path.write_bytes"):
 
             result = generate_character_references("fake_key", character_designs)
 
@@ -313,8 +311,7 @@ class TestGenerateCharacterReferences:
         ]
 
         # Mock Path operations
-        with patch("generate.Path.mkdir"), \
-             patch("generate.Path.write_bytes"):
+        with patch("generate.Path.mkdir"), patch("generate.Path.write_bytes"):
 
             result = generate_character_references("fake_key", character_designs)
 
@@ -353,8 +350,7 @@ class TestGenerateSceneVideos:
         ]
 
         # Mock Path operations
-        with patch("generate.Path.mkdir"), \
-             patch("generate.Path.write_bytes"):
+        with patch("generate.Path.mkdir"), patch("generate.Path.write_bytes"):
 
             result = generate_scene_videos("img_key", "veo_key", scenes, {})
 
@@ -392,9 +388,11 @@ class TestGenerateSceneVideos:
         }
 
         # Mock Path operations
-        with patch("generate.Path.mkdir"), \
-             patch("generate.Path.write_bytes"), \
-             patch("generate.Path.read_bytes", return_value=b"ref_image_data"):
+        with (
+            patch("generate.Path.mkdir"),
+            patch("generate.Path.write_bytes"),
+            patch("generate.Path.read_bytes", return_value=b"ref_image_data"),
+        ):
 
             result = generate_scene_videos("img_key", "veo_key", scenes, character_refs)
 
@@ -409,7 +407,9 @@ class TestGenerateSceneVideos:
     @patch("generate.generate_video_veo")
     @patch("generate.generate_image")
     @patch("generate.OUTPUT_DIR", Path("/fake/output"))
-    def test_generate_scene_videos_multiple_scenes(self, mock_gen_image, mock_gen_video, mock_upload_gcs):
+    def test_generate_scene_videos_multiple_scenes(
+        self, mock_gen_image, mock_gen_video, mock_upload_gcs
+    ):
         """Test generating multiple scene videos."""
         # Setup
         mock_gen_image.return_value = b"fake_image_data"
@@ -437,8 +437,7 @@ class TestGenerateSceneVideos:
         ]
 
         # Mock Path operations
-        with patch("generate.Path.mkdir"), \
-             patch("generate.Path.write_bytes"):
+        with patch("generate.Path.mkdir"), patch("generate.Path.write_bytes"):
 
             result = generate_scene_videos("img_key", "veo_key", scenes, {})
 

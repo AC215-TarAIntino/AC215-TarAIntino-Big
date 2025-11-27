@@ -1,5 +1,6 @@
-import pytest
 import numpy as np
+import pytest
+
 from quiz_service.model import FullCovarianceTasteModel
 
 
@@ -15,13 +16,7 @@ def sample_prior():
 @pytest.fixture
 def sample_tags():
     """Create sample quiz tags."""
-    return [
-        (0, "funny"),
-        (1, "dark"),
-        (2, "romantic"),
-        (3, "action"),
-        (4, "drama")
-    ]
+    return [(0, "funny"), (1, "dark"), (2, "romantic"), (3, "action"), (4, "drama")]
 
 
 @pytest.fixture
@@ -38,7 +33,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         assert model.D == 10
@@ -47,14 +42,16 @@ class TestFullCovarianceTasteModel:
         assert len(model.quiz_texts) == 5
         assert model.quiz_texts[0] == "funny"
 
-    def test_model_initialization_with_target_questions(self, sample_prior, sample_tags, sample_tagid2col):
+    def test_model_initialization_with_target_questions(
+        self, sample_prior, sample_tags, sample_tagid2col
+    ):
         prior_mean, prior_cov = sample_prior
         model = FullCovarianceTasteModel(
             prior_mean=prior_mean,
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            target_questions=3
+            target_questions=3,
         )
 
         assert model.target == 3
@@ -66,7 +63,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            target_questions=0  # Should clamp to 1
+            target_questions=0,  # Should clamp to 1
         )
 
         assert model.target == 1
@@ -78,7 +75,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            target_questions=100  # Should clamp to K=5
+            target_questions=100,  # Should clamp to K=5
         )
 
         assert model.target == 5
@@ -94,7 +91,7 @@ class TestFullCovarianceTasteModel:
                 prior_mean=prior_mean,
                 prior_cov=prior_cov,
                 tagid2col=tagid2col,
-                quiz_tags=invalid_tags
+                quiz_tags=invalid_tags,
             )
 
     def test_pick_next_quiz_tag_initial(self, sample_prior, sample_tags, sample_tagid2col):
@@ -108,7 +105,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         # Should pick the tag with highest variance (tag 2)
@@ -126,7 +123,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         # Mark first tag as asked
@@ -143,7 +140,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         payload = model.current_question_payload(0)
@@ -159,7 +156,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         # Store initial state
@@ -174,7 +171,7 @@ class TestFullCovarianceTasteModel:
         assert not np.allclose(model.Sigma, initial_cov)
 
         # Verify the tag was marked as asked
-        assert model.asked_mask[0] == True
+        assert model.asked_mask[0]
 
     def test_update_with_answer_clamps_rating(self, sample_prior, sample_tags, sample_tagid2col):
         prior_mean, prior_cov = sample_prior
@@ -183,15 +180,15 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         # Test with out-of-range values
         model.update_with_answer(0, 15.0)  # Should clamp to 10
-        assert model.asked_mask[0] == True
+        assert model.asked_mask[0]
 
         model.update_with_answer(1, -5.0)  # Should clamp to 0
-        assert model.asked_mask[1] == True
+        assert model.asked_mask[1]
 
     def test_update_preserves_symmetry(self, sample_prior, sample_tags, sample_tagid2col):
         prior_mean, prior_cov = sample_prior
@@ -200,7 +197,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         model.update_with_answer(0, 7.0)
@@ -215,7 +212,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         taste_vec = model.export_taste_vector()
@@ -235,7 +232,7 @@ class TestFullCovarianceTasteModel:
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
             sigma2=0.05,
-            target_questions=3
+            target_questions=3,
         )
 
         status = model.quiz_status()
@@ -257,18 +254,18 @@ class TestFullCovarianceTasteModel:
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
             sigma2=0.05,
-            target_questions=2
+            target_questions=2,
         )
 
-        assert model.is_complete() == False
+        assert not model.is_complete()
 
         # Answer first question
         model.update_with_answer(0, 7.0)
-        assert model.is_complete() == False
+        assert not model.is_complete()
 
         # Answer second question
         model.update_with_answer(1, 8.0)
-        assert model.is_complete() == True
+        assert model.is_complete()
 
     def test_multiple_updates_sequential(self, sample_prior, sample_tags, sample_tagid2col):
         prior_mean, prior_cov = sample_prior
@@ -277,13 +274,13 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         # Simulate a full quiz session
         for i in range(3):
             k = model.pick_next_quiz_tag()
-            payload = model.current_question_payload(k)
+            model.current_question_payload(k)
             model.update_with_answer(k, float(5 + i))
 
         # Check that 3 questions were asked
@@ -299,7 +296,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=sample_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         # Get initial variance for tag 0
@@ -321,7 +318,7 @@ class TestFullCovarianceTasteModel:
             (0, "valid1"),
             (1, "valid2"),
             (100, "invalid1"),  # Not in tagid2col
-            (2, "valid3")
+            (2, "valid3"),
         ]
 
         model = FullCovarianceTasteModel(
@@ -329,7 +326,7 @@ class TestFullCovarianceTasteModel:
             prior_cov=prior_cov,
             tagid2col=sample_tagid2col,
             quiz_tags=mixed_tags,
-            sigma2=0.05
+            sigma2=0.05,
         )
 
         # Should only have 3 valid tags

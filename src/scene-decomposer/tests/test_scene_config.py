@@ -5,8 +5,9 @@ Comprehensive tests for configuration management.
 import os
 import sys
 from pathlib import Path
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -39,15 +40,18 @@ class TestSettings:
 
     def test_settings_with_environment_variables(self):
         """Test that settings can be loaded from environment variables."""
-        with patch.dict(os.environ, {
-            "OPENROUTER_API_KEY": "test-api-key-123",
-            "OPENROUTER_MODEL": "google/gemini-2.0-flash",
-            "API_PORT": "9000",
-            "DEFAULT_TRAILER_DURATION": "45",
-            "INCLUDE_NARRATION": "false",
-            "LLM_TEMPERATURE": "0.5",
-            "LLM_MAX_TOKENS": "8000"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "OPENROUTER_API_KEY": "test-api-key-123",
+                "OPENROUTER_MODEL": "google/gemini-2.0-flash",
+                "API_PORT": "9000",
+                "DEFAULT_TRAILER_DURATION": "45",
+                "INCLUDE_NARRATION": "false",
+                "LLM_TEMPERATURE": "0.5",
+                "LLM_MAX_TOKENS": "8000",
+            },
+        ):
             test_settings = Settings()
 
             assert test_settings.api_port == 9000
@@ -58,10 +62,13 @@ class TestSettings:
 
     def test_extra_env_vars_ignored(self):
         """Test that extra environment variables are ignored."""
-        with patch.dict(os.environ, {
-            "SOME_RANDOM_VAR": "should-be-ignored",
-            "ANOTHER_RANDOM_VAR": "also-ignored",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "SOME_RANDOM_VAR": "should-be-ignored",
+                "ANOTHER_RANDOM_VAR": "also-ignored",
+            },
+        ):
             # Should not raise an error
             test_settings = Settings()
             assert not hasattr(test_settings, "some_random_var")
@@ -74,28 +81,29 @@ class TestSettings:
 
     def test_openrouter_base_url_customization(self):
         """Test that OpenRouter base URL can be customized."""
-        with patch.dict(os.environ, {
-            "OPENROUTER_BASE_URL": "https://custom-openrouter.example.com/v1"
-        }):
+        with patch.dict(
+            os.environ, {"OPENROUTER_BASE_URL": "https://custom-openrouter.example.com/v1"}
+        ):
             test_settings = Settings()
             assert test_settings.openrouter_base_url == "https://custom-openrouter.example.com/v1"
 
     def test_api_host_customization(self):
         """Test that API host can be customized."""
-        with patch.dict(os.environ, {
-            "API_HOST": "localhost"
-        }):
+        with patch.dict(os.environ, {"API_HOST": "localhost"}):
             test_settings = Settings()
             assert test_settings.api_host == "localhost"
 
     def test_numeric_type_conversion(self):
         """Test that numeric values are properly converted from strings."""
-        with patch.dict(os.environ, {
-            "API_PORT": "8080",
-            "DEFAULT_TRAILER_DURATION": "30",
-            "LLM_TEMPERATURE": "0.9",
-            "LLM_MAX_TOKENS": "15000"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "API_PORT": "8080",
+                "DEFAULT_TRAILER_DURATION": "30",
+                "LLM_TEMPERATURE": "0.9",
+                "LLM_MAX_TOKENS": "15000",
+            },
+        ):
             test_settings = Settings()
 
             # Check types
