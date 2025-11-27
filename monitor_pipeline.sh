@@ -38,8 +38,10 @@ print_status() {
     esac
 }
 
-# Monitor logs in real-time
-docker-compose logs -f --tail=0 frontend screenplay-writer scene-decomposer video-generator 2>&1 | while read line; do
+# Monitor logs in real-time (only NEW logs from now on)
+echo "Waiting for new pipeline activity..."
+echo ""
+docker-compose logs -f --tail=0 frontend quiz-service screenplay-writer scene-decomposer video-generator 2>&1 | while read line; do
     # Parse different log types
     if echo "$line" | grep -q "Starting video generation"; then
         SESSION_ID=$(echo "$line" | sed -n 's/.*\[\([0-9a-f-]*\)\].*/\1/p')
@@ -67,14 +69,55 @@ docker-compose logs -f --tail=0 frontend screenplay-writer scene-decomposer vide
         print_status "SCENE-DECOMPOSER" "success" "Trailer ready: $SCENES"
 
     elif echo "$line" | grep -q "Starting video generation"; then
-        print_status "VIDEO-GENERATOR" "processing" "Generating AI video (15-20 min)..."
+        print_status "VIDEO-GENERATOR" "processing" "Starting video generation pipeline..."
+
+    # Character reference generation
+    elif echo "$line" | grep -q "\[.*\] Generating .*\.\.\."; then
+        CHAR=$(echo "$line" | sed -n 's/.*Generating \(.*\)\.\.\./\1/p')
+        print_status "VIDEO-GEN" "processing" "Creating character reference: $CHAR"
+
+    # Scene video generation
+    elif echo "$line" | grep -q "Scene [0-9]*:"; then
+        SCENE_INFO=$(echo "$line" | sed -n 's/.*Scene \([0-9]*\): \(.*\)/Scene \1: \2/p')
+        print_status "VIDEO-GEN" "processing" "Starting $SCENE_INFO"
+
+    elif echo "$line" | grep -q "Generating start frame"; then
+        print_status "VIDEO-GEN" "processing" "  └─ Generating start frame..."
+
+    elif echo "$line" | grep -q "Generating end frame"; then
+        print_status "VIDEO-GEN" "processing" "  └─ Generating end frame..."
+
+    elif echo "$line" | grep -q "Generating video with VEO"; then
+        print_status "VIDEO-GEN" "processing" "  └─ VEO 3.1 generating video (2-3 min)..."
+
+    elif echo "$line" | grep -q "\[VEO 3.1\] Generating.*video"; then
+        DURATION=$(echo "$line" | sed -n 's/.*Generating \([0-9]*\)s video.*/\1/p')
+        print_status "VIDEO-GEN" "processing" "  └─ VEO started ${DURATION}s video generation..."
+
+    elif echo "$line" | grep -q "\[VEO\] Video generation started"; then
+        print_status "VIDEO-GEN" "processing" "  └─ Polling VEO for completion..."
+
+    elif echo "$line" | grep -q "\[VEO\] Waiting for video generation"; then
+        # Show occasional polling updates (don't spam)
+        :
+
+    elif echo "$line" | grep -q "\[VEO\] Video generation complete"; then
+        print_status "VIDEO-GEN" "success" "  └─ Scene video ready!"
+
+    elif echo "$line" | grep -q "☁ Uploaded to gs://"; then
+        FILE=$(echo "$line" | sed -n 's/.*gs:\/\/[^\/]*\/.*\/\(.*\)/\1/p')
+        print_status "VIDEO-GEN" "success" "  └─ Uploaded: $FILE"
 
     elif echo "$line" | grep -q "Video generation complete"; then
-        print_status "VIDEO-GENERATOR" "success" "Video ready!"
+        print_status "VIDEO-GENERATOR" "success" "All scenes generated!"
 
     elif echo "$line" | grep -q "GCS URL:"; then
         GCS=$(echo "$line" | sed 's/.*GCS URL: //')
-        print_status "VIDEO-GENERATOR" "success" "Uploaded: $GCS"
+        print_status "VIDEO-GENERATOR" "success" "Final video: $GCS"
+
+    elif echo "$line" | grep -q "Public URL:"; then
+        PUBLIC=$(echo "$line" | sed 's/.*Public URL: //')
+        print_status "VIDEO-GENERATOR" "success" "🎬 WATCH HERE: $PUBLIC"
 
     elif echo "$line" | grep -qi "error\|failed"; then
         ERROR=$(echo "$line" | sed 's/^.*ERROR://')

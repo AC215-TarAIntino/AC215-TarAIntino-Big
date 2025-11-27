@@ -10,7 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONPATH="/app"
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends build-essential curl \
+ && apt-get install -y --no-install-recommends build-essential curl ffmpeg \
  && rm -rf /var/lib/apt/lists/* \
  && pip install -U pip uv
 

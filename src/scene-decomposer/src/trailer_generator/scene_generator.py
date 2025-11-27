@@ -75,8 +75,10 @@ class SceneGenerator:
         character_designs_context = analyzer.format_character_designs_for_llm()
 
         # Calculate recommended number of scenes
-        # TEMPORARY: Reduced to 2 scenes for quota management
+        # TESTING MODE: Only 2 scenes of 8 seconds each for quick/cheap testing
+        # Note: Veo 3.1 REQUIRES 8 seconds when using reference images for character consistency
         num_scenes = "2"
+        scene_duration = "8"  # 8 seconds per scene (required for reference images)
 
         # Original logic (commented out for now):
         # if target_duration <= 25:
@@ -120,7 +122,7 @@ Before creating scenes, generate character designs for the top 4 main characters
 
 ### PHASE 2: SCENE GENERATION
 
-Create a trailer breakdown with {num_scenes} scenes. **CRITICAL**: Each scene MUST be at least 4 seconds and at most 10 seconds. If using reference_images, MUST be exactly 8 seconds. Total ~{target_duration} seconds.
+Create a trailer breakdown with EXACTLY {num_scenes} scenes. **CRITICAL FOR TESTING**: Each scene MUST be EXACTLY {scene_duration} seconds (for quick/cheap testing). No reference_images will be used.
 
 ## ⚠️ VEO 3.1 REFERENCE IMAGES SYSTEM
 
@@ -211,7 +213,7 @@ Classic trailer flow (adapt to story):
 
 {{
   "movie_title": "{movie.title}",
-  "total_duration": {target_duration},
+  "total_duration": 16,  // {num_scenes} scenes × {scene_duration} seconds each
   "character_designs": [
     {{
       "character_name": "Dr_Elara_Vance",
@@ -229,7 +231,7 @@ Classic trailer flow (adapt to story):
   "scenes": [
     {{
       "scene_number": 1,
-      "duration_seconds": 8,
+      "duration_seconds": {scene_duration},
       "scene_type": "character_introduction",
       "start_frame_prompt": "SELF-CONTAINED 4-5 sentence description. Characters identified as 'Dr. Vance (slender woman, late 30s, dark hair)'...",
       "end_frame_prompt": "SELF-CONTAINED 4-5 sentence description with COMPLETE context...",
@@ -240,7 +242,7 @@ Classic trailer flow (adapt to story):
     }},
     {{
       "scene_number": 2,
-      "duration_seconds": 6,  // MUST be 4-10 seconds (8 if reference_images is not empty)
+      "duration_seconds": {scene_duration},  // MUST be EXACTLY {scene_duration} seconds for testing
       "scene_type": "establishing",
       "start_frame_prompt": "SELF-CONTAINED description, no characters...",
       "end_frame_prompt": "SELF-CONTAINED complete description...",
@@ -271,7 +273,7 @@ Classic trailer flow (adapt to story):
 4. **Character identification**: In ALL prompts, identify characters as "Name (brief_identifier)"
 5. **Self-contained prompts**: ZERO references to other scenes, COMPLETE context every time
 6. **Audio integration**: Naturally woven into video_prompt (no separate audio_notes field)
-7. **Duration**: MINIMUM 4 seconds per scene, MAXIMUM 10 seconds. If using reference_images, MUST be exactly 8 seconds. Total ~{target_duration} seconds
+7. **Duration**: Each scene MUST be EXACTLY {scene_duration} seconds (testing mode - quick and cheap)
 8. **Prompt length**: start/end 4-5 sentences, video 6-8 sentences
 9. **Absolute descriptions**: No relative terms ("higher", "closer", "remains"), only absolute measurements
 10. **Aspect ratio**: Use 16:9 for technical_specs (VEO 3.1 requirement with reference images)
@@ -345,7 +347,7 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
                 try:
                     trailer_data = json.loads(content)
                 except json.JSONDecodeError:
-                    # If strict parsing fails, apply aggressive fixes
+                    # If strict parsing fails, apply aggressive fixes for Claude/Llama output
                     import re
 
                     # Save original for debugging
@@ -357,10 +359,30 @@ Generate the trailer breakdown now. Return ONLY valid JSON."""
                     # Fix 2: Remove trailing commas before closing brackets/braces
                     content = re.sub(r',(\s*[}\]])', r'\1', content)
 
-                    # Fix 3: Fix common quote escaping issues
+                    # Fix 3: Fix missing commas between fields (common Claude/Llama issue)
+                    content = re.sub(r'"\s+"', '", "', content)
+                    content = re.sub(r'"\s*\]', '"]', content)
+                    content = re.sub(r'"\s*\}', '"}', content)
+
+                    # Fix missing commas after closing braces/brackets before quotes or braces
+                    content = re.sub(r'}\s*"', '}, "', content)  # } " -> }, "
+                    content = re.sub(r'}\s*{', '}, {', content)  # } { -> }, {
+                    content = re.sub(r']\s*"', '], "', content)  # ] " -> ], "
+                    content = re.sub(r']\s*{', '], {', content)  # ] { -> ], {
+                    content = re.sub(r']\s*\[', '], [', content)  # ] [ -> ], [
+
+                    # Fix 4: Fix common quote escaping issues
                     # Replace smart quotes with regular quotes
                     content = content.replace('"', '"').replace('"', '"')
                     content = content.replace(''', "'").replace(''', "'")
+
+                    # Fix 5: Remove comments if any
+                    content = re.sub(r'//.*?\n', '', content)
+                    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+
+                    # Fix 6: Fix apostrophes in strings that might break JSON
+                    # Replace escaped apostrophes with regular ones
+                    content = content.replace("\\'", "'")
 
                     # Try parsing again
                     try:

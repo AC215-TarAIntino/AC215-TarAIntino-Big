@@ -46,6 +46,8 @@ services:
       TAGMETA_COLLECTION: tag_metadata
       LOG_DIR: /app/src/datapipeline/logs
       BATCH_SIZE: "2000"
+      ANONYMIZED_TELEMETRY: "False"
+      CHROMA_TELEMETRY_IMPL: "none"
     volumes:
       - ./src/quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
       - ./src/quiz-vector:/app
@@ -71,6 +73,8 @@ services:
       CHROMA_SERVER_PORT: "8000"
       CHROMA_COLLECTION: movie_tag_relevance_cos
       LOG_DIR: /app/src/datapipeline/logs
+      ANONYMIZED_TELEMETRY: "False"
+      CHROMA_TELEMETRY_IMPL: "none"
     volumes:
       - ./src/quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
       - ./src/quiz-vector:/app
@@ -92,6 +96,8 @@ services:
       PRIOR_MEAN_PATH: /app/src/datapipeline/logs/prior_mean.npy
       PRIOR_COV_PATH: /app/src/datapipeline/logs/prior_cov.npy
       TAG_INDEX_JSON: /app/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json
+      ANONYMIZED_TELEMETRY: "False"
+      CHROMA_TELEMETRY_IMPL: "none"
     volumes:
       - ./src/quiz-vector:/app
     ports:

@@ -78,6 +78,7 @@ class SceneVideoResponse(BaseModel):
 
 
 class TrailerGenerationRequest(BaseModel):
+    session_id: str = Field(..., description="Unique session ID for organizing GCS uploads")
     character_designs: List[CharacterDesign]
     scenes: List[Scene]
     image_api_key: Optional[str] = None
@@ -92,6 +93,8 @@ class TrailerGenerationResponse(BaseModel):
     character_refs: Dict[str, str]
     scene_videos: List[str]
     trailer_path: Optional[str]
+    gcs_url: Optional[str] = None
+    public_url: Optional[str] = None
 
 
 def _load_default_api_key(key_name: str = "image_api_key") -> Optional[str]:
@@ -176,6 +179,42 @@ def healthcheck() -> Dict[str, str]:
     return {"status": "ok"}
 
 
+class SignedUrlRequest(BaseModel):
+    gcs_path: str = Field(..., description="Path within the GCS bucket (e.g., video_generator_outputs/trailers/video.mp4)")
+    expiration_minutes: int = Field(default=60, description="URL expiration time in minutes")
+
+
+class SignedUrlResponse(BaseModel):
+    signed_url: str
+    expires_in_minutes: int
+
+
+@app.post("/signed-url", response_model=SignedUrlResponse)
+def generate_signed_url(request: SignedUrlRequest) -> SignedUrlResponse:
+    """Generate a signed URL for a GCS object"""
+    try:
+        from google.cloud import storage
+        from datetime import timedelta
+
+        client = storage.Client()
+        bucket = client.bucket("tarantaino-output")
+        blob = bucket.blob(request.gcs_path)
+
+        # Generate signed URL that expires in X minutes
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=request.expiration_minutes),
+            method="GET"
+        )
+
+        return SignedUrlResponse(
+            signed_url=signed_url,
+            expires_in_minutes=request.expiration_minutes
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to generate signed URL: {str(exc)}") from exc
+
+
 @app.post("/generate/character-references", response_model=CharacterReferenceResponse)
 def create_character_references(request: CharacterReferenceRequest) -> CharacterReferenceResponse:
     image_api_key = _resolve_api_key(request.image_api_key, "image_api_key")
@@ -226,6 +265,7 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
         character_refs = generate_character_references(
             image_api_key=image_api_key,
             character_designs=[design.model_dump() for design in request.character_designs],
+            session_id=request.session_id,
         )
 
         scene_paths = generate_scene_videos(
@@ -233,11 +273,12 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
             veo_api_key=veo_api_key,
             scenes=[scene.model_dump() for scene in request.scenes],
             character_refs=character_refs,
+            session_id=request.session_id,
         )
 
         trailer_path: Optional[Path] = None
         if request.stitch_trailer:
-            trailer_path = stitch_videos(scene_paths)
+            trailer_path = stitch_videos(scene_paths, session_id=request.session_id)
 
     except ValueError as exc:
         print(f"❌ ValueError in trailer generation: {exc}")
@@ -250,10 +291,41 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    # Generate GCS URLs with session ID - use signed URLs for private buckets
+    gcs_url = None
+    public_url = None
+    if trailer_path:
+        from google.cloud import storage
+        from datetime import timedelta
+
+        gcs_bucket_name = "tarantaino-output"
+        gcs_prefix = "video_generator_outputs"
+        filename = Path(trailer_path).name
+        gcs_path = f"{gcs_prefix}/trailers/{request.session_id}/{filename}"
+        gcs_url = f"gs://{gcs_bucket_name}/{gcs_path}"
+
+        # Generate a signed URL for secure access (2 hour expiration)
+        try:
+            client = storage.Client()
+            bucket = client.bucket(gcs_bucket_name)
+            blob = bucket.blob(gcs_path)
+            public_url = blob.generate_signed_url(
+                version="v4",
+                expiration=timedelta(minutes=120),
+                method="GET"
+            )
+            print(f"  ✅ Generated signed URL (expires in 2 hours)")
+        except Exception as e:
+            print(f"  ⚠️  Failed to generate signed URL: {e}")
+            # Fallback to unsigned URL (will fail if bucket is private)
+            public_url = f"https://storage.googleapis.com/{gcs_bucket_name}/{gcs_path}"
+
     return TrailerGenerationResponse(
         character_refs=character_refs,
         scene_videos=[str(path) for path in scene_paths],
         trailer_path=str(trailer_path) if trailer_path else None,
+        gcs_url=gcs_url,
+        public_url=public_url,
     )
 
 
@@ -288,13 +360,44 @@ def generate_trailer_mock(request: TrailerGenerationRequest) -> TrailerGeneratio
         trailer_path: Optional[Path] = None
         if request.stitch_trailer and scene_paths:
             print(f"  Stitching {len(scene_paths)} videos together...")
-            trailer_path = stitch_videos(scene_paths)
+            trailer_path = stitch_videos(scene_paths, session_id=request.session_id)
             print(f"  ✅ Trailer created: {trailer_path}")
+
+        # Generate GCS URLs for mock mode - use signed URLs for private buckets
+        gcs_url = None
+        public_url = None
+        if trailer_path:
+            from google.cloud import storage
+            from datetime import timedelta
+
+            gcs_bucket_name = "tarantaino-output"
+            gcs_prefix = "video_generator_outputs"
+            filename = Path(trailer_path).name
+            gcs_path = f"{gcs_prefix}/trailers/{request.session_id}/{filename}"
+            gcs_url = f"gs://{gcs_bucket_name}/{gcs_path}"
+
+            # Generate a signed URL for secure access (2 hour expiration)
+            try:
+                client = storage.Client()
+                bucket = client.bucket(gcs_bucket_name)
+                blob = bucket.blob(gcs_path)
+                public_url = blob.generate_signed_url(
+                    version="v4",
+                    expiration=timedelta(minutes=120),
+                    method="GET"
+                )
+                print(f"  ✅ Generated signed URL (expires in 2 hours)")
+            except Exception as e:
+                print(f"  ⚠️  Failed to generate signed URL: {e}")
+                # Fallback to unsigned URL (will fail if bucket is private)
+                public_url = f"https://storage.googleapis.com/{gcs_bucket_name}/{gcs_path}"
 
         return TrailerGenerationResponse(
             character_refs=character_refs,
             scene_videos=[str(path) for path in scene_paths],
             trailer_path=str(trailer_path) if trailer_path else None,
+            gcs_url=gcs_url,
+            public_url=public_url,
         )
 
     except Exception as exc:

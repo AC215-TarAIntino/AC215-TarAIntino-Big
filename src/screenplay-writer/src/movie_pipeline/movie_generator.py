@@ -189,7 +189,7 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
             if not content:
                 raise MovieGeneratorError("Empty response from LLM")
 
-            # Parse JSON response
+            # Parse JSON response with enhanced error handling for Llama models
             try:
                 # Try to extract JSON if there's extra text
                 json_start = content.find('{')
@@ -204,13 +204,29 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
                     # If strict parsing fails, try to fix common JSON issues
                     import re
 
-                    #Fix 1: Replace newlines within strings with spaces
-                    # This regex finds newlines that are inside quoted strings
-                    content = content.replace('\n\n', ' ')  # Double newlines first
-                    content = content.replace('\n', ' ')  # Then single newlines
+                    # Fix 1: Replace newlines within strings with spaces
+                    content = content.replace('\n\n', ' ')
+                    content = content.replace('\n', ' ')
 
                     # Fix 2: Remove trailing commas before closing brackets/braces
                     content = re.sub(r',(\s*[}\]])', r'\1', content)
+
+                    # Fix 3: Fix missing commas between fields (common Claude/Llama issue)
+                    content = re.sub(r'"\s*"', '", "', content)
+
+                    # Fix missing commas after closing braces/brackets before quotes or braces
+                    content = re.sub(r'}\s*"', '}, "', content)  # } " -> }, "
+                    content = re.sub(r'}\s*{', '}, {', content)  # } { -> }, {
+                    content = re.sub(r']\s*"', '], "', content)  # ] " -> ], "
+                    content = re.sub(r']\s*{', '], {', content)  # ] { -> ], {
+                    content = re.sub(r']\s*\[', '], [', content)  # ] [ -> ], [
+
+                    # Fix 4: Remove comments if any
+                    content = re.sub(r'//.*?\n', '', content)
+                    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+
+                    # Fix 5: Fix common quote escaping issues
+                    content = content.replace('\\"', '"').replace("'", '"')
 
                     # Try parsing again
                     movie_data = json.loads(content)

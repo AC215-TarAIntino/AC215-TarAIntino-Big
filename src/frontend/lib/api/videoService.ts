@@ -1,8 +1,17 @@
 /**
  * Video Service - Handles video generation status polling and retrieval
+ *
+ * TOGGLE BETWEEN MODES:
+ * - USE_SIMPLE_TEST_MODE = true  → API-FREE: Instantly returns pre-existing video (no costs, no microservices)
+ * - USE_SIMPLE_TEST_MODE = false → FULL PIPELINE: Runs all microservices + real Veo API (uses quota)
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
+
+// 🎬 MODE SELECTOR: Toggle this to switch between simple test and full pipeline
+// true  = API-FREE simple test mode (instant, no costs)
+// false = FULL PIPELINE with all microservices + real Veo API
+const USE_SIMPLE_TEST_MODE = false;  // Production mode with Claude Sonnet
 
 export interface VideoStatus {
   status: "pending" | "processing" | "complete" | "error";
@@ -26,7 +35,12 @@ export async function startVideoGeneration(
   tasteVector: number[]
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/generate-video`, {
+    // Use simple test mode to skip all backend processing
+    const endpoint = USE_SIMPLE_TEST_MODE
+      ? `${API_BASE_URL}/generate-video-simple`
+      : `${API_BASE_URL}/generate-video`;
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

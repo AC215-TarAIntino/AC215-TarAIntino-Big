@@ -24,10 +24,14 @@ QUIZ_TAGS = [
 def get_chroma_client():
     host = os.getenv("CHROMA_SERVER_HOST")
     port = os.getenv("CHROMA_SERVER_PORT")
+
+    # Create settings to disable telemetry
+    settings = chromadb.Settings(anonymized_telemetry=False)
+
     if host and port:
-        return chromadb.HttpClient(host=host, port=int(port))
+        return chromadb.HttpClient(host=host, port=int(port), settings=settings)
     path = os.getenv("CHROMA_PATH", "./chroma_db")
-    return chromadb.PersistentClient(path=path)
+    return chromadb.PersistentClient(path=path, settings=settings)
 
 @lru_cache(maxsize=1)
 def get_collection():

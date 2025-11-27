@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { videoStatusStore } from "@/lib/videoStatusStore";
 
 const SCREENPLAY_WRITER_URL = "http://screenplay-writer:8000";
 const SCENE_DECOMPOSER_URL = "http://scene-decomposer:8001";
 const VIDEO_GENERATOR_URL = "http://video-generator:8003";
 const QUIZ_SERVICE_URL = "http://quiz-service:8082";
-
-// Set to true to use mock/test mode (uses pre-generated videos, bypasses API quota)
-const USE_MOCK_MODE = true;
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +40,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function generateVideoAsync(sessionId: string, tasteVector: number[]) {
+async function generateVideoAsync(sessionId: string, _tasteVector: number[]) {
   try {
     console.log(`[${sessionId}] Starting video generation...`);
 
@@ -94,6 +92,9 @@ async function generateVideoAsync(sessionId: string, tasteVector: number[]) {
 
     console.log(`[${sessionId}] Movie generated: ${movie.title}`);
 
+    // Save movie title for the result page
+    const movieTitle = movie.title || movie.name || "Untitled Movie";
+
     // Step 3: Generate trailer breakdown
     console.log(`[${sessionId}] Generating trailer breakdown...`);
     const trailerResponse = await fetch(`${SCENE_DECOMPOSER_URL}/generate-trailer`, {
@@ -120,20 +121,20 @@ async function generateVideoAsync(sessionId: string, tasteVector: number[]) {
     const trailer = trailerData.trailer;
     console.log(`[${sessionId}] Trailer breakdown generated: ${trailer.scenes.length} scenes`);
 
-    // Step 4: Generate video
-    const videoEndpoint = USE_MOCK_MODE
-      ? `${VIDEO_GENERATOR_URL}/generate/trailer/mock`
-      : `${VIDEO_GENERATOR_URL}/generate/trailer`;
-
-    console.log(`[${sessionId}] Starting video generation${USE_MOCK_MODE ? ' (MOCK MODE)' : ''} (this may take 5-15 minutes)...`);
-    const videoResponse = await fetch(videoEndpoint, {
+    // Step 4: Generate video (REAL MODE - using VEO 3.0 Fast Generate)
+    console.log(`[${sessionId}] Starting video generation (REAL MODE - using VEO 3.0 Fast)...`);
+    const videoResponse = await fetch(`${VIDEO_GENERATOR_URL}/generate/trailer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        session_id: sessionId,
         character_designs: trailer.character_designs,
         scenes: trailer.scenes,
         stitch_trailer: true,
       }),
+      // @ts-expect-error - Node.js fetch (undici) supports these options
+      headersTimeout: 1200000, // 20 minutes
+      bodyTimeout: 1200000,    // 20 minutes
     });
 
     if (!videoResponse.ok) {
@@ -144,9 +145,17 @@ async function generateVideoAsync(sessionId: string, tasteVector: number[]) {
 
     console.log(`[${sessionId}] Video generation complete!`);
     console.log(`[${sessionId}] GCS URL: ${videoData.gcs_url}`);
+    console.log(`[${sessionId}] Public URL: ${videoData.public_url}`);
 
-    // Store the result (in production, use a database)
-    // For now, we'll rely on the client polling GCS directly
+    // Store the result in memory so the status endpoint can find it
+    videoStatusStore.set(sessionId, {
+      status: "complete",
+      gcsUrl: videoData.gcs_url,
+      publicUrl: videoData.public_url,
+      movieTitle: movieTitle,
+      progress: 100,
+    });
+
     return videoData;
   } catch (error) {
     console.error(`[${sessionId}] Video generation failed:`, error);

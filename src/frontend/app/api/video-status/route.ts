@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { videoStatusStore } from "@/lib/videoStatusStore";
 
 const GCS_BUCKET_NAME = "tarantaino-output";
-const GCS_PREFIX = "trailers";
+const GCS_PREFIX = "video_generator_outputs/trailers";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,24 +16,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if video exists in GCS bucket
-    // We'll look for files matching the pattern: trailers/trailer_*{sessionId}*.mp4
-    const videoUrl = await checkGCSForVideo(sessionId);
-
-    if (videoUrl) {
+    // Check in-memory store first (this is set only when the FULL pipeline completes)
+    const storedStatus = videoStatusStore.get(sessionId);
+    if (storedStatus && storedStatus.status === "complete" && storedStatus.publicUrl) {
       return NextResponse.json({
         status: "complete",
         sessionId,
-        videoUrl,
-        gcsUrl: `gs://${GCS_BUCKET_NAME}/${GCS_PREFIX}/${extractFilename(videoUrl)}`,
+        videoUrl: storedStatus.publicUrl,
+        gcsUrl: storedStatus.gcsUrl,
+        movieTitle: storedStatus.movieTitle,
+        progress: 100,
       });
     }
 
-    // Video not found yet - still processing
+    // If not in store yet, the pipeline is still running
+    // Don't check GCS yet - wait for the backend to complete the full pipeline
+    // This prevents showing "complete" before screenplay/scene-decomposer finish
     return NextResponse.json({
       status: "processing",
       sessionId,
-      progress: 50, // Estimate - we don't have real progress tracking
+      progress: 50,
     });
   } catch (error) {
     console.error("Error checking video status:", error);
@@ -75,12 +78,32 @@ async function checkGCSForVideo(sessionId: string): Promise<string | null> {
 
     // Option 2: Construct expected URL based on timestamp/session
     // This is a fallback if the video generator doesn't track status
-    const publicUrl = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/${GCS_PREFIX}/trailer_${sessionId}.mp4`;
+    const gcsPath = `${GCS_PREFIX}/${sessionId}/trailer_no_audio.mp4`;
+    const publicUrl = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/${gcsPath}`;
 
-    // Try to check if the file exists
+    // Try to check if the file exists (may fail if not public)
     const headResponse = await fetch(publicUrl, { method: "HEAD" });
     if (headResponse.ok) {
       return publicUrl;
+    }
+
+    // If public access fails, try to generate a signed URL
+    try {
+      const signedUrlResponse = await fetch(`${VIDEO_GENERATOR_URL}/signed-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gcs_path: gcsPath,
+          expiration_minutes: 120, // 2 hour expiration
+        }),
+      });
+
+      if (signedUrlResponse.ok) {
+        const signedData = await signedUrlResponse.json();
+        return signedData.signed_url;
+      }
+    } catch (signedUrlError) {
+      console.log("Failed to generate signed URL:", signedUrlError);
     }
 
     return null;

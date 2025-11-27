@@ -46,10 +46,16 @@ export default function ResultPage() {
     const storedGcsUrl = sessionStorage.getItem("gcsUrl");
     const movieTitle = sessionStorage.getItem("movieTitle");
 
+    console.log("🎬 Result Page - SessionStorage Debug:");
+    console.log("  videoUrl:", storedVideoUrl);
+    console.log("  gcsUrl:", storedGcsUrl);
+    console.log("  movieTitle:", movieTitle);
+
     if (!storedVideoUrl) {
-      console.error("No video URL found in sessionStorage");
+      console.error("❌ No video URL found in sessionStorage");
       setError("Video URL not found. Please generate a new trailer.");
     } else {
+      console.log("✅ Setting video URL:", storedVideoUrl.substring(0, 100) + "...");
       setVideoUrl(storedVideoUrl);
       setGcsUrl(storedGcsUrl || "");
     }
@@ -189,6 +195,17 @@ export default function ResultPage() {
                   autoPlay
                   className="w-full h-full object-contain bg-black"
                   src={videoUrl}
+                  onError={(e) => {
+                    console.error("❌ Video failed to load:", e);
+                    console.error("   Video URL:", videoUrl);
+                    console.error("   Error details:", (e.target as HTMLVideoElement).error);
+                  }}
+                  onLoadedMetadata={() => {
+                    console.log("✅ Video metadata loaded successfully!");
+                  }}
+                  onCanPlay={() => {
+                    console.log("✅ Video can play!");
+                  }}
                 >
                   <source src={videoUrl} type="video/mp4" />
                   Your browser does not support the video tag.

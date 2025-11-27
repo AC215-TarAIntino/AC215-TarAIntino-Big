@@ -159,10 +159,13 @@ export default function GeneratingPage() {
           setCurrentPhaseIndex(3);
           setStatusMessage("🎉 Success! Your trailer is ready!");
 
-          // Store video URL for result page
+          // Store video URL and movie title for result page
           sessionStorage.setItem("videoUrl", videoStatus.videoUrl);
           if (videoStatus.gcsUrl) {
             sessionStorage.setItem("gcsUrl", videoStatus.gcsUrl);
+          }
+          if ((videoStatus as any).movieTitle) {
+            sessionStorage.setItem("movieTitle", (videoStatus as any).movieTitle);
           }
 
           // Navigate to result page

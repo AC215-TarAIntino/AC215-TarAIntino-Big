@@ -225,9 +225,10 @@ hand-ins/*.jpg
 hand-ins/*.jpeg
 # Keep README and markdown files in hand-ins
 
-# Root-level markdown files (except README)
-/*.md
+# Markdown files - ignore all except README files
+*.md
 !README.md
+!**/README.md
 
 # Root-level shell scripts
 /*.sh
