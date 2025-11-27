@@ -5,9 +5,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     PYTHONUNBUFFERED=1 \
     UV_LINK_MODE=copy \
-    UV_PROJECT_ENVIRONMENT=/opt/venv \ 
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:${PATH}" \
-    PYTHONPATH="/app"
+    PYTHONPATH="/app/src"
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends build-essential curl \
@@ -18,7 +18,7 @@ WORKDIR /app
 
 COPY pyproject.toml /app/pyproject.toml
 
-RUN uv sync
+RUN uv sync --extra dev
 
 COPY . /app/
 

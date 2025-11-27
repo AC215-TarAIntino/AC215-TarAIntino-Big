@@ -90,7 +90,7 @@ async def generate_movie(request: MovieRequest):
         if not movies:
             raise HTTPException(
                 status_code=404,
-                detail=f"None of the provided movies were found in OMDb: {request.movie_names}"
+                detail=f"Movies not found in OMDb: {request.movie_names}"
             )
 
         logger.info(f"Found {len(movies)} movies out of {len(request.movie_names)} requested")
@@ -112,6 +112,10 @@ async def generate_movie(request: MovieRequest):
             input_movies_data=movies,
             model_used=request.model or settings.openrouter_model
         )
+
+    except HTTPException:
+        # Re-raise HTTPException so FastAPI can handle it properly
+        raise
 
     except MovieFetcherError as e:
         logger.error(f"Movie fetcher error: {e}")

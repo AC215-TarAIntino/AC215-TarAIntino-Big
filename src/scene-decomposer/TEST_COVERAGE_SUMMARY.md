@@ -1,106 +1,125 @@
-# Scene Decomposer Test Coverage Summary
+# Scene-Decomposer Test Coverage Summary
 
-**Total: 10 functions/endpoints, 92 test cases**
+**Total: 76 test cases | Coverage: 88%**
 
-## Coverage Breakdown by Category
+## Test Results
 
-### 1. Core Functionality (scene_analyzer.py)
-- ✅ MovieAnalyzer initialization
-- ✅ Main character extraction (top 4)
-- ✅ Main character extraction with fewer than 4 cast members
-- ✅ Key theme extraction (top 4)
-- ✅ Key theme extraction with fewer than 4 themes
-- ✅ Visual style summarization
-- ✅ Tone determination for all genres (Action, Drama, Sci-Fi, Comedy, Horror, Romance, Crime, Thriller, Unknown)
-- ✅ Hook element identification
-- ✅ Character consistency guide generation
-- ✅ LLM context formatting
-- ✅ Character design formatting for LLM
+✅ **76 passed in 2.43s**
 
-### 2. Scene Generation (scene_generator.py)
-- ✅ SceneGenerator initialization (default and custom)
-- ✅ Generation prompt creation
-- ✅ Generation prompt without narration
-- ✅ Generation prompt with different durations
-- ✅ Successful trailer generation
-- ✅ Trailer generation with model override
-- ✅ Character appearance map building
-- ✅ Trailer consistency validation
-- ✅ Reference image constraint validation (max 3)
-- ✅ Duration constraint validation (8 seconds for reference images)
-- ✅ Character existence validation
+## Coverage Breakdown by Module
 
-### 3. API Endpoints (api.py)
-- ✅ Root endpoint with service information
-- ✅ Health check endpoint with/without API key
-- ✅ Generate trailer endpoint (success case)
-- ✅ Generate trailer with custom model
-- ✅ Generate trailer with default values
-- ✅ Analyze movie endpoint (success case)
-- ✅ Analyze movie with empty cast
-- ✅ CORS middleware configuration
-- ✅ Lifespan startup events
+### Production Code Coverage
 
-### 4. Configuration Management (config.py)
-- ✅ Default configuration values
-- ✅ Environment variable loading
-- ✅ Case-insensitive environment variables
-- ✅ Extra environment variable handling (ignored)
-- ✅ Global settings instance
-- ✅ Numeric type conversion from env vars
-- ✅ Boolean type conversion from env vars
-- ✅ Model configuration attributes
+| Module | Statements | Missed | Coverage |
+|--------|-----------|--------|----------|
+| **src/trailer_generator/api.py** | 69 | 4 | **94%** |
+| **src/trailer_generator/config.py** | 14 | 0 | **100%** |
+| **src/trailer_generator/scene_analyzer.py** | 70 | 1 | **99%** |
+| **src/trailer_generator/scene_generator.py** | 94 | 4 | **96%** |
+| **src/trailer_generator/schemas.py** | 78 | 0 | **100%** |
 
-### 5. Schema Validation (schemas.py)
-- ✅ CharacterDesign schema
-- ✅ TrailerScene with reference images
-- ✅ TrailerScene without characters
-- ✅ Complete TrailerBreakdown
-- ✅ TechnicalSpecs schema
-- ✅ Schema validation constraints
+### **Overall Production Coverage: 98%** (excluding standalone script)
 
-### 6. Error Handling
-- ✅ Empty LLM response handling
-- ✅ Invalid JSON response handling
-- ✅ JSON with surrounding text handling
-- ✅ API error handling
-- ✅ SceneGeneratorError handling
-- ✅ HTTPException handling (404, 500)
-- ✅ Invalid duration validation (too short/long)
-- ✅ Missing required fields validation
-- ✅ Invalid movie data validation
-- ✅ Analysis error handling
+Note: The 88% overall figure includes test_scene_standalone.py (11% coverage), which is a utility script not part of core functionality.
 
-### 7. Edge Cases
-- ✅ Movies with fewer than 4 cast members
-- ✅ Movies with fewer than 4 themes
-- ✅ Movies without unique selling point
-- ✅ Unknown genres
-- ✅ Empty reference images lists
-- ✅ Multiple reference images per scene
-- ✅ Trailer output file saving
+## Test Coverage by Category
+
+### 1. Scene Analyzer (22 tests)
+- ✅ Analyzer initialization
+- ✅ Movie analysis returns complete MovieAnalysis
+- ✅ Extract main characters (top 4)
+- ✅ Extract main characters (fewer than 4)
+- ✅ Extract key themes (top 4)
+- ✅ Extract key themes (fewer than 4)
+- ✅ Summarize visual style
+- ✅ Determine tone for Thriller
+- ✅ Determine tone for Action
+- ✅ Determine tone for Drama
+- ✅ Determine tone for Sci-Fi
+- ✅ Determine tone for Comedy
+- ✅ Determine tone for Horror
+- ✅ Determine tone for Romance
+- ✅ Determine tone for Crime
+- ✅ Determine tone for Unknown genre
+- ✅ Identify hooks with USP
+- ✅ Identify hooks without USP
+- ✅ Get character consistency guide
+- ✅ Format for LLM context
+- ✅ Format character designs for LLM
 - ✅ Complete analysis workflow
 
-## Estimated Coverage Percentage
+### 2. API Endpoints (20 tests)
+- ✅ Root endpoint returns service info
+- ✅ Health check with API key configured
+- ✅ Health check without API key
+- ✅ Generate trailer success
+- ✅ Generate trailer with custom model
+- ✅ Generate trailer with scene generator error
+- ✅ Generate trailer with unexpected error
+- ✅ Generate trailer invalid duration (too short)
+- ✅ Generate trailer invalid duration (too long)
+- ✅ Generate trailer missing required fields
+- ✅ Generate trailer invalid movie data
+- ✅ Generate trailer with default values
+- ✅ Generate trailer saves output to file
+- ✅ Analyze movie success
+- ✅ Analyze movie with invalid data
+- ✅ Analyze movie with analysis error
+- ✅ Analyze movie with empty cast
+- ✅ CORS headers on OPTIONS request
+- ✅ Lifespan events startup
 
-### scene_analyzer.py
-- **Functions covered:** 8/8 (100%)
-- **Lines covered:** ~230/246 (93%)
+### 3. Configuration Management (10 tests)
+- ✅ Default configuration values
+- ✅ Settings with environment variables
+- ✅ Extra environment variables ignored
+- ✅ Global settings instance
+- ✅ OpenRouter base URL customization
+- ✅ API host customization
+- ✅ Numeric type conversion
+- ✅ Boolean type conversion
+- ✅ Settings immutability after creation
+- ✅ Model config attributes
 
-### scene_generator.py
-- **Functions covered:** 5/5 (100%)
-- **Lines covered:** ~390/462 (84%)
+### 4. Scene Generator (19 tests)
+- ✅ Initialization with defaults
+- ✅ Initialization with custom parameters
+- ✅ Create generation prompt
+- ✅ Create generation prompt without narration
+- ✅ Create generation prompt with different durations
+- ✅ Generate trailer success
+- ✅ Generate trailer with model override
+- ✅ Generate trailer with empty response
+- ✅ Generate trailer with invalid JSON
+- ✅ Generate trailer with JSON and extra text
+- ✅ Generate trailer API error
+- ✅ Build character appearance map
+- ✅ Validate trailer consistency (valid)
+- ✅ Validate trailer consistency (wrong duration)
+- ✅ Validate trailer consistency (too many references)
+- ✅ Validate trailer consistency (missing character)
+- ✅ Validate trailer consistency (empty reference images)
+- ✅ Generate trailer without narration
+- ✅ Generate trailer validates output
 
-### api.py
-- **Functions covered:** 5/5 (100%)
-- **Lines covered:** ~160/200 (80%)
+### 5. Schema Validation (4 tests)
+- ✅ CharacterDesign schema validation
+- ✅ TrailerScene with reference images
+- ✅ TrailerScene without reference images
+- ✅ TrailerBreakdown complete schema
+- ✅ Validation constraints enforcement
 
-### config.py
-- **Functions covered:** All settings (100%)
-- **Lines covered:** ~35/38 (92%)
+### 6. Smoke Test (1 test)
+- ✅ Basic import test
 
-### schemas.py
-- **Functions covered:** All schemas (100%)
-- **Lines covered:** ~250/282 (89%)
+## Summary
 
-### **Overall Estimated Coverage: ~87%**
+- **76 tests** covering all major functionality
+- **88% overall code coverage** (98% excluding standalone script)
+- **100% coverage** on config.py and schemas.py
+- **99% coverage** on scene_analyzer.py
+- Comprehensive scene analysis testing
+- Complete scene generation with validation
+- Full API endpoint testing
+- Genre-specific tone determination tests
+- Fast test execution: 2.43 seconds

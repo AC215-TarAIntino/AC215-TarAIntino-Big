@@ -301,9 +301,9 @@ You will be able to see when the generation process is at in the terminal where 
 
 ## Testing Pipeline
 
-### Running Tests
+### Microservice Tests
 
-All services use Docker for consistent testing environments.
+Tests for all microservices using Docker for consistent testing environments.
 
 First, ensure all services are running:
 ```bash
@@ -318,6 +318,15 @@ docker-compose exec quiz-service python -m pytest tests/ --cov=. --cov-report=te
 docker-compose exec screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 docker-compose exec scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 docker-compose exec video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
+```
+
+### End-to-End Integration Tests
+
+Comprehensive end-to-end tests covering the entire pipeline:
+
+```bash
+docker-compose up -d
+docker run --rm --network host -v $(pwd)/tests:/tests taraintino-base:latest sh -c "pip install -q requests && python -m pytest /tests/test_end_to_end_trailer_generation.py -v"
 ```
 
 ## Happy Trailer Generating!
