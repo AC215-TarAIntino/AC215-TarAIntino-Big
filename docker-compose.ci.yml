@@ -1,0 +1,18 @@
+# CI-specific docker-compose override
+# Disables services that require real GCS credentials
+# Usage: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+
+services:
+  # Make chroma-init a no-op (just exit successfully)
+  chroma-init:
+    command: "true"
+    restart: "no"
+
+  # Make quiz-rag-app a no-op (not needed for unit tests)
+  quiz-rag-app:
+    command: "true"
+    restart: "no"
+
+  # Override quiz-service restart policy so failures are visible
+  quiz-service:
+    restart: "no"

@@ -11,6 +11,8 @@ on:
       - 'tests/**'
       - 'pyproject.toml'
       - 'Makefile'
+      - 'docker-compose.yml'
+      - 'docker-compose.ci.yml'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [main]
@@ -22,6 +24,8 @@ on:
       - 'tests/**'
       - 'pyproject.toml'
       - 'Makefile'
+      - 'docker-compose.yml'
+      - 'docker-compose.ci.yml'
       - '.github/workflows/backend-ci.yml'
 
 jobs:
@@ -89,9 +93,33 @@ jobs:
           echo '{"project_api_key": "test_key"}' > src/video-generator/secret.json
           echo '{"type": "service_account"}' > src/video-generator/gcp-credentials.json
 
+      - name: Create mock data files for quiz-service
+        run: |
+          pip install numpy
+          mkdir -p src/quiz-vector/src/datapipeline/logs
+          python3 << 'EOF'
+          import numpy as np
+          import json
+
+          # Create mock prior mean (100-dimensional zero vector)
+          prior_mean = np.zeros(100, dtype=np.float64)
+          np.save("src/quiz-vector/src/datapipeline/logs/prior_mean.npy", prior_mean)
+
+          # Create mock prior covariance (100x100 identity matrix)
+          prior_cov = np.eye(100, dtype=np.float64)
+          np.save("src/quiz-vector/src/datapipeline/logs/prior_cov.npy", prior_cov)
+
+          # Create mock tag index JSON
+          tag_index = {"tag_ids_sorted": list(range(100))}
+          with open("src/quiz-vector/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json", "w") as f:
+              json.dump(tag_index, f)
+
+          print("Mock data files created successfully!")
+          EOF
+
       - name: Build and start Docker services
         run: |
-          docker compose up -d --build
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
           # Wait for services to be healthy
           sleep 30
 
