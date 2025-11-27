@@ -241,7 +241,7 @@ docker-compose down -v
 ```bash
 # Check health endpoints
 curl http://localhost:8082/health  # Quiz Service --> should return {"ok":true}
-curl http://localhost:8080/health  # Screenplay Writer --> should return {"status":"healthy","omdb_configured":true,"openrouter_configured":true,"model":"google/gemini-3-pro-preview"}
+curl http://localhost:8080/health  # Screenplay Writer --> should return {"status":"healthy","omdb_configured":true,"openrouter_configured":true,"model":"anthropic/claude-3.5-sonnet"}
 curl http://localhost:8001/health  # Scene Decomposer --> should return {"status":"healthy","openrouter_configured":true,"model":"anthropic/claude-3.5-sonnet","default_duration":35,"include_narration":true}
 curl http://localhost:8003/health  # Video Generator --> should return {"status":"ok"}
 ```

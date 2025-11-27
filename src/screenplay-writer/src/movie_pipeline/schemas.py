@@ -21,7 +21,7 @@ class MovieRequest(BaseModel):
     model: str | None = Field(
         None,
         description="OpenRouter model to use (overrides default)",
-        examples=["google/gemini-3-pro-preview", "anthropic/claude-3.5-sonnet"],
+        examples=["anthropic/claude-3.5-sonnet"],
     )
 
 

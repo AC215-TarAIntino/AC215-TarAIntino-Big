@@ -44,7 +44,7 @@ class TestSettings:
             os.environ,
             {
                 "OPENROUTER_API_KEY": "test-api-key-123",
-                "OPENROUTER_MODEL": "google/gemini-2.0-flash",
+                "OPENROUTER_MODEL": "anthropic/claude-3.5-sonnet",
                 "API_PORT": "9000",
                 "DEFAULT_TRAILER_DURATION": "45",
                 "INCLUDE_NARRATION": "false",

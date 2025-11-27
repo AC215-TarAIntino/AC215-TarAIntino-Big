@@ -104,7 +104,7 @@ OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_API_KEY=sk-or-v1-...
 
 # Optional (defaults shown)
-OPENROUTER_MODEL=google/gemini-3-pro-preview
+OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
 TRAILER_DURATION=35
 NUM_SCENES=7
 INCLUDE_NARRATION=true
@@ -116,8 +116,7 @@ API_PORT=8001
 
 The service can be configured via environment variables in `.env`:
 
-- **`OPENROUTER_MODEL`**: LLM model to use (default: `google/gemini-3-pro-preview`)
-  - Options: `google/gemini-3-pro-preview`, `anthropic/claude-3.5-sonnet`
+- **`OPENROUTER_MODEL`**: LLM model to use (default: `anthropic/claude-3.5-sonnet`)
 - **`TRAILER_DURATION`**: Total trailer length in seconds (default: 35)
 - **`NUM_SCENES`**: Number of scenes to generate (default: 7)
 - **`INCLUDE_NARRATION`**: Add voice-over narration (default: true)

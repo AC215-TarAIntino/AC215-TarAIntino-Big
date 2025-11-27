@@ -117,7 +117,7 @@ OPENROUTER_API_KEY=sk-or-v1-...
 OMDB_API_KEY=...
 
 # Optional (defaults shown)
-OPENROUTER_MODEL=google/gemini-3-pro-preview
+OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
 API_HOST=0.0.0.0
 API_PORT=8000
 ```
@@ -125,7 +125,7 @@ API_PORT=8000
 ## Configuration Options
 
 - **`OPENROUTER_MODEL`**: LLM model for screenplay generation
-  - Default: `google/gemini-3-pro-preview`
+  - Default: `anthropic/claude-3.5-sonnet`
   - Options: Any OpenRouter-supported model
 
 - **OMDb API**: Free tier allows 1,000 requests/day
