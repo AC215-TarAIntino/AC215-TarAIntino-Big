@@ -458,7 +458,7 @@ Automatically run checks before every commit to ensure code is always formatted 
 ```bash
 # 1. Start development
 make up                    # Start services
-make watch                 # Auto-run checks on file changes
+./setup-git-hooks.sh       # Install pre-commit hooks
 
 # 2. Make changes, tests run automatically
 
