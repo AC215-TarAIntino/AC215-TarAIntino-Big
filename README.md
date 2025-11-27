@@ -53,8 +53,10 @@ AC215-TarAIntino-Big/
 ├── .husky/
 │   └── pre-commit                  # Git pre-commit hooks
 ├── hand-ins/                       # Project documentation & reports
+│   ├── Application Design Document.pdf # Final Solution and Technical Architecture report
+│   ├── CI screenshots/             # CI status images
 │   ├── diagrams/                   # Architecture diagrams
-│   └── previous reports/           # Historical documentation
+│   └── previous reports/           # Historical documentation and reports from previous milestones (project proposal, midterm ppt presentation, etc.)
 ├── tests/                          # Root-level integration tests
 │   ├── test_end_to_end_trailer_generation.py
 │   └── TEST_COVERAGE_SUMMARY.md
