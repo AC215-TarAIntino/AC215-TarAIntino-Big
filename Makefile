@@ -40,21 +40,21 @@ lint-fix: ## Lint and auto-fix issues with ruff
 test: ## Run all microservice tests
 	@echo "$(BLUE)Running all microservice tests...$(NC)"
 	@echo "\n=== Testing Quiz Service ==="
-	docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+	docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=term-missing -v
 	@echo "\n=== Testing Screenplay Writer ==="
-	docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+	docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 	@echo "\n=== Testing Scene Decomposer ==="
-	docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+	docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=term-missing -v
 	@echo "\n=== Testing Video Generator ==="
-	docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v || true
+	docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
 	@echo "$(GREEN)All tests complete!$(NC)"
 
 test-cov: ## Run all tests with HTML coverage report
 	@echo "$(BLUE)Running tests with coverage...$(NC)"
-	docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v || true
-	docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v || true
-	docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v || true
-	docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v || true
+	docker compose exec -T quiz-service python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v
+	docker compose exec -T screenplay-writer python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v
+	docker compose exec -T scene-decomposer python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v
+	docker compose exec -T video-generator python -m pytest tests/ --cov=. --cov-report=html --cov-report=term-missing -v
 	@echo "$(GREEN)Coverage reports generated in htmlcov/$(NC)"
 
 test-quiz: ## Run quiz-vector tests only
