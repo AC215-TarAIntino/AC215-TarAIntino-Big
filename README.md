@@ -21,6 +21,8 @@ The system works as follows:
 - **Produces video content** using Google Gemini/VEO 3.1
 - **Delivers results** via a React-based frontend with real-time polling
 
+**More detailed information is available in the `hand-ins/Application Design Document.pdf`.**
+
 ## Architecture
 
 ```
@@ -41,6 +43,8 @@ The system works as follows:
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**More detailed architecture diagram available in `hand-ins/diagram/`.**
+
 ## Project Structure
 
 ```
@@ -54,8 +58,10 @@ AC215-TarAIntino-Big/
 │   └── pre-commit                  # Git pre-commit hooks
 ├── hand-ins/                       # Project documentation & reports
 │   ├── Application Design Document.pdf # Final Solution and Technical Architecture report
-│   ├── CI screenshots/             # CI status images
-│   ├── diagrams/                   # Architecture diagrams
+│   ├── TarAIntino Complete Run of App.mp4 # Demo video of the complete app running succesfully
+│   ├── screenshots for CI CD/      # CI/CD status images + in Github Actions
+│   ├── screenshots for test coverage # Test coverage results for all microservices
+│   ├── diagram/                    # Architecture diagram
 │   └── previous reports/           # Historical documentation and reports from previous milestones (project proposal, midterm ppt presentation, etc.)
 ├── tests/                          # Root-level integration tests
 │   ├── test_end_to_end_trailer_generation.py
@@ -257,6 +263,8 @@ Then launch the frontend in your browser at `http://localhost:3000` (opens Front
 
 You will be able to see when the generation process is at in the terminal where you ran `monitor_pipeline.sh`.
 
+**An example of an entire run of the app is available in the hand-ins folder as "TarAIntino Complete Run of App.mp4".**
+
 ## Services
 
 ### Quiz Service (:8082)
@@ -330,6 +338,8 @@ docker-compose exec scene-decomposer python -m pytest tests/ --cov=. --cov-repor
 docker-compose exec video-generator python -m pytest tests/ --cov=. --cov-report=term-missing -v
 ```
 
+**Results for all the microservices' tests can be found in their respective `TEST_COVERAGE_SUMMARY.md` files in each folder. Screenshots of the test coverage results are also available in the `hand-ins/screenshots for test coverage/` folder.**
+
 ### End-to-End Integration Tests
 
 Comprehensive end-to-end tests covering the entire pipeline:
@@ -397,6 +407,8 @@ All pull requests must pass CI checks before merging. The CI pipeline automatica
 2. Lints code with ruff
 3. Runs all microservice tests in Docker containers
 4. Verifies frontend build and type-safety
+
+**Results of CI runs can be found in the `hand-ins/screenshots for CI CD/` folder.**
 
 ## Development Tools
 
