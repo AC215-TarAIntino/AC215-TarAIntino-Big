@@ -1,0 +1,3 @@
+config:
+  gcp_project: llm-service-account-474620  # Replace with your project ID
+  gcp_region: us-central1

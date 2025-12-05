@@ -1,0 +1,28 @@
+name: taraintino-k8s
+runtime: python
+description: Deploy TarAIntino application to Google Kubernetes Engine
+
+config:
+  gcp_project:
+    description: GCP Project ID
+    type: string
+  gcp_region:
+    description: GCP Region
+    type: string
+    default: us-central1
+  gcp_zone:
+    description: GCP Zone
+    type: string
+    default: us-central1-a
+  cluster_name:
+    description: GKE Cluster Name
+    type: string
+    default: taraintino-cluster
+  node_count:
+    description: Initial number of nodes in the cluster
+    type: integer
+    default: 3
+  node_machine_type:
+    description: Machine type for cluster nodes
+    type: string
+    default: n1-standard-4

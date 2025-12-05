@@ -1,0 +1,12 @@
+name: taraintino-images
+runtime: python
+description: Build and push TarAIntino Docker images to GCP Artifact Registry
+
+config:
+  gcp_project:
+    description: GCP Project ID
+    type: string
+  gcp_region:
+    description: GCP Region for Artifact Registry
+    type: string
+    default: us-central1
