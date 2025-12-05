@@ -15,17 +15,32 @@ Usage:
 import pulumi
 import pulumi_gcp as gcp
 import pulumi_kubernetes as k8s
-from pulumi_kubernetes.apps.v1 import Deployment, DeploymentSpecArgs
+from pulumi_kubernetes.apps.v1 import DeploymentSpecArgs
+from pulumi_kubernetes.batch.v1 import JobSpecArgs
 from pulumi_kubernetes.core.v1 import (
-    Service, ServiceSpecArgs, ServicePortArgs,
-    ContainerArgs as Container, ContainerPortArgs, EnvVarArgs, VolumeArgs, VolumeMountArgs,
-    PersistentVolumeClaim, PersistentVolumeClaimSpecArgs, ResourceRequirementsArgs,
-    ConfigMap, Secret, PodSpecArgs, PodTemplateSpecArgs, ProbeArgs as Probe,
-    HTTPGetActionArgs, EnvVarSourceArgs, SecretKeySelectorArgs,
-    SecretVolumeSourceArgs, KeyToPathArgs
+    ContainerArgs as Container,
+)
+from pulumi_kubernetes.core.v1 import (
+    ContainerPortArgs,
+    EnvVarArgs,
+    EnvVarSourceArgs,
+    HTTPGetActionArgs,
+    KeyToPathArgs,
+    PersistentVolumeClaimSpecArgs,
+    PodSpecArgs,
+    PodTemplateSpecArgs,
+    ResourceRequirementsArgs,
+    SecretKeySelectorArgs,
+    SecretVolumeSourceArgs,
+    ServicePortArgs,
+    ServiceSpecArgs,
+    VolumeArgs,
+    VolumeMountArgs,
+)
+from pulumi_kubernetes.core.v1 import (
+    ProbeArgs as Probe,
 )
 from pulumi_kubernetes.meta.v1 import LabelSelectorArgs, ObjectMetaArgs
-from pulumi_kubernetes.batch.v1 import Job, JobSpecArgs
 
 # ============================================================================
 # Configuration
@@ -81,6 +96,7 @@ node_pool = gcp.container.NodePool(
     ),
 )
 
+
 # Create kubeconfig
 def generate_kubeconfig(cluster_name, cluster_endpoint, cluster_ca):
     return f"""apiVersion: v1
@@ -107,15 +123,14 @@ users:
       provideClusterInfo: true
 """
 
+
 kubeconfig = pulumi.Output.all(
     cluster.name, cluster.endpoint, cluster.master_auth.cluster_ca_certificate
 ).apply(lambda args: generate_kubeconfig(args[0], args[1], args[2]))
 
 # Create Kubernetes provider
 k8s_provider = k8s.Provider(
-    "gke-k8s",
-    kubeconfig=kubeconfig,
-    opts=pulumi.ResourceOptions(depends_on=[node_pool])
+    "gke-k8s", kubeconfig=kubeconfig, opts=pulumi.ResourceOptions(depends_on=[node_pool])
 )
 
 # ============================================================================
@@ -125,7 +140,7 @@ k8s_provider = k8s.Provider(
 namespace = k8s.core.v1.Namespace(
     "taraintino-namespace",
     metadata=ObjectMetaArgs(name="taraintino"),
-    opts=pulumi.ResourceOptions(provider=k8s_provider)
+    opts=pulumi.ResourceOptions(provider=k8s_provider),
 )
 
 ns_name = namespace.metadata.name
@@ -155,7 +170,7 @@ config_map = k8s.core.v1.ConfigMap(
         "ANONYMIZED_TELEMETRY": "False",
         "CHROMA_TELEMETRY_IMPL": "none",
     },
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 # Secret placeholder (user must create this separately with actual credentials)
@@ -174,11 +189,9 @@ chroma_pvc = k8s.core.v1.PersistentVolumeClaim(
     ),
     spec=PersistentVolumeClaimSpecArgs(
         access_modes=["ReadWriteOnce"],
-        resources=ResourceRequirementsArgs(
-            requests={"storage": "50Gi"}
-        ),
+        resources=ResourceRequirementsArgs(requests={"storage": "50Gi"}),
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 # ============================================================================
@@ -207,9 +220,7 @@ chroma_deployment = k8s.apps.v1.Deployment(
                             EnvVarArgs(name="CHROMA_SERVER_HTTP_PORT", value="8000"),
                             EnvVarArgs(name="ALLOW_RESET", value="true"),
                         ],
-                        volume_mounts=[
-                            VolumeMountArgs(name="chroma-data", mount_path="/chroma")
-                        ],
+                        volume_mounts=[VolumeMountArgs(name="chroma-data", mount_path="/chroma")],
                         liveness_probe=Probe(
                             http_get=HTTPGetActionArgs(path="/api/v1/heartbeat", port=8000),
                             initial_delay_seconds=10,
@@ -219,14 +230,13 @@ chroma_deployment = k8s.apps.v1.Deployment(
                 ],
                 volumes=[
                     VolumeArgs(
-                        name="chroma-data",
-                        persistent_volume_claim={"claim_name": "chroma-pvc"}
+                        name="chroma-data", persistent_volume_claim={"claim_name": "chroma-pvc"}
                     )
                 ],
             ),
         ),
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[chroma_pvc])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[chroma_pvc]),
 )
 
 chroma_service = k8s.core.v1.Service(
@@ -240,7 +250,7 @@ chroma_service = k8s.core.v1.Service(
         ports=[ServicePortArgs(port=8000, target_port=8000)],
         type="ClusterIP",
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 # ============================================================================
@@ -263,22 +273,27 @@ chroma_init_job = k8s.batch.v1.Job(
                         name="chroma-init",
                         image=f"{registry_url}/quiz-vector:latest",
                         command=[
-                            "sh", "-c",
+                            "sh",
+                            "-c",
                             "echo 'Starting ChromaDB data ingestion...' && "
                             "python -m src.datapipeline.downloader --to_chroma --to_tagmeta && "
                             "echo 'Uploading prior files to GCS...' && "
                             "gsutil cp /app/src/datapipeline/logs/prior_mean.npy gs://tag-genome-data/quiz-priors/ && "
                             "gsutil cp /app/src/datapipeline/logs/prior_cov.npy gs://tag-genome-data/quiz-priors/ && "
                             "gsutil cp /app/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json gs://tag-genome-data/quiz-priors/ && "
-                            "echo 'ChromaDB initialization complete!'"
+                            "echo 'ChromaDB initialization complete!'",
                         ],
                         env=[
                             EnvVarArgs(name="CHROMA_SERVER_HOST", value="chroma-service"),
                             EnvVarArgs(name="CHROMA_SERVER_PORT", value="8000"),
                             EnvVarArgs(name="CHROMA_COLLECTION", value="movie_tag_relevance_cos"),
                             EnvVarArgs(name="GCS_BUCKET", value="tag-genome-data"),
-                            EnvVarArgs(name="TAG_REL_OBJECT", value="datasets/tag_genome/tag_relevance.dat"),
-                            EnvVarArgs(name="MOVIES_OBJECT", value="datasets/tag_genome/movies.dat"),
+                            EnvVarArgs(
+                                name="TAG_REL_OBJECT", value="datasets/tag_genome/tag_relevance.dat"
+                            ),
+                            EnvVarArgs(
+                                name="MOVIES_OBJECT", value="datasets/tag_genome/movies.dat"
+                            ),
                             EnvVarArgs(name="TAGS_OBJECT", value="datasets/tag_genome/tags.dat"),
                             EnvVarArgs(name="TAGMETA_COLLECTION", value="tag_metadata"),
                             EnvVarArgs(name="LOG_DIR", value="/app/src/datapipeline/logs"),
@@ -293,9 +308,8 @@ chroma_init_job = k8s.batch.v1.Job(
         backoff_limit=3,
     ),
     opts=pulumi.ResourceOptions(
-        provider=k8s_provider,
-        depends_on=[chroma_deployment, chroma_service]
-    )
+        provider=k8s_provider, depends_on=[chroma_deployment, chroma_service]
+    ),
 )
 
 # ============================================================================
@@ -319,23 +333,29 @@ quiz_deployment = k8s.apps.v1.Deployment(
                         name="download-priors",
                         image="google/cloud-sdk:slim",
                         command=[
-                            "sh", "-c",
+                            "sh",
+                            "-c",
                             "mkdir -p /data && "
                             "gsutil cp gs://tag-genome-data/quiz-priors/prior_mean.npy /data/ && "
                             "gsutil cp gs://tag-genome-data/quiz-priors/prior_cov.npy /data/ && "
                             "gsutil cp gs://tag-genome-data/quiz-priors/movie_tag_relevance_cos__tag_index.json /data/ && "
-                            "echo 'Prior files downloaded successfully'"
+                            "echo 'Prior files downloaded successfully'",
                         ],
-                        volume_mounts=[
-                            VolumeMountArgs(name="prior-data", mount_path="/data")
-                        ],
+                        volume_mounts=[VolumeMountArgs(name="prior-data", mount_path="/data")],
                     )
                 ],
                 containers=[
                     Container(
                         name="quiz-service",
                         image=f"{registry_url}/quiz-vector:latest",
-                        command=["uvicorn", "src.quiz_service.api:app", "--host", "0.0.0.0", "--port", "8082"],
+                        command=[
+                            "uvicorn",
+                            "src.quiz_service.api:app",
+                            "--host",
+                            "0.0.0.0",
+                            "--port",
+                            "8082",
+                        ],
                         ports=[ContainerPortArgs(container_port=8082)],
                         env=[
                             EnvVarArgs(name="CHROMA_SERVER_HOST", value="chroma-service"),
@@ -343,13 +363,14 @@ quiz_deployment = k8s.apps.v1.Deployment(
                             EnvVarArgs(name="CHROMA_COLLECTION", value="movie_tag_relevance_cos"),
                             EnvVarArgs(name="PRIOR_MEAN_PATH", value="/data/prior_mean.npy"),
                             EnvVarArgs(name="PRIOR_COV_PATH", value="/data/prior_cov.npy"),
-                            EnvVarArgs(name="TAG_INDEX_JSON", value="/data/movie_tag_relevance_cos__tag_index.json"),
+                            EnvVarArgs(
+                                name="TAG_INDEX_JSON",
+                                value="/data/movie_tag_relevance_cos__tag_index.json",
+                            ),
                             EnvVarArgs(name="ANONYMIZED_TELEMETRY", value="False"),
                             EnvVarArgs(name="CHROMA_TELEMETRY_IMPL", value="none"),
                         ],
-                        volume_mounts=[
-                            VolumeMountArgs(name="prior-data", mount_path="/data")
-                        ],
+                        volume_mounts=[VolumeMountArgs(name="prior-data", mount_path="/data")],
                         liveness_probe=Probe(
                             http_get=HTTPGetActionArgs(path="/health", port=8082),
                             initial_delay_seconds=30,
@@ -366,13 +387,11 @@ quiz_deployment = k8s.apps.v1.Deployment(
                         ),
                     )
                 ],
-                volumes=[
-                    VolumeArgs(name="prior-data", empty_dir={})
-                ],
+                volumes=[VolumeArgs(name="prior-data", empty_dir={})],
             ),
         ),
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[chroma_init_job])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[chroma_init_job]),
 )
 
 quiz_service = k8s.core.v1.Service(
@@ -386,7 +405,7 @@ quiz_service = k8s.core.v1.Service(
         ports=[ServicePortArgs(port=8082, target_port=8082)],
         type="LoadBalancer",  # Changed from ClusterIP to allow external browser access
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 # ============================================================================
@@ -417,19 +436,17 @@ screenplay_deployment = k8s.apps.v1.Deployment(
                                 name="OPENROUTER_API_KEY",
                                 value_from=EnvVarSourceArgs(
                                     secret_key_ref=SecretKeySelectorArgs(
-                                        name="api-secrets",
-                                        key="openrouter-api-key"
+                                        name="api-secrets", key="openrouter-api-key"
                                     )
-                                )
+                                ),
                             ),
                             EnvVarArgs(
                                 name="OMDB_API_KEY",
                                 value_from=EnvVarSourceArgs(
                                     secret_key_ref=SecretKeySelectorArgs(
-                                        name="api-secrets",
-                                        key="omdb-api-key"
+                                        name="api-secrets", key="omdb-api-key"
                                     )
-                                )
+                                ),
                             ),
                         ],
                         liveness_probe=Probe(
@@ -446,7 +463,7 @@ screenplay_deployment = k8s.apps.v1.Deployment(
             ),
         ),
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 screenplay_service = k8s.core.v1.Service(
@@ -460,7 +477,7 @@ screenplay_service = k8s.core.v1.Service(
         ports=[ServicePortArgs(port=8080, target_port=8000)],
         type="ClusterIP",
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 # ============================================================================
@@ -491,10 +508,9 @@ scene_deployment = k8s.apps.v1.Deployment(
                                 name="OPENROUTER_API_KEY",
                                 value_from=EnvVarSourceArgs(
                                     secret_key_ref=SecretKeySelectorArgs(
-                                        name="api-secrets",
-                                        key="openrouter-api-key"
+                                        name="api-secrets", key="openrouter-api-key"
                                     )
-                                )
+                                ),
                             ),
                         ],
                         liveness_probe=Probe(
@@ -511,7 +527,7 @@ scene_deployment = k8s.apps.v1.Deployment(
             ),
         ),
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 scene_service = k8s.core.v1.Service(
@@ -525,7 +541,7 @@ scene_service = k8s.core.v1.Service(
         ports=[ServicePortArgs(port=8001, target_port=8001)],
         type="ClusterIP",
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 # ============================================================================
@@ -552,13 +568,14 @@ video_deployment = k8s.apps.v1.Deployment(
                         env=[
                             EnvVarArgs(name="GCS_BUCKET_NAME", value="tarantaino-output"),
                             EnvVarArgs(name="GCS_PREFIX", value="video_generator_outputs"),
-                            EnvVarArgs(name="GOOGLE_APPLICATION_CREDENTIALS", value="/secrets/gcp-credentials.json"),
+                            EnvVarArgs(
+                                name="GOOGLE_APPLICATION_CREDENTIALS",
+                                value="/secrets/gcp-credentials.json",
+                            ),
                         ],
                         volume_mounts=[
                             VolumeMountArgs(
-                                name="gcp-credentials",
-                                mount_path="/secrets",
-                                read_only=True
+                                name="gcp-credentials", mount_path="/secrets", read_only=True
                             )
                         ],
                         liveness_probe=Probe(
@@ -577,17 +594,18 @@ video_deployment = k8s.apps.v1.Deployment(
                         name="gcp-credentials",
                         secret=SecretVolumeSourceArgs(
                             secret_name="api-secrets",
-                            items=[KeyToPathArgs(
-                                key="gcp-credentials.json",
-                                path="gcp-credentials.json"
-                            )]
-                        )
+                            items=[
+                                KeyToPathArgs(
+                                    key="gcp-credentials.json", path="gcp-credentials.json"
+                                )
+                            ],
+                        ),
                     )
                 ],
             ),
         ),
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 video_service = k8s.core.v1.Service(
@@ -601,7 +619,7 @@ video_service = k8s.core.v1.Service(
         ports=[ServicePortArgs(port=8003, target_port=8003)],
         type="ClusterIP",
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 # ============================================================================
@@ -633,7 +651,9 @@ frontend_deployment = k8s.apps.v1.Deployment(
                             # NOTE: Quiz service is exposed via LoadBalancer for browser access
                             # The IP (35.222.147.123) is dynamically assigned by GCP
                             # For production, consider using a static IP reservation
-                            EnvVarArgs(name="NEXT_PUBLIC_QUIZ_API_URL", value="http://35.222.147.123:8082"),
+                            EnvVarArgs(
+                                name="NEXT_PUBLIC_QUIZ_API_URL", value="http://35.222.147.123:8082"
+                            ),
                         ],
                         liveness_probe=Probe(
                             http_get=HTTPGetActionArgs(path="/api/health", port=3002),
@@ -651,8 +671,8 @@ frontend_deployment = k8s.apps.v1.Deployment(
     ),
     opts=pulumi.ResourceOptions(
         provider=k8s_provider,
-        depends_on=[quiz_service, screenplay_service, scene_service, video_service]
-    )
+        depends_on=[quiz_service, screenplay_service, scene_service, video_service],
+    ),
 )
 
 frontend_service = k8s.core.v1.Service(
@@ -666,7 +686,7 @@ frontend_service = k8s.core.v1.Service(
         ports=[ServicePortArgs(port=80, target_port=3002)],
         type="LoadBalancer",  # Direct LoadBalancer instead of Ingress
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
 
 # ============================================================================
@@ -707,7 +727,7 @@ quiz_hpa = k8s.autoscaling.v2.HorizontalPodAutoscaler(
             ),
         ],
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[quiz_deployment])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[quiz_deployment]),
 )
 
 frontend_hpa = k8s.autoscaling.v2.HorizontalPodAutoscaler(
@@ -737,7 +757,7 @@ frontend_hpa = k8s.autoscaling.v2.HorizontalPodAutoscaler(
             ),
         ],
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[frontend_deployment])
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[frontend_deployment]),
 )
 
 # ============================================================================
@@ -751,29 +771,44 @@ pulumi.export("namespace", ns_name)
 
 # Get LoadBalancer IP from frontend service
 load_balancer_ip = frontend_service.status.apply(
-    lambda status: status.load_balancer.ingress[0].ip
-    if status and status.load_balancer and status.load_balancer.ingress
-    else "pending..."
+    lambda status: (
+        status.load_balancer.ingress[0].ip
+        if status and status.load_balancer and status.load_balancer.ingress
+        else "pending..."
+    )
 )
 
 pulumi.export("load_balancer_ip", load_balancer_ip)
-pulumi.export("app_url", load_balancer_ip.apply(lambda ip: f"http://{ip}" if ip != "pending..." else "pending..."))
+pulumi.export(
+    "app_url",
+    load_balancer_ip.apply(lambda ip: f"http://{ip}" if ip != "pending..." else "pending..."),
+)
 
 # Get LoadBalancer IP from quiz service
 quiz_load_balancer_ip = quiz_service.status.apply(
-    lambda status: status.load_balancer.ingress[0].ip
-    if status and status.load_balancer and status.load_balancer.ingress
-    else "pending..."
+    lambda status: (
+        status.load_balancer.ingress[0].ip
+        if status and status.load_balancer and status.load_balancer.ingress
+        else "pending..."
+    )
 )
 
 pulumi.export("quiz_service_ip", quiz_load_balancer_ip)
-pulumi.export("quiz_api_url", quiz_load_balancer_ip.apply(lambda ip: f"http://{ip}:8082" if ip != "pending..." else "pending..."))
+pulumi.export(
+    "quiz_api_url",
+    quiz_load_balancer_ip.apply(
+        lambda ip: f"http://{ip}:8082" if ip != "pending..." else "pending..."
+    ),
+)
 
-pulumi.export("services_deployed", [
-    "chroma",
-    "quiz-service",
-    "screenplay-writer",
-    "scene-decomposer",
-    "video-generator",
-    "frontend"
-])
+pulumi.export(
+    "services_deployed",
+    [
+        "chroma",
+        "quiz-service",
+        "screenplay-writer",
+        "scene-decomposer",
+        "video-generator",
+        "frontend",
+    ],
+)

@@ -10,9 +10,10 @@ Usage:
     pulumi up --stack dev
 """
 
+import subprocess
+
 import pulumi
 import pulumi_docker as docker
-import subprocess
 
 # Configuration
 config = pulumi.Config()
@@ -23,7 +24,7 @@ registry_url = f"{gcp_region}-docker.pkg.dev/{gcp_project}/taraintino-images"
 # Get git commit SHA for versioning
 try:
     git_sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode().strip()
-except:
+except Exception:
     git_sha = "latest"
 
 pulumi.export("git_sha", git_sha)
@@ -53,9 +54,11 @@ for service_name, (context, dockerfile) in services.items():
             platform="linux/amd64",  # Ensure compatibility with GKE
             # Build args for frontend
             # Updated to use external LoadBalancer IP for browser access
-            args={
-                "NEXT_PUBLIC_QUIZ_API_URL": "http://35.222.147.123:8082"
-            } if service_name == "frontend" else {}
+            args=(
+                {"NEXT_PUBLIC_QUIZ_API_URL": "http://35.222.147.123:8082"}
+                if service_name == "frontend"
+                else {}
+            ),
         ),
         image_name=image_name,
         registry=docker.RegistryArgs(
