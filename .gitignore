@@ -29,6 +29,12 @@ API_call_test.json
 gcp-credentials.json
 Sample.json
 
+# Kubernetes credentials
+kubeconfig.yaml
+**/kubeconfig.yaml
+gke_gcloud_auth_plugin_cache
+**/gke_gcloud_auth_plugin_cache
+
 # -----------------------------------------------------------------------------
 # Python
 # -----------------------------------------------------------------------------
@@ -225,10 +231,12 @@ hand-ins/*.jpg
 hand-ins/*.jpeg
 # Keep README and markdown files in hand-ins
 
-# Markdown files - ignore all except README files
+# Markdown files - ignore all except README and TEST_COVERAGE files
 *.md
 !README.md
 !**/README.md
+!TEST_COVERAGE.md
+!**/TEST_COVERAGE.md
 
 # Root-level shell scripts (keep essential scripts)
 /*.sh
