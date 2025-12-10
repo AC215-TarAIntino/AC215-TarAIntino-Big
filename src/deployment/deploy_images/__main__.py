@@ -55,7 +55,7 @@ for service_name, (context, dockerfile) in services.items():
             # Build args for frontend
             # Updated to use external LoadBalancer IP for browser access
             args=(
-                {"NEXT_PUBLIC_QUIZ_API_URL": "http://35.222.147.123:8082"}
+                {"NEXT_PUBLIC_QUIZ_API_URL": "http://34.30.95.212:8082"}
                 if service_name == "frontend"
                 else {}
             ),
