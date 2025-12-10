@@ -38,6 +38,12 @@ jobs:
         run: |
           black --check src/ tests/ --exclude '/(\.git|\.venv|build|dist|node_modules)/'
 
+      - name: Create mock env files for docker-compose validation
+        run: |
+          echo "OPENROUTER_API_KEY=test_key" > src/screenplay-writer/.env
+          echo "OMDB_API_KEY=test_key" >> src/screenplay-writer/.env
+          echo "OPENROUTER_API_KEY=test_key" > src/scene-decomposer/.env
+
       - name: Validate docker-compose syntax
         run: |
           docker compose config
