@@ -1,3 +1,5 @@
 config:
-  gcp_project: llm-service-account-474620  # Replace with your project ID
-  gcp_region: us-central1
+  taraintino-images:gcp_project: taraintino-showcase-52d833
+  taraintino-images:gcp_region: us-central1
+  taraintino-images:imageTag: "1765349347"
+encryptionsalt: v1:ByGHas8QYf0=:v1:gTXyADyiG7MyBK3r:YNXJe/DY91I9nulIVFl4JhJ5lQ61kw==

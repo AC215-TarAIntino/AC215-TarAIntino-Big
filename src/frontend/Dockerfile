@@ -28,7 +28,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Quiz API URL (baked into the build for NEXT_PUBLIC_ vars)
 # Updated to use external LoadBalancer IP for browser access
-ARG NEXT_PUBLIC_QUIZ_API_URL=http://35.222.147.123:8082
+ARG NEXT_PUBLIC_QUIZ_API_URL=http://34.30.95.212:8082
 ENV NEXT_PUBLIC_QUIZ_API_URL=$NEXT_PUBLIC_QUIZ_API_URL
 
 # Build the application

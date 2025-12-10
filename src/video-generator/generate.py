@@ -7,7 +7,7 @@ from google.genai import types
 
 OUTPUT_DIR = Path("./output")
 
-GCS_BUCKET_NAME = "tarantaino-output"
+GCS_BUCKET_NAME = "taraintino-showcase-videos"
 GCS_PREFIX = "video_generator_outputs"
 
 

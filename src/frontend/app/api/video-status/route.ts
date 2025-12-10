@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { videoStatusStore } from "@/lib/videoStatusStore";
 
-const GCS_BUCKET_NAME = "tarantaino-output";
+const GCS_BUCKET_NAME = "taraintino-showcase-videos";
 const GCS_PREFIX = "video_generator_outputs/trailers";
 
 export async function GET(request: NextRequest) {

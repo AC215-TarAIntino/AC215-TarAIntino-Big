@@ -9,7 +9,7 @@ import { videoStatusStore } from "@/lib/videoStatusStore";
  */
 
 const VIDEO_GENERATOR_URL = "http://video-generator:8003";
-const EXISTING_GCS_URL = "gs://tarantaino-output/video_generator_outputs/trailers/trailer_no_audio.mp4";
+const EXISTING_GCS_URL = "gs://taraintino-showcase-videos/video_generator_outputs/trailers/trailer_no_audio.mp4";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,11 +42,11 @@ export async function POST(request: NextRequest) {
         console.log(`[${sessionId}] ✅ Got signed URL`);
       } else {
         console.error(`[${sessionId}] Failed to get signed URL, using direct URL (may not work)`);
-        signedUrl = "https://storage.googleapis.com/tarantaino-output/video_generator_outputs/trailers/trailer_no_audio.mp4";
+        signedUrl = "https://storage.googleapis.com/taraintino-showcase-videos/video_generator_outputs/trailers/trailer_no_audio.mp4";
       }
     } catch (error) {
       console.error(`[${sessionId}] Error getting signed URL:`, error);
-      signedUrl = "https://storage.googleapis.com/tarantaino-output/video_generator_outputs/trailers/trailer_no_audio.mp4";
+      signedUrl = "https://storage.googleapis.com/taraintino-showcase-videos/video_generator_outputs/trailers/trailer_no_audio.mp4";
     }
 
     // Immediately store the "completed" status

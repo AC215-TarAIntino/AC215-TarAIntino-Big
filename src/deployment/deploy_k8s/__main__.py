@@ -94,6 +94,7 @@ node_pool = gcp.container.NodePool(
         auto_repair=True,
         auto_upgrade=True,
     ),
+    opts=pulumi.ResourceOptions(ignore_changes=["node_config"]),
 )
 
 
@@ -128,9 +129,50 @@ kubeconfig = pulumi.Output.all(
     cluster.name, cluster.endpoint, cluster.master_auth.cluster_ca_certificate
 ).apply(lambda args: generate_kubeconfig(args[0], args[1], args[2]))
 
-# Create Kubernetes provider
+# Create Kubernetes provider using token-based kubeconfig
+# This avoids the gke-gcloud-auth-plugin requirement
+import subprocess
+
+def get_token_kubeconfig(cluster_name_val, endpoint_val, ca_cert_val):
+    """Generate kubeconfig that uses gcloud access token instead of auth plugin"""
+    # Get a fresh access token
+    result = subprocess.run(
+        ["gcloud", "auth", "print-access-token"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+    token = result.stdout.strip()
+
+    return f"""apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: {ca_cert_val}
+    server: https://{endpoint_val}
+  name: {cluster_name_val}
+contexts:
+- context:
+    cluster: {cluster_name_val}
+    user: {cluster_name_val}
+  name: {cluster_name_val}
+current-context: {cluster_name_val}
+kind: Config
+preferences: {{}}
+users:
+- name: {cluster_name_val}
+  user:
+    token: {token}
+"""
+
+token_kubeconfig = pulumi.Output.all(
+    cluster.name, cluster.endpoint, cluster.master_auth.cluster_ca_certificate
+).apply(lambda args: get_token_kubeconfig(args[0], args[1], args[2]))
+
+# Create K8s provider with token-based kubeconfig
 k8s_provider = k8s.Provider(
-    "gke-k8s", kubeconfig=kubeconfig, opts=pulumi.ResourceOptions(depends_on=[node_pool])
+    "gke-k8s",
+    kubeconfig=token_kubeconfig,
+    opts=pulumi.ResourceOptions(depends_on=[node_pool])
 )
 
 # ============================================================================
@@ -160,7 +202,7 @@ config_map = k8s.core.v1.ConfigMap(
         "CHROMA_SERVER_HOST": "chroma-service",
         "CHROMA_SERVER_PORT": "8000",
         "CHROMA_COLLECTION": "movie_tag_relevance_cos",
-        "GCS_BUCKET_NAME": "tarantaino-output",
+        "GCS_BUCKET_NAME": "taraintino-showcase-videos",
         "GCS_PREFIX": "video_generator_outputs",
         "TAG_REL_OBJECT": "datasets/tag_genome/tag_relevance.dat",
         "MOVIES_OBJECT": "datasets/tag_genome/movies.dat",
@@ -213,14 +255,14 @@ chroma_deployment = k8s.apps.v1.Deployment(
                 containers=[
                     Container(
                         name="chroma",
-                        image="chromadb/chroma:latest",
+                        image="ghcr.io/chroma-core/chroma:0.5.23",
                         ports=[ContainerPortArgs(container_port=8000)],
                         env=[
                             EnvVarArgs(name="CHROMA_SERVER_HOST", value="0.0.0.0"),
                             EnvVarArgs(name="CHROMA_SERVER_HTTP_PORT", value="8000"),
                             EnvVarArgs(name="ALLOW_RESET", value="true"),
                         ],
-                        volume_mounts=[VolumeMountArgs(name="chroma-data", mount_path="/chroma")],
+                        volume_mounts=[VolumeMountArgs(name="chroma-data", mount_path="/data")],
                         liveness_probe=Probe(
                             http_get=HTTPGetActionArgs(path="/api/v1/heartbeat", port=8000),
                             initial_delay_seconds=10,
@@ -257,60 +299,61 @@ chroma_service = k8s.core.v1.Service(
 # ChromaDB Initialization Job
 # ============================================================================
 
-chroma_init_job = k8s.batch.v1.Job(
-    "chroma-init-job",
-    metadata=ObjectMetaArgs(
-        name="chroma-init",
-        namespace=ns_name,
-    ),
-    spec=JobSpecArgs(
-        template=PodTemplateSpecArgs(
-            metadata=ObjectMetaArgs(labels={"app": "chroma-init"}),
-            spec=PodSpecArgs(
-                restart_policy="OnFailure",
-                containers=[
-                    Container(
-                        name="chroma-init",
-                        image=f"{registry_url}/quiz-vector:latest",
-                        command=[
-                            "sh",
-                            "-c",
-                            "echo 'Starting ChromaDB data ingestion...' && "
-                            "python -m src.datapipeline.downloader --to_chroma --to_tagmeta && "
-                            "echo 'Uploading prior files to GCS...' && "
-                            "gsutil cp /app/src/datapipeline/logs/prior_mean.npy gs://tag-genome-data/quiz-priors/ && "
-                            "gsutil cp /app/src/datapipeline/logs/prior_cov.npy gs://tag-genome-data/quiz-priors/ && "
-                            "gsutil cp /app/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json gs://tag-genome-data/quiz-priors/ && "
-                            "echo 'ChromaDB initialization complete!'",
-                        ],
-                        env=[
-                            EnvVarArgs(name="CHROMA_SERVER_HOST", value="chroma-service"),
-                            EnvVarArgs(name="CHROMA_SERVER_PORT", value="8000"),
-                            EnvVarArgs(name="CHROMA_COLLECTION", value="movie_tag_relevance_cos"),
-                            EnvVarArgs(name="GCS_BUCKET", value="tag-genome-data"),
-                            EnvVarArgs(
-                                name="TAG_REL_OBJECT", value="datasets/tag_genome/tag_relevance.dat"
-                            ),
-                            EnvVarArgs(
-                                name="MOVIES_OBJECT", value="datasets/tag_genome/movies.dat"
-                            ),
-                            EnvVarArgs(name="TAGS_OBJECT", value="datasets/tag_genome/tags.dat"),
-                            EnvVarArgs(name="TAGMETA_COLLECTION", value="tag_metadata"),
-                            EnvVarArgs(name="LOG_DIR", value="/app/src/datapipeline/logs"),
-                            EnvVarArgs(name="BATCH_SIZE", value="2000"),
-                            EnvVarArgs(name="ANONYMIZED_TELEMETRY", value="False"),
-                            EnvVarArgs(name="CHROMA_TELEMETRY_IMPL", value="none"),
-                        ],
-                    )
-                ],
-            ),
-        ),
-        backoff_limit=3,
-    ),
-    opts=pulumi.ResourceOptions(
-        provider=k8s_provider, depends_on=[chroma_deployment, chroma_service]
-    ),
-)
+# ChromaDB init job commented out - data already exists in persistent volume
+# chroma_init_job = k8s.batch.v1.Job(
+#     "chroma-init-job",
+#     metadata=ObjectMetaArgs(
+#         name="chroma-init",
+#         namespace=ns_name,
+#     ),
+#     spec=JobSpecArgs(
+#         template=PodTemplateSpecArgs(
+#             metadata=ObjectMetaArgs(labels={"app": "chroma-init"}),
+#             spec=PodSpecArgs(
+#                 restart_policy="OnFailure",
+#                 containers=[
+#                     Container(
+#                         name="chroma-init",
+#                         image=f"{registry_url}/quiz-vector:latest",
+#                         command=[
+#                             "sh",
+#                             "-c",
+#                             "echo 'Starting ChromaDB data ingestion...' && "
+#                             "python -m src.datapipeline.downloader --to_chroma --to_tagmeta && "
+#                             "echo 'Uploading prior files to GCS...' && "
+#                             "gsutil cp /app/src/datapipeline/logs/prior_mean.npy gs://taraintino-showcase-data/quiz-priors/ && "
+#                             "gsutil cp /app/src/datapipeline/logs/prior_cov.npy gs://taraintino-showcase-data/quiz-priors/ && "
+#                             "gsutil cp /app/src/datapipeline/logs/movie_tag_relevance_cos__tag_index.json gs://taraintino-showcase-data/quiz-priors/ && "
+#                             "echo 'ChromaDB initialization complete!'",
+#                         ],
+#                         env=[
+#                             EnvVarArgs(name="CHROMA_SERVER_HOST", value="chroma-service"),
+#                             EnvVarArgs(name="CHROMA_SERVER_PORT", value="8000"),
+#                             EnvVarArgs(name="CHROMA_COLLECTION", value="movie_tag_relevance_cos"),
+#                             EnvVarArgs(name="GCS_BUCKET", value="taraintino-showcase-data"),
+#                             EnvVarArgs(
+#                                 name="TAG_REL_OBJECT", value="datasets/tag_genome/tag_relevance.dat"
+#                             ),
+#                             EnvVarArgs(
+#                                 name="MOVIES_OBJECT", value="datasets/tag_genome/movies.dat"
+#                             ),
+#                             EnvVarArgs(name="TAGS_OBJECT", value="datasets/tag_genome/tags.dat"),
+#                             EnvVarArgs(name="TAGMETA_COLLECTION", value="tag_metadata"),
+#                             EnvVarArgs(name="LOG_DIR", value="/app/src/datapipeline/logs"),
+#                             EnvVarArgs(name="BATCH_SIZE", value="2000"),
+#                             EnvVarArgs(name="ANONYMIZED_TELEMETRY", value="False"),
+#                             EnvVarArgs(name="CHROMA_TELEMETRY_IMPL", value="none"),
+#                         ],
+#                     )
+#                 ],
+#             ),
+#         ),
+#         backoff_limit=3,
+#     ),
+#     opts=pulumi.ResourceOptions(
+#         provider=k8s_provider, depends_on=[chroma_deployment, chroma_service]
+#     ),
+# )
 
 # ============================================================================
 # Quiz Service Deployment and Service
@@ -336,9 +379,9 @@ quiz_deployment = k8s.apps.v1.Deployment(
                             "sh",
                             "-c",
                             "mkdir -p /data && "
-                            "gsutil cp gs://tag-genome-data/quiz-priors/prior_mean.npy /data/ && "
-                            "gsutil cp gs://tag-genome-data/quiz-priors/prior_cov.npy /data/ && "
-                            "gsutil cp gs://tag-genome-data/quiz-priors/movie_tag_relevance_cos__tag_index.json /data/ && "
+                            "gsutil cp gs://taraintino-showcase-data/quiz-priors/prior_mean.npy /data/ && "
+                            "gsutil cp gs://taraintino-showcase-data/quiz-priors/prior_cov.npy /data/ && "
+                            "gsutil cp gs://taraintino-showcase-data/quiz-priors/movie_tag_relevance_cos__tag_index.json /data/ && "
                             "echo 'Prior files downloaded successfully'",
                         ],
                         volume_mounts=[VolumeMountArgs(name="prior-data", mount_path="/data")],
@@ -391,7 +434,7 @@ quiz_deployment = k8s.apps.v1.Deployment(
             ),
         ),
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[chroma_init_job]),
+    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[chroma_deployment, chroma_service]),
 )
 
 quiz_service = k8s.core.v1.Service(
@@ -404,6 +447,7 @@ quiz_service = k8s.core.v1.Service(
         selector={"app": "quiz-service"},
         ports=[ServicePortArgs(port=8082, target_port=8082)],
         type="LoadBalancer",  # Changed from ClusterIP to allow external browser access
+        session_affinity="ClientIP",  # Ensure same client goes to same pod (required for in-memory sessions)
     ),
     opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[namespace]),
 )
@@ -453,6 +497,8 @@ screenplay_deployment = k8s.apps.v1.Deployment(
                             http_get=HTTPGetActionArgs(path="/health", port=8000),
                             initial_delay_seconds=10,
                             period_seconds=10,
+                            timeout_seconds=5,  # Allow 5 seconds for health check response
+                            failure_threshold=12,  # Allow 12 failures (120s total) before restart
                         ),
                         resources=ResourceRequirementsArgs(
                             requests={"cpu": "500m", "memory": "1Gi"},
@@ -517,6 +563,8 @@ scene_deployment = k8s.apps.v1.Deployment(
                             http_get=HTTPGetActionArgs(path="/health", port=8001),
                             initial_delay_seconds=10,
                             period_seconds=10,
+                            timeout_seconds=5,  # Allow 5 seconds for health check response
+                            failure_threshold=12,  # Allow 12 failures (120s total) before restart
                         ),
                         resources=ResourceRequirementsArgs(
                             requests={"cpu": "500m", "memory": "1Gi"},
@@ -566,39 +614,19 @@ video_deployment = k8s.apps.v1.Deployment(
                         image=f"{registry_url}/video-generator:latest",
                         ports=[ContainerPortArgs(container_port=8003)],
                         env=[
-                            EnvVarArgs(name="GCS_BUCKET_NAME", value="tarantaino-output"),
+                            EnvVarArgs(name="GCS_BUCKET_NAME", value="taraintino-showcase-videos"),
                             EnvVarArgs(name="GCS_PREFIX", value="video_generator_outputs"),
-                            EnvVarArgs(
-                                name="GOOGLE_APPLICATION_CREDENTIALS",
-                                value="/secrets/gcp-credentials.json",
-                            ),
-                        ],
-                        volume_mounts=[
-                            VolumeMountArgs(
-                                name="gcp-credentials", mount_path="/secrets", read_only=True
-                            )
                         ],
                         liveness_probe=Probe(
                             http_get=HTTPGetActionArgs(path="/health", port=8003),
                             initial_delay_seconds=10,
                             period_seconds=10,
+                            timeout_seconds=5,  # Allow 5 seconds for health check response
+                            failure_threshold=12,  # Allow 12 failures (120s total) before restart
                         ),
                         resources=ResourceRequirementsArgs(
                             requests={"cpu": "1", "memory": "2Gi"},
                             limits={"cpu": "4", "memory": "8Gi"},
-                        ),
-                    )
-                ],
-                volumes=[
-                    VolumeArgs(
-                        name="gcp-credentials",
-                        secret=SecretVolumeSourceArgs(
-                            secret_name="api-secrets",
-                            items=[
-                                KeyToPathArgs(
-                                    key="gcp-credentials.json", path="gcp-credentials.json"
-                                )
-                            ],
                         ),
                     )
                 ],
@@ -649,17 +677,14 @@ frontend_deployment = k8s.apps.v1.Deployment(
                             EnvVarArgs(name="PORT", value="3002"),
                             EnvVarArgs(name="HOSTNAME", value="0.0.0.0"),
                             # NOTE: Quiz service is exposed via LoadBalancer for browser access
-                            # The IP (35.222.147.123) is dynamically assigned by GCP
+                            # The IP (34.30.95.212) is dynamically assigned by GCP
                             # For production, consider using a static IP reservation
                             EnvVarArgs(
-                                name="NEXT_PUBLIC_QUIZ_API_URL", value="http://35.222.147.123:8082"
+                                name="NEXT_PUBLIC_QUIZ_API_URL", value="http://34.30.95.212:8082"
                             ),
                         ],
-                        liveness_probe=Probe(
-                            http_get=HTTPGetActionArgs(path="/api/health", port=3002),
-                            initial_delay_seconds=10,
-                            period_seconds=10,
-                        ),
+                        # Liveness probe removed - Next.js doesn't have /api/health endpoint
+                        # Frontend is stable and will restart automatically if it crashes
                         resources=ResourceRequirementsArgs(
                             requests={"cpu": "250m", "memory": "512Mi"},
                             limits={"cpu": "1", "memory": "2Gi"},

@@ -73,30 +73,58 @@ class MovieFetcher:
         except requests.RequestException as e:
             raise MovieFetcherError(f"Failed to fetch movie '{title}': {str(e)}") from e
 
-    def fetch_multiple_movies(self, titles: list[str]) -> list[dict[str, Any]]:
+    def fetch_multiple_movies(
+        self, titles: list[str], min_required: int = 3, max_attempts: int = 20
+    ) -> list[dict[str, Any]]:
         """
-        Fetch details for multiple movies.
+        Fetch details for multiple movies with fallback mechanism.
 
         Args:
-            titles: List of movie titles
+            titles: List of movie titles (ordered by preference/similarity)
+            min_required: Minimum number of movies needed (default: 3)
+            max_attempts: Maximum number of titles to try from the list (default: 20)
 
         Returns:
             List of movie detail dictionaries
 
         Note:
-            Silently skips movies that are not found rather than raising an error.
+            If fewer than min_required movies are found in the initial list,
+            continues trying subsequent titles up to max_attempts to reach
+            the minimum threshold.
         """
         movies = []
+        attempted = 0
+
         for title in titles:
+            if attempted >= max_attempts:
+                print(
+                    f"Warning: Reached max attempts ({max_attempts}), stopping with {len(movies)} movies"
+                )
+                break
+
+            attempted += 1
+
             try:
                 movie_data = self.fetch_movie_by_title(title)
                 movies.append(movie_data)
+                print(f"✓ Found: {title} ({len(movies)}/{min_required} minimum)")
+
+                # If we have enough movies, we can stop
+                if len(movies) >= min_required:
+                    print(f"✓ Reached minimum required movies ({min_required})")
+                    break
+
             except MovieNotFoundError as e:
-                print(f"Warning: {e}")
+                print(f"✗ Not found: {title} - {e}")
                 continue
             except MovieFetcherError as e:
-                print(f"Error: {e}")
+                print(f"✗ Error fetching {title}: {e}")
                 continue
+
+        if len(movies) < min_required:
+            print(
+                f"Warning: Only found {len(movies)} movies out of minimum {min_required} required"
+            )
 
         return movies
 

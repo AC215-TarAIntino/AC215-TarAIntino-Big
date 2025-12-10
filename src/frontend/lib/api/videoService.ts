@@ -6,7 +6,7 @@
  * - USE_SIMPLE_TEST_MODE = false → FULL PIPELINE: Runs all microservices + real Veo API (uses quota)
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 // 🎬 MODE SELECTOR: Toggle this to switch between simple test and full pipeline
 // true  = API-FREE simple test mode (instant, no costs)

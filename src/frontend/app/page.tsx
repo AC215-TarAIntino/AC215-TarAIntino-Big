@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { SwipeCard } from "@/components/quiz/SwipeCard";
 import { ProgressRing } from "@/components/quiz/ProgressRing";
+import MovieGallery from "@/components/quiz/MovieGallery";
 import { GradientBackground } from "@/components/effects/GradientBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { startQuiz, submitAnswer } from "@/lib/api/quizService";
@@ -147,7 +148,7 @@ export default function QuizPage() {
   const currentQuestionNumber = progress.asked + 1;
 
   return (
-    <main className="h-screen relative overflow-hidden flex flex-col">
+    <main className="min-h-screen relative flex flex-col">
       <GradientBackground />
 
       {/* Header */}
@@ -185,9 +186,9 @@ export default function QuizPage() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.4 }}
-        className="relative z-20 flex-1 flex items-center justify-center px-6 py-4 min-h-0"
+        className="relative z-20 flex-1 flex items-center justify-center px-6 py-4 min-h-[600px]"
       >
-        <div className="w-full max-w-lg h-full max-h-[500px] relative">
+        <div className="w-full max-w-lg h-[500px] relative">
           <AnimatePresence mode="wait">
             {currentQuestion && (
               <SwipeCard
@@ -237,6 +238,16 @@ export default function QuizPage() {
           </p>
         </motion.div>
       </motion.footer>
+
+      {/* Movie Gallery Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="relative z-10 pb-12 pt-8"
+      >
+        <MovieGallery />
+      </motion.section>
     </main>
   );
 }

@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from gallery_updater import update_gallery_with_trailer
 from generate import (
     OUTPUT_DIR,
     generate_character_references,
@@ -86,6 +87,15 @@ class TrailerGenerationRequest(BaseModel):
     stitch_trailer: bool = Field(
         default=True,
         description="If true, stitch scene videos into output/trailer_no_audio.mp4",
+    )
+    movie_title: str | None = Field(
+        None, description="Movie title for gallery metadata (optional)"
+    )
+    screenplay_data: dict | None = Field(
+        None, description="Screenplay JSON data for gallery metadata (optional)"
+    )
+    update_gallery: bool = Field(
+        default=True, description="If true, automatically add to gallery after generation"
     )
 
 
@@ -199,7 +209,7 @@ def generate_signed_url(request: SignedUrlRequest) -> SignedUrlResponse:
         from google.cloud import storage
 
         client = storage.Client()
-        bucket = client.bucket("tarantaino-output")
+        bucket = client.bucket("taraintino-showcase-videos")
         blob = bucket.blob(request.gcs_path)
 
         # Generate signed URL that expires in X minutes
@@ -302,7 +312,7 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
 
         from google.cloud import storage
 
-        gcs_bucket_name = "tarantaino-output"
+        gcs_bucket_name = "taraintino-showcase-videos"
         gcs_prefix = "video_generator_outputs"
         filename = Path(trailer_path).name
         gcs_path = f"{gcs_prefix}/trailers/{request.session_id}/{filename}"
@@ -321,6 +331,24 @@ def generate_trailer(request: TrailerGenerationRequest) -> TrailerGenerationResp
             print(f"  ⚠️  Failed to generate signed URL: {e}")
             # Fallback to unsigned URL (will fail if bucket is private)
             public_url = f"https://storage.googleapis.com/{gcs_bucket_name}/{gcs_path}"
+
+        # Update gallery with newly generated trailer
+        if request.update_gallery:
+            try:
+                movie_title = request.movie_title or f"Trailer {request.session_id}"
+                # Calculate total duration from scenes
+                total_duration = sum(scene.duration_seconds for scene in request.scenes)
+
+                print(f"\n🎬 Updating gallery with '{movie_title}'...")
+                update_gallery_with_trailer(
+                    title=movie_title,
+                    video_url=gcs_url,
+                    screenplay_data=request.screenplay_data,
+                    duration=total_duration,
+                )
+            except Exception as gallery_err:
+                print(f"  ⚠️  Failed to update gallery (non-fatal): {gallery_err}")
+                # Don't fail the request if gallery update fails
 
     return TrailerGenerationResponse(
         character_refs=character_refs,
@@ -373,7 +401,7 @@ def generate_trailer_mock(request: TrailerGenerationRequest) -> TrailerGeneratio
 
             from google.cloud import storage
 
-            gcs_bucket_name = "tarantaino-output"
+            gcs_bucket_name = "taraintino-showcase-videos"
             gcs_prefix = "video_generator_outputs"
             filename = Path(trailer_path).name
             gcs_path = f"{gcs_prefix}/trailers/{request.session_id}/{filename}"

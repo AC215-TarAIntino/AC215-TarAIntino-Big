@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { videoStatusStore } from "@/lib/videoStatusStore";
 
-const SCREENPLAY_WRITER_URL = "http://screenplay-writer:8000";
-const SCENE_DECOMPOSER_URL = "http://scene-decomposer:8001";
-const VIDEO_GENERATOR_URL = "http://video-generator:8003";
+const SCREENPLAY_WRITER_URL = "http://screenplay-service:8080";
+const SCENE_DECOMPOSER_URL = "http://scene-service:8001";
+const VIDEO_GENERATOR_URL = "http://video-service:8003";
 const QUIZ_SERVICE_URL = "http://quiz-service:8082";
 
 export async function POST(request: NextRequest) {
@@ -44,12 +44,12 @@ async function generateVideoAsync(sessionId: string, _tasteVector: number[]) {
   try {
     console.log(`[${sessionId}] Starting video generation...`);
 
-    // Step 1: Get recommendations from taste vector
+    // Step 1: Get recommendations from taste vector (request 15 for fallback)
     console.log(`[${sessionId}] Getting recommendations...`);
     const recResponse = await fetch(`${QUIZ_SERVICE_URL}/recommend`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionId, top_n: 5 }),
+      body: JSON.stringify({ session_id: sessionId, top_n: 15 }),
     });
 
     if (!recResponse.ok) {
@@ -58,37 +58,64 @@ async function generateVideoAsync(sessionId: string, _tasteVector: number[]) {
 
     const recommendations = await recResponse.json();
 
-    // Step 2: Generate movie concept
+    // Step 2: Generate movie concept with OMDB fallback
     console.log(`[${sessionId}] Generating movie concept...`);
 
     // Extract movie titles from recommendations
-    const movieNames = recommendations.recommendations
+    const allMovieNames = recommendations.recommendations
       ? recommendations.recommendations.map((rec: { title: string }) => rec.title)
       : recommendations.results?.map((rec: { title: string }) => rec.title) || [];
 
-    console.log(`[${sessionId}] Using ${movieNames.length} movie recommendations:`, movieNames);
+    console.log(`[${sessionId}] Got ${allMovieNames.length} total recommendations`);
 
-    const movieResponse = await fetch(`${SCREENPLAY_WRITER_URL}/generate-movie`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        movie_names: movieNames.slice(0, 5), // Use top 5 movies
-      }),
-    });
+    // Try up to 3 batches of 5 movies if OMDB lookup fails
+    let movie = null;
+    let lastError = null;
+    const maxAttempts = 3;
 
-    if (!movieResponse.ok) {
-      const errorText = await movieResponse.text();
-      console.error(`[${sessionId}] Screenplay-writer error:`, errorText);
-      throw new Error(`Failed to generate movie: ${errorText}`);
+    for (let attempt = 0; attempt < maxAttempts && !movie; attempt++) {
+      const startIdx = attempt * 5;
+      const endIdx = startIdx + 5;
+      const movieBatch = allMovieNames.slice(startIdx, endIdx);
+
+      if (movieBatch.length === 0) {
+        console.log(`[${sessionId}] No more movies to try`);
+        break;
+      }
+
+      console.log(`[${sessionId}] Attempt ${attempt + 1}/${maxAttempts}: Trying movies ${startIdx + 1}-${endIdx}:`, movieBatch);
+
+      const movieResponse = await fetch(`${SCREENPLAY_WRITER_URL}/generate-movie`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          movie_names: movieBatch,
+        }),
+      });
+
+      if (movieResponse.ok) {
+        const movieData = await movieResponse.json();
+        if (movieData.success && movieData.movie) {
+          movie = movieData.movie;
+          console.log(`[${sessionId}] Successfully generated movie on attempt ${attempt + 1}`);
+          break;
+        }
+      } else if (movieResponse.status === 404) {
+        const errorText = await movieResponse.text();
+        console.warn(`[${sessionId}] Batch ${attempt + 1} failed OMDB lookup:`, errorText);
+        lastError = errorText;
+        // Continue to next batch
+      } else {
+        // Other error - stop trying
+        const errorText = await movieResponse.text();
+        console.error(`[${sessionId}] Non-OMDB error:`, errorText);
+        throw new Error(`Failed to generate movie: ${errorText}`);
+      }
     }
 
-    const movieData = await movieResponse.json();
-
-    if (!movieData.success || !movieData.movie) {
-      throw new Error(`Failed to generate movie: ${movieData.error || "Unknown error"}`);
+    if (!movie) {
+      throw new Error(`Failed to generate movie after ${maxAttempts} attempts. Last error: ${lastError}`);
     }
-
-    const movie = movieData.movie;
 
     console.log(`[${sessionId}] Movie generated: ${movie.title}`);
 
@@ -131,6 +158,9 @@ async function generateVideoAsync(sessionId: string, _tasteVector: number[]) {
         character_designs: trailer.character_designs,
         scenes: trailer.scenes,
         stitch_trailer: true,
+        movie_title: movieTitle,
+        screenplay_data: movie,  // Pass full movie data for gallery metadata
+        update_gallery: true,
       }),
       // @ts-expect-error - Node.js fetch (undici) supports these options
       headersTimeout: 1200000, // 20 minutes

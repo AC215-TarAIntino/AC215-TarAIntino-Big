@@ -182,9 +182,9 @@ def ingest_tag_relevance_to_chroma(
         collection = client.get_collection(collection_name)
         log(f"Using existing Chroma collection: {collection_name}")
     except Exception:
-        collection = client.create_collection(
-            name=collection_name, metadata={"hnsw:space": "cosine"}
-        )
+        # Create collection without metadata - ChromaDB will use defaults
+        # Note: ChromaDB v0.6+ uses cosine similarity by default
+        collection = client.create_collection(name=collection_name)
         log(f"Created Chroma collection (cosine): {collection_name}")
 
     # Batch insert
@@ -261,9 +261,8 @@ def ingest_tags_metadata_to_chroma(
         col = client.get_collection(collection_name)
         log(f"Using existing Chroma collection: {collection_name}")
     except Exception:
-        col = client.create_collection(
-            name=collection_name, metadata={"hnsw:space": "cosine"}  # doesn't really matter here
-        )
+        # Create collection without metadata - ChromaDB will use defaults
+        col = client.create_collection(name=collection_name)
         log(f"Created Chroma collection: {collection_name}")
 
     # We'll insert/update in batches

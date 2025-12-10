@@ -1,8 +1,9 @@
 config:
-  gcp:project: llm-service-account-474620
+  gcp:project: taraintino-showcase-52d833
   taraintino-k8s:cluster_name: taraintino-cluster
-  taraintino-k8s:gcp_project: llm-service-account-474620
+  taraintino-k8s:gcp_project: taraintino-showcase-52d833
   taraintino-k8s:gcp_region: us-central1
   taraintino-k8s:gcp_zone: us-central1-a
   taraintino-k8s:node_count: "3"
   taraintino-k8s:node_machine_type: n1-standard-4
+encryptionsalt: v1:F5r1a/o6PMA=:v1:PBRqky15dEX0aTyk:xj1neioinZnSu+0Ri6zUM1/wEYMuwA==

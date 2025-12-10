@@ -199,10 +199,14 @@ generated_movie.json
 /output/**/*.mp4
 /output/**/*.png
 sample_videos/
+extra-gallery/
 
 # Screenplay writer / Scene decomposer
 screenplay-writer/outputs/*.json
 scene-decomposer/outputs/*.json
+
+# Utility scripts
+scripts/
 
 # -----------------------------------------------------------------------------
 # Node.js / Frontend (Next.js specific)
@@ -257,6 +261,24 @@ dmypy.json
 # Project Management
 # -----------------------------------------------------------------------------
 .abstra/
+
+# -----------------------------------------------------------------------------
+# Deployment & Infrastructure
+# -----------------------------------------------------------------------------
+# Pulumi
+.pulumi/
+Pulumi.*.yaml
+!Pulumi.yaml
+*.pulumi.lock
+
+# Deployment logs and artifacts
+deployment*.log
+*deployment*.log
+/tmp/gallery_manifest*.json
+/tmp/*key.txt
+
+# Kubernetes manifests (generated)
+k8s-*.yaml
 
 # -----------------------------------------------------------------------------
 # OS Files

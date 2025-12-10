@@ -1,7 +1,7 @@
 services:
   # ChromaDB Vector Database
   chroma:
-    image: ghcr.io/chroma-core/chroma:0.6.1
+    image: ghcr.io/chroma-core/chroma:0.5.23
     container_name: chroma
     environment:
       CHROMA_SERVER_HOST: 0.0.0.0
@@ -54,7 +54,7 @@ services:
       CHROMA_TELEMETRY_IMPL: "none"
       SKIP_CHROMA_INIT: ${SKIP_CHROMA_INIT:-false}
     volumes:
-      - ./src/quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
+      - ./src/quiz-vector/secrets/taraintino-showcase-key.json:/app/adc.json:ro
       - ./src/quiz-vector:/app
     depends_on:
       chroma:
@@ -81,7 +81,7 @@ services:
       ANONYMIZED_TELEMETRY: "False"
       CHROMA_TELEMETRY_IMPL: "none"
     volumes:
-      - ./src/quiz-vector/secrets/llm-service-account.json:/app/adc.json:ro
+      - ./src/quiz-vector/secrets/taraintino-showcase-key.json:/app/adc.json:ro
       - ./src/quiz-vector:/app
     depends_on:
       chroma-init:
@@ -182,7 +182,7 @@ services:
       - "8003:8003"
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
-      - GCS_BUCKET_NAME=tarantaino-output
+      - GCS_BUCKET_NAME=taraintino-showcase-videos
       - GCS_PREFIX=video_generator_outputs
     volumes:
       - ./src/video-generator/output:/app/output
