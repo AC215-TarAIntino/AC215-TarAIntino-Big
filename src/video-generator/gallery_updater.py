@@ -69,9 +69,9 @@ class GalleryUpdater:
         if screenplay_data:
             # Handle both full screenplay structure and trailer structure
             narration = (
-                screenplay_data.get("narration_script", "") or
-                screenplay_data.get("narration", "") or
-                screenplay_data.get("synopsis", "")
+                screenplay_data.get("narration_script", "")
+                or screenplay_data.get("narration", "")
+                or screenplay_data.get("synopsis", "")
             )
 
             # Extract characters from either character_appearance_map or character_designs

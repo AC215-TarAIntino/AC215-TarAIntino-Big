@@ -5,15 +5,16 @@ Create gallery manifest from movie JSON files
 
 import json
 import os
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 SCENE_DECOMPOSER_DIR = Path(__file__).parent.parent / "scene-decomposer" / "outputs"
 OUTPUT_DIR = Path(__file__).parent / "output"
 
+
 def extract_movie_metadata(json_path):
     """Extract relevant metadata from a movie JSON file."""
-    with open(json_path, 'r') as f:
+    with open(json_path) as f:
         data = json.load(f)
 
     metadata = {
@@ -27,10 +28,11 @@ def extract_movie_metadata(json_path):
         "created_at": datetime.fromtimestamp(os.path.getmtime(json_path)).isoformat(),
         "filename": json_path.stem,
         "video_url": "gs://taraintino-showcase-videos/gallery/trailers/demo_trailer.mp4",
-        "thumbnail_url": "gs://taraintino-showcase-videos/gallery/trailers/demo_trailer.mp4"
+        "thumbnail_url": "gs://taraintino-showcase-videos/gallery/trailers/demo_trailer.mp4",
     }
 
     return metadata
+
 
 def main():
     print("Creating gallery manifest...")
@@ -51,15 +53,16 @@ def main():
         "version": "1.0",
         "created_at": datetime.now().isoformat(),
         "total_movies": len(movies_metadata),
-        "movies": movies_metadata
+        "movies": movies_metadata,
     }
 
     manifest_path = OUTPUT_DIR / "gallery_manifest.json"
-    with open(manifest_path, 'w') as f:
+    with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
 
     print(f"\n✓ Manifest created: {manifest_path}")
     print(f"✓ Total movies: {len(movies_metadata)}")
+
 
 if __name__ == "__main__":
     main()

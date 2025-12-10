@@ -12,9 +12,10 @@ This script:
 
 import json
 import os
-from pathlib import Path
-from google.cloud import storage
 from datetime import datetime
+from pathlib import Path
+
+from google.cloud import storage
 
 # Configuration
 GCS_BUCKET_NAME = "taraintino-showcase-videos"
@@ -23,9 +24,10 @@ SCENE_DECOMPOSER_DIR = Path(__file__).parent.parent / "scene-decomposer" / "outp
 VIDEO_OUTPUT_DIR = Path(__file__).parent / "output"
 TRAILER_VIDEO = VIDEO_OUTPUT_DIR / "trailer_no_audio.mp4"
 
+
 def extract_movie_metadata(json_path):
     """Extract relevant metadata from a movie JSON file."""
-    with open(json_path, 'r') as f:
+    with open(json_path) as f:
         data = json.load(f)
 
     # Extract key information
@@ -38,10 +40,11 @@ def extract_movie_metadata(json_path):
         "visual_style": data.get("technical_specs", {}).get("visual_style", ""),
         "aspect_ratio": data.get("technical_specs", {}).get("aspect_ratio", "16:9"),
         "created_at": datetime.fromtimestamp(os.path.getmtime(json_path)).isoformat(),
-        "filename": json_path.stem
+        "filename": json_path.stem,
     }
 
     return metadata
+
 
 def upload_to_gcs(local_path, dest_path, bucket_name, content_type=None):
     """Upload a file to GCS."""
@@ -56,6 +59,7 @@ def upload_to_gcs(local_path, dest_path, bucket_name, content_type=None):
 
     print(f"✓ Uploaded: gs://{bucket_name}/{dest_path}")
     return f"gs://{bucket_name}/{dest_path}"
+
 
 def main():
     print("=" * 60)
@@ -79,24 +83,21 @@ def main():
             print(f"    ✗ Error processing {json_file.name}: {e}")
 
     # Step 3: Check if trailer video exists
-    print(f"\n[3] Checking trailer video...")
+    print("\n[3] Checking trailer video...")
     if not TRAILER_VIDEO.exists():
         print(f"    ✗ Trailer video not found: {TRAILER_VIDEO}")
-        print(f"    Please ensure the trailer video exists before running this script.")
+        print("    Please ensure the trailer video exists before running this script.")
         return
 
     print(f"    ✓ Trailer video found: {TRAILER_VIDEO}")
     print(f"    Size: {TRAILER_VIDEO.stat().st_size / (1024 * 1024):.2f} MB")
 
     # Step 4: Upload trailer video to GCS
-    print(f"\n[4] Uploading trailer video to GCS...")
+    print("\n[4] Uploading trailer video to GCS...")
     trailer_gcs_path = f"{GCS_PREFIX}/trailers/demo_trailer.mp4"
     try:
         video_url = upload_to_gcs(
-            TRAILER_VIDEO,
-            trailer_gcs_path,
-            GCS_BUCKET_NAME,
-            content_type="video/mp4"
+            TRAILER_VIDEO, trailer_gcs_path, GCS_BUCKET_NAME, content_type="video/mp4"
         )
 
         # Add video URL to all movie metadata (they all share the same trailer for demo)
@@ -108,29 +109,26 @@ def main():
         return
 
     # Step 5: Create gallery manifest
-    print(f"\n[5] Creating gallery manifest...")
+    print("\n[5] Creating gallery manifest...")
     manifest = {
         "version": "1.0",
         "created_at": datetime.now().isoformat(),
         "total_movies": len(movies_metadata),
-        "movies": movies_metadata
+        "movies": movies_metadata,
     }
 
     # Save manifest locally
     manifest_path = VIDEO_OUTPUT_DIR / "gallery_manifest.json"
-    with open(manifest_path, 'w') as f:
+    with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
     print(f"    ✓ Manifest created: {manifest_path}")
 
     # Step 6: Upload manifest to GCS
-    print(f"\n[6] Uploading manifest to GCS...")
+    print("\n[6] Uploading manifest to GCS...")
     manifest_gcs_path = f"{GCS_PREFIX}/gallery_manifest.json"
     try:
         upload_to_gcs(
-            manifest_path,
-            manifest_gcs_path,
-            GCS_BUCKET_NAME,
-            content_type="application/json"
+            manifest_path, manifest_gcs_path, GCS_BUCKET_NAME, content_type="application/json"
         )
     except Exception as e:
         print(f"    ✗ Error uploading manifest: {e}")
@@ -147,6 +145,7 @@ def main():
     print("1. Create a gallery API endpoint to fetch the manifest")
     print("2. Add a gallery UI component to the quiz page")
     print("=" * 60)
+
 
 if __name__ == "__main__":
     main()

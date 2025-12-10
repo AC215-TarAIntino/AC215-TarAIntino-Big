@@ -12,11 +12,12 @@ Usage:
     pulumi up --stack dev
 """
 
+import subprocess
+
 import pulumi
 import pulumi_gcp as gcp
 import pulumi_kubernetes as k8s
 from pulumi_kubernetes.apps.v1 import DeploymentSpecArgs
-from pulumi_kubernetes.batch.v1 import JobSpecArgs
 from pulumi_kubernetes.core.v1 import (
     ContainerArgs as Container,
 )
@@ -25,13 +26,11 @@ from pulumi_kubernetes.core.v1 import (
     EnvVarArgs,
     EnvVarSourceArgs,
     HTTPGetActionArgs,
-    KeyToPathArgs,
     PersistentVolumeClaimSpecArgs,
     PodSpecArgs,
     PodTemplateSpecArgs,
     ResourceRequirementsArgs,
     SecretKeySelectorArgs,
-    SecretVolumeSourceArgs,
     ServicePortArgs,
     ServiceSpecArgs,
     VolumeArgs,
@@ -131,16 +130,13 @@ kubeconfig = pulumi.Output.all(
 
 # Create Kubernetes provider using token-based kubeconfig
 # This avoids the gke-gcloud-auth-plugin requirement
-import subprocess
+
 
 def get_token_kubeconfig(cluster_name_val, endpoint_val, ca_cert_val):
     """Generate kubeconfig that uses gcloud access token instead of auth plugin"""
     # Get a fresh access token
     result = subprocess.run(
-        ["gcloud", "auth", "print-access-token"],
-        capture_output=True,
-        text=True,
-        check=True
+        ["gcloud", "auth", "print-access-token"], capture_output=True, text=True, check=True
     )
     token = result.stdout.strip()
 
@@ -164,15 +160,14 @@ users:
     token: {token}
 """
 
+
 token_kubeconfig = pulumi.Output.all(
     cluster.name, cluster.endpoint, cluster.master_auth.cluster_ca_certificate
 ).apply(lambda args: get_token_kubeconfig(args[0], args[1], args[2]))
 
 # Create K8s provider with token-based kubeconfig
 k8s_provider = k8s.Provider(
-    "gke-k8s",
-    kubeconfig=token_kubeconfig,
-    opts=pulumi.ResourceOptions(depends_on=[node_pool])
+    "gke-k8s", kubeconfig=token_kubeconfig, opts=pulumi.ResourceOptions(depends_on=[node_pool])
 )
 
 # ============================================================================
@@ -434,7 +429,9 @@ quiz_deployment = k8s.apps.v1.Deployment(
             ),
         ),
     ),
-    opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[chroma_deployment, chroma_service]),
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider, depends_on=[chroma_deployment, chroma_service]
+    ),
 )
 
 quiz_service = k8s.core.v1.Service(

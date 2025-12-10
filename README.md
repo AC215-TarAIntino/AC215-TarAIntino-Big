@@ -12,6 +12,8 @@ TarAIntino
 
 TarAIntino is an end-to-end machine learning pipeline that creates personalized movie trailers based on user preferences. Indeed, in this project we aim to develop a comprehensive MLOps system for generating personalized movie trailers using taste vectors, LLMs, and video generation AI. The app will feature an adaptive quiz to elicit user preferences and include a modular pipeline connecting those preferences to generative APIs. Users can simply answer a short interactive quiz, and the app will produce a personalized, AI-generated movie trailer that reflects their cinematic taste. Additionally, a storytelling and trailer-planning agent will allow users to explore customized narratives and styles. It will be powered by a large language model for narrative generation and diffusion-based video models, making it a specialist in personalized cinematic creation.
 
+**🌐 Live Application:** http://34.59.37.46/
+
 ## Overview
 
 The system works as follows:
@@ -370,8 +372,9 @@ The project uses GitHub Actions for continuous integration:
 ├──────────────────────┤              ├──────────────────────┤
 │ • TypeScript Check   │              │ • Black Format       │
 │ • ESLint             │              │ • Ruff Lint          │
-│ • Build              │              │ • Pytest (Docker)    │
-└──────────────────────┘              └──────────────────────┘
+│ • Build              │              │ • Docker Compose     │
+└──────────────────────┘              │ • Pytest (Docker)    │
+                                      └──────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
 │              Specialized Workflows (Optimized)              │
@@ -385,7 +388,7 @@ The project uses GitHub Actions for continuous integration:
 
 - **`ci.yml`** - Main CI pipeline that runs on all pushes and PRs
   - Runs frontend checks (TypeScript, ESLint, build)
-  - Runs backend checks (black, ruff, pytest)
+  - Runs backend checks (black, ruff, docker-compose validation, pytest)
   - Comprehensive status check
 
 - **`frontend-ci.yml`** - Specialized frontend pipeline
@@ -395,18 +398,20 @@ The project uses GitHub Actions for continuous integration:
   - Build verification
 
 - **`backend-ci.yml`** - Specialized backend pipeline
-  - Triggers only on Python file changes
+  - Triggers on Python, deployment, and docker-compose changes
   - Black formatting check
   - Ruff linting
+  - Docker-compose syntax validation
   - Docker-based pytest for all microservices
 
 ### CI Status
 
 All pull requests must pass CI checks before merging. The CI pipeline automatically:
 1. Formats code with black (check only)
-2. Lints code with ruff
-3. Runs all microservice tests in Docker containers
-4. Verifies frontend build and type-safety
+2. Lints code with ruff (including deployment files)
+3. Validates docker-compose.yml syntax
+4. Runs all microservice tests in Docker containers
+5. Verifies frontend build and type-safety
 
 **Results of CI runs can be found in the `hand-ins/screenshots for CI CD/` folder.**
 

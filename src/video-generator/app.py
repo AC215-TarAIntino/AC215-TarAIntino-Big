@@ -88,9 +88,7 @@ class TrailerGenerationRequest(BaseModel):
         default=True,
         description="If true, stitch scene videos into output/trailer_no_audio.mp4",
     )
-    movie_title: str | None = Field(
-        None, description="Movie title for gallery metadata (optional)"
-    )
+    movie_title: str | None = Field(None, description="Movie title for gallery metadata (optional)")
     screenplay_data: dict | None = Field(
         None, description="Screenplay JSON data for gallery metadata (optional)"
     )

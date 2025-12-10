@@ -8,6 +8,8 @@ on:
       - 'src/screenplay-writer/**'
       - 'src/scene-decomposer/**'
       - 'src/video-generator/**'
+      - 'src/deployment/**'
+      - 'docker-compose.yml'
       - 'tests/**'
       - 'pyproject.toml'
       - 'Makefile'
@@ -19,6 +21,8 @@ on:
       - 'src/screenplay-writer/**'
       - 'src/scene-decomposer/**'
       - 'src/video-generator/**'
+      - 'src/deployment/**'
+      - 'docker-compose.yml'
       - 'tests/**'
       - 'pyproject.toml'
       - 'Makefile'
@@ -51,6 +55,10 @@ jobs:
       - name: Lint code with ruff
         run: |
           ruff check src/ tests/
+
+      - name: Validate docker-compose syntax
+        run: |
+          docker compose config
 
   test:
     name: Test Microservices
