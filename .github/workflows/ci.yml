@@ -251,3 +251,110 @@ jobs:
             exit 1
           fi
           echo "✅ All CI jobs passed!"
+
+  # Deploy to GKE (only on main branch after all tests pass)
+  deploy:
+    name: Deploy to GKE
+    runs-on: ubuntu-latest
+    needs: [status-check, detect-changes]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Install Pulumi CLI
+        uses: pulumi/actions@v5
+        with:
+          pulumi-version: ^3.0.0
+
+      - name: Build and Push Docker Images
+        if: |
+          needs.detect-changes.outputs.quiz-vector == 'true' ||
+          needs.detect-changes.outputs.screenplay-writer == 'true' ||
+          needs.detect-changes.outputs.scene-decomposer == 'true' ||
+          needs.detect-changes.outputs.video-generator == 'true' ||
+          needs.detect-changes.outputs.frontend == 'true'
+        working-directory: src/deployment/deploy_images
+        run: |
+          echo "🔧 Installing Pulumi dependencies..."
+          pip install -r requirements.txt
+
+          echo "🔐 Logging into Pulumi..."
+          pulumi login
+
+          echo "📦 Selecting/creating stack..."
+          pulumi stack select dev --create || pulumi stack select dev
+
+          echo "⚙️  Configuring GCP project..."
+          pulumi config set gcp_project ${{ secrets.GCP_PROJECT_ID }}
+          pulumi config set gcp_region us-central1
+
+          echo "🏗️  Building and pushing Docker images..."
+          pulumi up --yes --skip-preview
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+      - name: Deploy to Kubernetes
+        working-directory: src/deployment/deploy_k8s
+        run: |
+          echo "🔧 Installing Pulumi dependencies..."
+          pip install -r requirements.txt
+
+          echo "🔐 Logging into Pulumi..."
+          pulumi login
+
+          echo "📦 Selecting/creating stack..."
+          pulumi stack select dev --create || pulumi stack select dev
+
+          echo "⚙️  Configuring GCP settings..."
+          pulumi config set gcp_project ${{ secrets.GCP_PROJECT_ID }}
+          pulumi config set gcp_region us-central1
+          pulumi config set gcp_zone us-central1-a
+          pulumi config set cluster_name taraintino-cluster
+          pulumi config set node_count 3
+          pulumi config set node_machine_type n1-standard-4
+
+          echo "🚀 Deploying to Kubernetes..."
+          pulumi up --yes --skip-preview
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+      - name: Get deployment info
+        if: always()
+        working-directory: src/deployment/deploy_k8s
+        run: |
+          echo "📦 Deployment Summary"
+          echo "===================="
+          pulumi login
+          pulumi stack select dev
+          echo ""
+          echo "🌐 Application URL:"
+          pulumi stack output app_url || echo "Not available"
+          echo ""
+          echo "🔧 Cluster Name:"
+          pulumi stack output cluster_name || echo "Not available"
+          echo ""
+          echo "📊 All outputs:"
+          pulumi stack output --json || echo "No outputs available"
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
