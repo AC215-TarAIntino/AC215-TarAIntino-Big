@@ -561,10 +561,6 @@ git commit -m "Your message"
   - YAML syntax: Valid
   - Deployment structure: All Pulumi files and directories present
   - Job dependencies: Correctly configured
-  - Secrets documentation: All required secrets documented in README
-    - GCP_SA_KEY
-    - GCP_PROJECT_ID
-    - PULUMI_ACCESS_TOKEN
 
 ### ✅ Code Quality
 
