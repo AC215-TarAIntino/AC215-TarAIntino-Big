@@ -2,7 +2,7 @@
 
 **Team Members**
 
-Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vrancic
+Mathilde Cros, Robert Debbas, Maddy Jin, Karlo Vrancic.
 
 **Group Name**
 
