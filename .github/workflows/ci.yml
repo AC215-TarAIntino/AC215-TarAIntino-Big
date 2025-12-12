@@ -341,6 +341,22 @@ jobs:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
 
+      - name: Create API secrets in Kubernetes
+        run: |
+          echo "🔐 Getting cluster credentials..."
+          gcloud container clusters get-credentials taraintino-cluster \
+            --zone=us-central1-a \
+            --project=${{ secrets.GCP_PROJECT_ID }}
+
+          echo "🔑 Creating api-secrets..."
+          kubectl create secret generic api-secrets \
+            --from-literal=openrouter-api-key=${{ secrets.OPENROUTER_API_KEY }} \
+            --from-literal=omdb-api-key=${{ secrets.OMDB_API_KEY }} \
+            -n taraintino \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          echo "✅ API secrets created successfully"
+
       - name: Get deployment info
         if: always()
         working-directory: src/deployment/deploy_k8s
