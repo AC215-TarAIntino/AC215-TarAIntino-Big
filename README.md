@@ -560,7 +560,7 @@ git commit -m "Your message"
 
   - Workflow validation: All deployment configuration checks passed (12/12 checks)
   - YAML syntax: Valid
-  - Deployment structure: All Pulumi files and directories present
+  - Deployment structure: All Pulumi files and directories are present
   - Job dependencies: Correctly configured
 
 ### ✅ Code Quality
