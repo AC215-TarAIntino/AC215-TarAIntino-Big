@@ -197,6 +197,7 @@ Make sure your Github Actions secrets (Settings → Secrets and variables → Ac
   GCP_SA_KEY: <your GCP service account JSON>
   GCP_PROJECT_ID: <your-gcp-project-id>
   PULUMI_ACCESS_TOKEN: <your-pulumi-token>
+  PULUMI_CONFIG_PASSPHRASE: <your-pulumi-stack-passphrase>
 
 **Screenplay Writer Service:**
 ```bash

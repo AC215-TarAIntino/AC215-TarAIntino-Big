@@ -103,7 +103,7 @@ fi
 # 8. Check for required secrets documentation
 echo ""
 echo "8. Checking secrets documentation..."
-if grep -q "GCP_SA_KEY" README.md && grep -q "GCP_PROJECT_ID" README.md && grep -q "PULUMI_ACCESS_TOKEN" README.md; then
+if grep -q "GCP_SA_KEY" README.md && grep -q "GCP_PROJECT_ID" README.md && grep -q "PULUMI_ACCESS_TOKEN" README.md && grep -q "PULUMI_CONFIG_PASSPHRASE" README.md; then
     check_pass "Required secrets are documented in README"
 else
     check_warn "Some required secrets may not be documented"
@@ -155,6 +155,7 @@ echo "1. Ensure GitHub secrets are configured:"
 echo "   - GCP_SA_KEY"
 echo "   - GCP_PROJECT_ID"
 echo "   - PULUMI_ACCESS_TOKEN"
+echo "   - PULUMI_CONFIG_PASSPHRASE"
 echo ""
 echo "2. Test the workflow by pushing to main branch"
 echo ""
