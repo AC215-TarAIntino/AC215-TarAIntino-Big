@@ -343,6 +343,9 @@ jobs:
 
       - name: Create API secrets in Kubernetes
         run: |
+          echo "🔧 Installing gke-gcloud-auth-plugin..."
+          gcloud components install gke-gcloud-auth-plugin --quiet
+
           echo "🔐 Getting cluster credentials..."
           gcloud container clusters get-credentials taraintino-cluster \
             --zone=us-central1-a \
